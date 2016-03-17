@@ -1,0 +1,13 @@
+.idea/
+src/experiments/configurations/*
+src/experiments/data/*
+src/experiments/plots/*
+src/topo/.cache/*
+src/model/.cache/*
+src/experiments/.cache/*
+src/analysis/.cache/*
+src/synthesis/.cache/*
+*pyc
+*.bak
+*~
+*.json
