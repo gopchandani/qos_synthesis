@@ -49,12 +49,12 @@ class SynthesizeQoSAborescene():
             if node_type == "host":
                 nmdg.remove_node(n)
 
-            # Set the weights of ingress edges to destination switch to zero
-            if node_type == "host" and dst_h_obj.node_id != node_obj.node_id:
+            # Set the weights of ingress edges to destination switch to less than 1
+            if node_type == "host" and dst_h_obj.node_id == node_obj.node_id:
                 for pred in nmdg.predecessors(node_obj.switch_id):
                     nmdg[pred][node_obj.switch_id][0]['weight'] = 0.5
 
-        msa = nx.minimum_spanning_arborescence(nmdg)
+        msa = nx.maximum_spanning_arborescence(nmdg)
 
         # Go through each node of the msa and check its successors
         for n in msa:

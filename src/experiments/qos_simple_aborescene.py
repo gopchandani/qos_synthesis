@@ -29,8 +29,11 @@ class QosDemo(Experiment):
         for total_number_of_hosts in self.total_number_of_hosts:
 
             #self.topo_description = ("ring", 4, 1, None, None)
-            self.topo_description = ("clostopo", None, 1, 2, 1)
-            ng = self.setup_network_graph(self.topo_description, synthesis_scheme="QoS_Synthesis_Aborescene")
+            self.topo_description = ("clostopo", None, 1, 3, 1)
+
+            ng = self.setup_network_graph(self.topo_description,
+                                          synthesis_scheme="QoS_Synthesis_Aborescene",
+                                          synthesis_setup_gap=5)
 
         print "Done..."
 
