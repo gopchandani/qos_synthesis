@@ -24,7 +24,6 @@ from experiments.topologies.clique_topo import CliqueTopo
 from experiments.topologies.ameren_topo import AmerenTopo
 
 from synthesis.synthesize_dij_qos import SynthesizeQoS
-from synthesis.synthesize_qos_aborescene import SynthesizeQoSAborescene
 
 
 class MininetMan():
@@ -492,7 +491,3 @@ class MininetMan():
             print "--"
             self.parse_netperf_output(netperf_output_dict_h2s2[i])
 
-    def qos_synthesize_aborescene(self, ng):
-
-        self.synth = SynthesizeQoSAborescene(ng)
-        self.synth.synthesize_all_dsts(50)
