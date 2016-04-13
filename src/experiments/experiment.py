@@ -94,7 +94,8 @@ class Experiment(object):
                                                                                           same_output_queue=False)
                     #self.mm.qos_setup_two_flows_on_separate_queues_to_same_host(self.ng)
 
-
+                elif synthesis_scheme == "QoS_Synthesis_Aborescene":
+                    self.mm.qos_synthesize_aborescene(self.ng)
 
                 self.mm.net.pingAll()
                 #is_bi_connected = self.mm.is_bi_connected_manual_ping_test()
