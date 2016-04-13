@@ -70,8 +70,6 @@ class SynthesizeQoSAborescene():
                                                               min_rate=rate,
                                                               max_rate=rate)
 
-        print self.sw_intents
-
     def push_intents(self):
 
         for src_sw in self.sw_intents:
