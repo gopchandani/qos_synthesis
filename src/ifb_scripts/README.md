@@ -15,8 +15,11 @@ In the Glacier, I had checked earlier, IFB module option is already selected, so
 	* htb_exp.sh - It installs HTB qdisc for egress with 3 classes - class1 (ICMP protocol), class 2 (ssh traffic), class 3 is the default
 	* ifb_htb.sh - It adds pesudo interface ifb0 to the ingress of eth1, installs HTB qdisc for the egress of ifb0 with three classes, installs HTB qdisc for egress of eth1 with three classes.
 	* delete_interface.sh - deletes all qdiscs settings. Use this everytime when you want to change the htb rates or priority and run the htb_exp.sh script or ifb_htb.sh script.   
+
 * All scripts required to be executed with sudo
+
 * To test the scripts - 
+
 	* Change the src ip address in the script based on your machine ip address
 	* Run the script
 	* Test if the qdisc and classes information by using the commands mentioned above.	At this point, you should be able to see the htb qdisc has been attached to the interface with all class rates information, number of packets sent, yokens info, etc.
