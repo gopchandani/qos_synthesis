@@ -1,6 +1,5 @@
 __author__ = 'Rakesh Kumar'
 
-
 from collections import defaultdict
 
 

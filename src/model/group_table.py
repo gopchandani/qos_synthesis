@@ -3,7 +3,7 @@ __author__ = 'Rakesh Kumar'
 from action_set import Action, ActionSet
 
 
-class Bucket():
+class Bucket:
     def __init__(self, sw, bucket_json, group):
 
         self.sw = sw
@@ -76,7 +76,8 @@ class Bucket():
 
         return prior_active_watch_ports
 
-class Group():
+
+class Group:
     '''
     As per OF1.3 specification:
 
@@ -169,7 +170,8 @@ class Group():
     def set_active_bucket(self):
         self.active_bucket = self.get_first_live_bucket()
 
-class GroupTable():
+
+class GroupTable:
 
     def __init__(self, sw, groups_json):
 

@@ -1,13 +1,10 @@
 __author__ = 'Rakesh Kumar'
 
-import sys
-
-
-from match import OdlMatchJsonParser
 from match import ryu_field_names_mapping
 from collections import defaultdict
 
-class Action():
+
+class Action:
     '''
      As per OF1.3 specification:
 
@@ -59,69 +56,6 @@ class Action():
 
         return len(prior_active_watch_ports)
 
-    def parse_odl_action_json(self):
-
-        self.order = self.action_json["order"]
-
-        if "output-action" in self.action_json:
-            self.action_type = "output"
-
-            if self.action_json["output-action"]["output-node-connector"] == u"CONTROLLER":
-                self.out_port = self.sw.network_graph.OFPP_CONTROLLER
-            elif self.action_json["output-action"]["output-node-connector"] == u"INPORT":
-                self.out_port = self.sw.network_graph.OFPP_IN
-            else:
-                self.out_port = int(self.action_json["output-action"]["output-node-connector"])
-
-        if "group-action" in self.action_json:
-            self.action_type = "group"
-            self.group_id = int(self.action_json["group-action"]["group-id"])
-
-        if "push-vlan-action" in self.action_json:
-            self.action_type = "push_vlan"
-            self.vlan_ethernet_type = self.action_json["push-vlan-action"]["ethernet-type"]
-
-        if "pop-vlan-action" in self.action_json:
-            self.action_type = "pop_vlan"
-
-        if "set-field" in self.action_json:
-            self.action_type = "set_field"
-            self.set_field_match_json = self.action_json["set-field"]
-            mjp = OdlMatchJsonParser(self.action_json["set-field"])
-            if mjp.keys():
-                self.modified_field = mjp.keys()[0]
-                self.field_modified_to = mjp[self.modified_field]
-
-
-    def parse_sel_action_json(self):
-        self.order = self.action_json["setOrder"]
-
-        if self.action_json["actionType"] == 'Output':
-            self.action_type = "output"
-            if int(self.action_json["outPort"]) == 4294967293:
-                self.out_port = self.sw.network_graph.OFPP_CONTROLLER
-            else:
-                self.out_port = int(self.action_json["outPort"])
-
-        if self.action_json["actionType"] == 'Group':
-            self.action_type = "group"
-            self.group_id = int(self.action_json["groupId"])
-
-        # if self.action_json["actionType"] == 'PushVlan':
-        #     self.action_type = "push_vlan"
-        #     self.vlan_ethernet_type = self.action_json['ethernetType']
-        #
-        # if self.action_json["actionType"] == 'PopVlan':
-        #     self.action_type = "pop_vlan"
-
-        if self.action_json["actionType"] == 'SetField':
-            self.action_type = "set_field"
-            if self.action_json["field"]["@odata.type"] == "#Sel.Sel5056.OpenFlowPlugin.DataTreeObjects.MatchFields.VlanVid":
-                self.modified_field = "vlan_id"
-                self.field_modified_to = int(self.action_json["field"]["value"])
-            else:
-                raise NotImplementedError
-
     def parse_ryu_action_json(self):
 
         if self.action_json["type"] == "OUTPUT":
@@ -153,7 +87,8 @@ class Action():
     def is_failover_action(self):
         return (self.bucket and self.bucket.group.group_type == self.sw.network_graph.GROUP_FF)
 
-class ActionSet():
+
+class ActionSet:
 
     '''
     As per OF1.3 specification:
@@ -288,6 +223,5 @@ class ActionSet():
                     # Add an edge, only if the output_port is currently up
                     if self.sw.ports[output_action.out_port].state == "up":
                         port_graph_edges.append((str(output_action.out_port), output_action))
-
 
         return port_graph_edges

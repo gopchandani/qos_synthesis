@@ -21,50 +21,6 @@ class Port(object):
         else:
             raise NotImplemented
 
-    def init_port_graph_state(self):
-
-        # Need port_number parsed in before this is called
-        self.switch_port_graph_ingress_node = PortGraphNode(self.sw,
-                                                            PortGraph.get_ingress_node_id(self.sw.node_id,
-                                                                                          self.port_number),
-                                                            "ingress")
-
-        self.switch_port_graph_egress_node = PortGraphNode(self.sw,
-                                                           PortGraph.get_egress_node_id(self.sw.node_id,
-                                                                                        self.port_number),
-                                                           "egress")
-
-        self.network_port_graph_ingress_node = PortGraphNode(self.sw,
-                                                             PortGraph.get_ingress_node_id(self.sw.node_id,
-                                                                                           self.port_number),
-                                                             "ingress")
-
-        self.network_port_graph_egress_node = PortGraphNode(self.sw,
-                                                            PortGraph.get_egress_node_id(self.sw.node_id,
-                                                                                         self.port_number),
-                                                            "egress")
-
-        self.switch_port_graph_ingress_node.parent_obj = self
-        self.switch_port_graph_egress_node.parent_obj = self
-        self.network_port_graph_ingress_node.parent_obj = self
-        self.network_port_graph_egress_node.parent_obj = self
-
-        self.ingress_node_traffic = Traffic(init_wildcard=True)
-        self.ingress_node_traffic.set_field("in_port", int(self.port_number))
-
-    def parse_odl_port_json(self, port_json):
-
-        self.port_id = str(self.sw.node_id) + ":" + str(port_json["flow-node-inventory:port-number"])
-        self.port_number = port_json["flow-node-inventory:port-number"]
-        self.mac_address = port_json["flow-node-inventory:hardware-address"]
-        self.curr_speed = int(port_json["flow-node-inventory:current-speed"])
-        self.max_speed = int(port_json["flow-node-inventory:maximum-speed"])
-
-        if port_json["flow-node-inventory:state"]["link-down"]:
-            self.state = "down"
-        else:
-            self.state = "up"
-
     def parse_ryu_port_json(self, port_json):
 
         self.port_id = str(self.sw.node_id) + ":" + str(port_json["port_no"])
@@ -79,14 +35,5 @@ class Port(object):
         #TODO: Peep into port_json["state"]
         self.state = "up"
 
-    def parse_sel_port_json(self, port_json):
-        self.port_id = str(self.sw.node_id) + ":" + str(port_json["portId"])
-        self.port_number = port_json["portId"]
-        self.mac_address = port_json["hardwareAddress"]
-        self.curr_speed = port_json["currentSpeed"]
-        self.max_speed = port_json["maxSpeed"]
-        self.state = "up"
-
     def __str__(self):
-
         return str(self.port_id)
