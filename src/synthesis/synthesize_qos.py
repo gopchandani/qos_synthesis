@@ -14,10 +14,9 @@ class SynthesizeQoS:
 
     def __init__(self, params):
 
-        self.params = params
-
         self.network_graph = None
-        self.same_output_queue = params["same_output_queue"]
+
+        self.params = params
 
         self.synthesis_lib = SynthesisLib("localhost", "8181", self.network_graph)
 
@@ -63,7 +62,7 @@ class SynthesizeQoS:
 
             fwd_flow_match = deepcopy(flow_match)
 
-            if not self.same_output_queue:
+            if not self.params["same_output_queue"]:
                 mac_int = int(dst_host.mac_addr.replace(":", ""), 16)
                 fwd_flow_match["ethernet_destination"] = int(mac_int)
 
@@ -77,7 +76,7 @@ class SynthesizeQoS:
 
             # Using dst_switch_tag as key here to
             # avoid adding multiple intents for the same destination
-            if self.same_output_queue:
+            if self.params["same_output_queue"]:
                 self._add_intent(p[i], dst_switch_tag, intent)
             else:
                 self._add_intent(p[i], (dst_switch_tag, dst_host.mac_addr), intent)
@@ -208,7 +207,7 @@ class SynthesizeQoS:
 
                     combined_intent = deepcopy(primary_intents[0])
 
-                    if self.same_output_queue:
+                    if self.params["same_output_queue"]:
                         combined_intent.min_rate = 0
                         combined_intent.max_rate = 0
 
@@ -226,7 +225,7 @@ class SynthesizeQoS:
                         combined_intent.flow_match,
                         combined_intent.apply_immediately)
 
-    def synthesize_all_node_pairs(self, rate):
+    def synthesize_all_node_pairs(self):
 
         print "Synthesizing backup paths between all possible host pairs..."
         for src in self.network_graph.host_ids:
@@ -250,7 +249,10 @@ class SynthesizeQoS:
                 flow_match = Match(is_wildcard=True)
                 flow_match["ethernet_type"] = 0x0800
 
-                self.synthesize_flow_qos(src_h_obj, dst_h_obj, flow_match, rate, rate)
+                self.synthesize_flow_qos(src_h_obj, dst_h_obj, flow_match,
+                                         self.params["global_flow_rate"],
+                                         self.params["global_flow_rate"])
+
                 print "-----------------------------------------------------------------------------------------------"
 
         self.push_switch_changes()
