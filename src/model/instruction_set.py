@@ -15,13 +15,7 @@ class Instruction():
         self.actions_list = []
         self.go_to_table = None
 
-        if self.sw.network_graph.controller == "odl":
-            self.parse_odl_instruction()
-
-        elif self.sw.network_graph.controller == "ryu":
-            self.parse_ryu_instruction()
-
-        elif self.sw.network_graph.controller == "sel":
+        if self.sw.network_graph.controller == "sel":
             self.parse_sel_instruction()
 
         else:
@@ -128,13 +122,7 @@ class InstructionSet():
         self.instruction_list = []
         self.goto_table = None
 
-        if self.sw.network_graph.controller == "odl":
-            self.parse_odl_instruction_set()
-
-        elif self.sw.network_graph.controller == "ryu":
-            self.parse_ryu_instruction_set()
-
-        elif self.sw.network_graph.controller == "sel":
+        if self.sw.network_graph.controller == "sel":
             self.parse_sel_instruction_set()
 
         else:

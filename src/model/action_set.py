@@ -46,14 +46,10 @@ class Action():
         self.modified_field = None
         self.field_modified_to = None
 
-        if self.sw.network_graph.controller == "odl":
-            self.parse_odl_action_json()
-
-        elif self.sw.network_graph.controller == "ryu":
+        if self.sw.network_graph.controller == "ryu":
             self.parse_ryu_action_json()
-
-        elif self.sw.network_graph.controller == "sel":
-            self.parse_sel_action_json()
+        else:
+            raise NotImplemented
 
     def get_active_rank(self):
 

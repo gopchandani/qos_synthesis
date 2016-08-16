@@ -128,11 +128,11 @@ class Match(DictMixin):
         self.match_field_values = {}
 
         if match_json and controller == "odl":
-            self.add_element_from_odl_match_json(match_json)
+            raise NotImplemented
         elif match_json and controller == "ryu":
             self.add_element_from_ryu_match_json(match_json)
         elif match_json and controller == "sel":
-            self.add_element_from_sel_match_json(match_json)
+            raise NotImplemented
         elif is_wildcard:
             for field_name in field_names:
                 self.match_field_values[field_name] = sys.maxsize
@@ -453,9 +453,5 @@ class Match(DictMixin):
 
         if controller == "ryu":
             return self.generate_ryu_match_json(match_json, has_vlan_tag_check)
-        elif controller == "odl":
-            return self.generate_odl_match_json(match_json, has_vlan_tag_check)
-        elif controller == "sel":
-            return self.generate_sel_match_json(match_json, has_vlan_tag_check)
         else:
             raise NotImplementedError

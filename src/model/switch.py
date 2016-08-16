@@ -4,7 +4,7 @@ __author__ = 'Rakesh Kumar'
 from collections import defaultdict
 
 
-class Switch():
+class Switch:
 
     def __init__(self, sw_id, network_graph):
 

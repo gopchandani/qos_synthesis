@@ -15,14 +15,11 @@ class Port(object):
         self.state = None
         self.attached_host = None
 
-        if self.sw.network_graph.controller == "odl":
-            self.parse_odl_port_json(port_json)
-
-        elif self.sw.network_graph.controller == "ryu":
+        if self.sw.network_graph.controller == "ryu":
             self.parse_ryu_port_json(port_json)
 
-        elif self.sw.network_graph.controller == "sel":
-            self.parse_sel_port_json(port_json)
+        else:
+            raise NotImplemented
 
     def init_port_graph_state(self):
 

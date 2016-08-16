@@ -2,6 +2,7 @@ __author__ = 'Rakesh Kumar'
 
 from action_set import Action, ActionSet
 
+
 class Bucket():
     def __init__(self, sw, bucket_json, group):
 
@@ -12,39 +13,7 @@ class Bucket():
         self.weight = None
         self.group = group
 
-        if self.sw.network_graph.controller == "odl":
-
-            self.bucket_id = bucket_json["bucket-id"]
-
-            for action_json in bucket_json["action"]:
-                self.action_list.append(Action(sw, action_json))
-
-            if "watch_port" in bucket_json:
-                if bucket_json["watch_port"] != 4294967295:
-                    self.watch_port = self.sw.ports[int(bucket_json["watch_port"])]
-
-            if "weight" in bucket_json:
-                self.weight = str(bucket_json["weight"])
-
-            # Sort the action_list by order
-            self.action_list = sorted(self.action_list, key=lambda action: action.order)
-
-        elif self.sw.network_graph.controller == "sel":
-            self.bucket_id = bucket_json['id']
-
-            for action_json in bucket_json["actions"]:
-                self.action_list.append(Action(sw, action_json))
-
-            if "watchPort" in bucket_json:
-                if bucket_json["watchPort"] != 4294967293:
-                    self.watch_port = str(bucket_json["watchPort"])
-
-            if "weight" in bucket_json:
-                self.weight = str(bucket_json["weight"])
-
-            self.action_list = sorted(self.action_list, key=lambda action: action.order)
-
-        elif self.sw.network_graph.controller == "ryu":
+        if self.sw.network_graph.controller == "ryu":
 
             for action_json in bucket_json["actions"]:
                 self.action_list.append(Action(sw, action_json))
@@ -144,25 +113,7 @@ class Group():
         self.sw = sw
         self.bucket_list = []
 
-        if self.sw.network_graph.controller == "odl":
-            self.group_id = group_json["group-id"]
-            self.group_type = group_json["group-type"]
-
-            if group_json["group-type"] == "group-ff":
-                self.group_type = self.sw.network_graph.GROUP_FF
-            elif group_json["group-type"] == "group-all":
-                self.group_type = self.sw.network_graph.GROUP_ALL
-
-            for bucket_json in group_json["buckets"]["bucket"]:
-                self.bucket_list.append(Bucket(sw, bucket_json, self))
-
-            #  Sort the bucket_list by bucket-id
-            self.bucket_list = sorted(self.bucket_list, key=lambda bucket: bucket.bucket_id)
-
-            # Initialize the active bucket
-            self.set_active_bucket()
-
-        elif self.sw.network_graph.controller == "ryu":
+        if self.sw.network_graph.controller == "ryu":
             self.group_id = group_json["group_id"]
 
             if group_json["type"] == u"ALL":
@@ -173,19 +124,9 @@ class Group():
             for bucket_json in group_json["buckets"]:
                 self.bucket_list.append(Bucket(sw, bucket_json, self))
 
-        elif self.sw.network_graph.controller == "sel":
-            self.group_id = group_json["groupId"]
-            self.group_type = group_json["groupType"]
+        else:
+            raise NotImplemented
 
-            if group_json["groupType"] == u"FastFailover":
-                self.group_type = self.sw.network_graph.GROUP_FF
-            elif group_json["groupType"] == u"All":
-                self.group_type = self.sw.network_graph.GROUP_ALL
-
-            for bucket_json in group_json["buckets"]:
-                self.bucket_list.append(Bucket(sw, bucket_json, self))
-
-            self.bucket_list = sorted(self.bucket_list, key=lambda bucket: bucket.bucket_id)
         #TODO: For now, assume that all edges would be up at the system initialization and failure events
         # will occur subsequently
         if self.group_type == self.sw.network_graph.GROUP_FF:
