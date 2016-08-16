@@ -62,13 +62,17 @@ class NetworkConfiguration(object):
         # Setup the directory for saving configs, check if one does not exist,
         # if not, assume that the controller, mininet and rule synthesis needs to be triggered.
         self.conf_path = self.conf_root + str(self) + "/"
-        if not os.path.exists(self.conf_path):
-            os.makedirs(self.conf_path)
-            self.load_config = False
-            self.save_config = True
-        else:
-            self.load_config = True
-            self.save_config = False
+        # if not os.path.exists(self.conf_path):
+        #     os.makedirs(self.conf_path)
+        #     self.load_config = False
+        #     self.save_config = True
+        # else:
+        #     self.load_config = True
+        #     self.save_config = False
+        #
+
+        self.load_config = False
+        self.save_config = True
 
         # Initialize things to talk to controller
         self.baseUrlRyu = "http://localhost:8080/"

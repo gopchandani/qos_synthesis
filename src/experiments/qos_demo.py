@@ -115,16 +115,16 @@ class QosDemo(Experiment):
         print "Last-Hop Queue Rate:", str(last_hop_queue_rate), "M"
         for i in range(num_traffic_profiles):
 
-            print "--"
-            print "Size of send (bytes):", size_of_send[i]
-            print "Number of sends in a burst:", number_of_sends_in_a_burst[i]
-            print "Inter-burst time (miliseconds):", inter_burst_times[i]
+            # print "--"
+            # print "Size of send (bytes):", size_of_send[i]
+            # print "Number of sends in a burst:", number_of_sends_in_a_burst[i]
+            # print "Inter-burst time (miliseconds):", inter_burst_times[i]
 
             rate = (size_of_send[i] * 8 * number_of_sends_in_a_burst[i]) / (inter_burst_times[i] * 1000.0)
             print "Sending Rate:", str(rate), 'Mbps'
-
+            print "--h1s2"
             self.parse_netperf_output(netperf_output_dict_h1s2[i])
-            print "--"
+            print "--h2s2"
             self.parse_netperf_output(netperf_output_dict_h2s2[i])
 
 
