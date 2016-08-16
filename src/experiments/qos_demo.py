@@ -19,10 +19,11 @@ class QosDemo(Experiment):
         self.network_configurations = network_configurations
 
     def trigger(self):
-
         for nc in self.network_configurations:
             print "network_configuration:", nc
-            self.measure_flow_rates(nc, 50)
+
+            nc.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
+            self.measure_flow_rates(nc, nc.synthesis_params["global_flow_rate"])
 
     def parse_iperf_output(self, iperf_output_string):
         data_lines =  iperf_output_string.split('\r\n')
@@ -127,22 +128,24 @@ class QosDemo(Experiment):
             self.parse_netperf_output(netperf_output_dict_h2s2[i])
 
 
-def prepare_network_configurations(num_hosts_per_switch_list):
+def prepare_network_configurations(num_hosts_per_switch_list, global_flow_rate_list, same_output_queue_list):
     nc_list = []
-    for hps in num_hosts_per_switch_list:
 
-        nc = NetworkConfiguration("ryu",
-                                  "linear",
-                                  {"num_switches": 2,
-                                   "num_hosts_per_switch": hps},
-                                  conf_root="configurations/",
-                                  synthesis_name="SynthesizeQoS",
-                                  synthesis_params={"global_flow_rate": 50,
-                                                    "same_output_queue": False})
+    for same_output_queue in same_output_queue_list:
+        for global_flow_rate in global_flow_rate_list:
 
-        nc.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
+            for hps in num_hosts_per_switch_list:
 
-        nc_list.append(nc)
+                nc = NetworkConfiguration("ryu",
+                                          "linear",
+                                          {"num_switches": 2,
+                                           "num_hosts_per_switch": hps},
+                                          conf_root="configurations/",
+                                          synthesis_name="SynthesizeQoS",
+                                          synthesis_params={"global_flow_rate": global_flow_rate,
+                                                            "same_output_queue": same_output_queue})
+
+                nc_list.append(nc)
 
     return nc_list
 
@@ -151,7 +154,12 @@ def main():
 
     num_iterations = 1
     num_hosts_per_switch_list = [2]#[2, 4, 6, 8, 10]
-    network_configurations = prepare_network_configurations(num_hosts_per_switch_list)
+    global_flow_rate_list = [50]
+    same_output_queue_list = [False, True]
+    network_configurations = prepare_network_configurations(num_hosts_per_switch_list,
+                                                            global_flow_rate_list,
+                                                            same_output_queue_list)
+
     exp = QosDemo(num_iterations, network_configurations)
 
     exp.trigger()
