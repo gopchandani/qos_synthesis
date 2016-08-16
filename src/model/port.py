@@ -1,6 +1,7 @@
 __author__ = 'Rakesh Kumar'
 
-class Port():
+
+class Port(object):
 
     def __init__(self, sw, port_json):
 
@@ -12,6 +13,7 @@ class Port():
         self.mac_address = None
         self.port_number = None
         self.state = None
+        self.attached_host = None
 
         if self.sw.network_graph.controller == "odl":
             self.parse_odl_port_json(port_json)
@@ -21,6 +23,37 @@ class Port():
 
         elif self.sw.network_graph.controller == "sel":
             self.parse_sel_port_json(port_json)
+
+    def init_port_graph_state(self):
+
+        # Need port_number parsed in before this is called
+        self.switch_port_graph_ingress_node = PortGraphNode(self.sw,
+                                                            PortGraph.get_ingress_node_id(self.sw.node_id,
+                                                                                          self.port_number),
+                                                            "ingress")
+
+        self.switch_port_graph_egress_node = PortGraphNode(self.sw,
+                                                           PortGraph.get_egress_node_id(self.sw.node_id,
+                                                                                        self.port_number),
+                                                           "egress")
+
+        self.network_port_graph_ingress_node = PortGraphNode(self.sw,
+                                                             PortGraph.get_ingress_node_id(self.sw.node_id,
+                                                                                           self.port_number),
+                                                             "ingress")
+
+        self.network_port_graph_egress_node = PortGraphNode(self.sw,
+                                                            PortGraph.get_egress_node_id(self.sw.node_id,
+                                                                                         self.port_number),
+                                                            "egress")
+
+        self.switch_port_graph_ingress_node.parent_obj = self
+        self.switch_port_graph_egress_node.parent_obj = self
+        self.network_port_graph_ingress_node.parent_obj = self
+        self.network_port_graph_egress_node.parent_obj = self
+
+        self.ingress_node_traffic = Traffic(init_wildcard=True)
+        self.ingress_node_traffic.set_field("in_port", int(self.port_number))
 
     def parse_odl_port_json(self, port_json):
 

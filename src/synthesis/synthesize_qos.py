@@ -9,12 +9,15 @@ from synthesis.synthesis_lib import SynthesisLib
 from model.intent import Intent
 from model.match import Match
 
-class SynthesizeQoS():
 
-    def __init__(self, network_graph, same_output_queue=False):
+class SynthesizeQoS:
 
-        self.network_graph = network_graph
-        self.same_output_queue = same_output_queue
+    def __init__(self, params):
+
+        self.params = params
+
+        self.network_graph = None
+        self.same_output_queue = params["same_output_queue"]
 
         self.synthesis_lib = SynthesisLib("localhost", "8181", self.network_graph)
 
@@ -28,7 +31,6 @@ class SynthesizeQoS():
         self.apply_tag_intents_immediately = True
         self.apply_other_intents_immediately = True
 
-
         # Table contains the rules that drop packets destined to the same MAC address as host of origin
         self.loop_preventing_drop_table = 0
 
@@ -40,6 +42,13 @@ class SynthesizeQoS():
 
         # Table contains the actual forwarding rules
         self.ip_forwarding_table_id = 3
+
+    def __str__(self):
+        params_str = ''
+        for k, v in self.params.items():
+            params_str += "_" + str(k) + "_" + str(v)
+        return self.__class__.__name__ + params_str
+
 
     def _compute_path_ip_intents(self, src_host, dst_host, p, intent_type,
                                  flow_match, first_in_port, dst_switch_tag, min_rate, max_rate):
@@ -104,8 +113,8 @@ class SynthesizeQoS():
 
     def _compute_destination_host_mac_intents(self, h_obj, flow_match, matching_tag, min_rate, max_rate):
 
-        edge_ports_dict = self.network_graph.get_link_ports_dict(h_obj.switch_id, h_obj.node_id)
-        out_port = edge_ports_dict[h_obj.switch_id]
+        edge_ports_dict = self.network_graph.get_link_ports_dict(h_obj.sw.node_id, h_obj.node_id)
+        out_port = edge_ports_dict[h_obj.sw.node_id]
 
         host_mac_match = deepcopy(flow_match)
         mac_int = int(h_obj.mac_addr.replace(":", ""), 16)
@@ -118,13 +127,13 @@ class SynthesizeQoS():
 
         # Avoiding addition of multiple mac forwarding intents for the same host 
         # by using its mac address as the key
-        self._add_intent(h_obj.switch_id, h_obj.mac_addr, host_mac_intent)
+        self._add_intent(h_obj.sw.node_id, h_obj.mac_addr, host_mac_intent)
 
     def _compute_push_vlan_tag_intents(self, h_obj, flow_match, required_tag):
 
         push_vlan_match= deepcopy(flow_match)
-        push_vlan_match["in_port"] = int(h_obj.switch_port_attached)
-        push_vlan_tag_intent = Intent("push_vlan", push_vlan_match, h_obj.switch_port_attached, "all",
+        push_vlan_match["in_port"] = int(h_obj.switch_port.port_number)
+        push_vlan_tag_intent = Intent("push_vlan", push_vlan_match, h_obj.switch_port.port_number, "all",
                                       self.apply_tag_intents_immediately)
 
         push_vlan_tag_intent.required_vlan_id = required_tag
@@ -132,14 +141,14 @@ class SynthesizeQoS():
         # Avoiding adding a new intent for every departing flow for this switch,
         # by adding the tag as the key
         
-        self._add_intent(h_obj.switch_id, required_tag, push_vlan_tag_intent)
+        self._add_intent(h_obj.sw.node_id, required_tag, push_vlan_tag_intent)
 
     def synthesize_flow_qos(self, src_host, dst_host, flow_match, min_rate, max_rate):
 
         # Handy info
-        edge_ports_dict = self.network_graph.get_link_ports_dict(src_host.node_id, src_host.switch_id)
-        in_port = edge_ports_dict[src_host.switch_id]        
-        dst_sw_obj = self.network_graph.get_node_object(dst_host.switch_id)
+        edge_ports_dict = self.network_graph.get_link_ports_dict(src_host.node_id, src_host.sw.node_id)
+        in_port = edge_ports_dict[src_host.sw.node_id]
+        dst_sw_obj = self.network_graph.get_node_object(dst_host.sw.node_id)
     
         ## Things at source
         # Tag packets leaving the source host with a vlan tag of the destination switch
@@ -150,7 +159,7 @@ class SynthesizeQoS():
         self._compute_destination_host_mac_intents(dst_host, flow_match, dst_sw_obj.synthesis_tag, min_rate, max_rate)
 
         #  First find the shortest path between src and dst.
-        p = nx.shortest_path(self.network_graph.graph, source=src_host.switch_id, target=dst_host.switch_id)
+        p = nx.shortest_path(self.network_graph.graph, source=src_host.sw.node_id, target=dst_host.sw.node_id)
         print "Primary Path:", p
 
         self.primary_path_edge_dict[(src_host.node_id, dst_host.node_id)] = []
@@ -183,12 +192,12 @@ class SynthesizeQoS():
                 dst_intents = intents[dst]
 
                 # Take care of mac intents for this destination
-                self.synthesis_lib.push_destination_host_mac_intents(sw, dst_intents,
+                self.synthesis_lib.push_destination_host_mac_intents(sw,
                                                                      self.get_intents(dst_intents, "mac"),
                                                                      self.mac_forwarding_table_id)
 
                 # Take care of vlan tag push intents for this destination
-                self.synthesis_lib.push_vlan_push_intents(sw, dst_intents,
+                self.synthesis_lib.push_vlan_push_intents(sw,
                                                           self.get_intents(dst_intents, "push_vlan"),
                                                           self.vlan_tag_push_rules_table_id)
 
@@ -231,7 +240,7 @@ class SynthesizeQoS():
                 dst_h_obj = self.network_graph.get_node_object(dst)
 
                 # Ignore installation of paths between switches on the same switch
-                if src_h_obj.switch_id == dst_h_obj.switch_id:
+                if src_h_obj.sw.node_id == dst_h_obj.sw.node_id:
                     continue
 
                 print "-----------------------------------------------------------------------------------------------"

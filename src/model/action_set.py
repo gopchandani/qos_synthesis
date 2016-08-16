@@ -1,5 +1,8 @@
 __author__ = 'Rakesh Kumar'
 
+import sys
+
+
 from match import OdlMatchJsonParser
 from match import ryu_field_names_mapping
 from collections import defaultdict
@@ -123,34 +126,33 @@ class Action():
             else:
                 raise NotImplementedError
 
-
-
     def parse_ryu_action_json(self):
 
-        if self.action_json.startswith("OUTPUT"):
+        if self.action_json["type"] == "OUTPUT":
             self.action_type = "output"
-            output_port = self.action_json.split(":")[1]
-            self.out_port = int(output_port)
+            self.out_port = self.action_json["port"]
 
-        if self.action_json.startswith("SET_FIELD"):
+        if self.action_json["type"] == "SET_FIELD":
             self.action_type = "set_field"
-            field_mod = self.action_json[self.action_json.find("{") + 1:]
-            self.modified_field = ryu_field_names_mapping[field_mod[0:field_mod.find(":")]]
-            self.field_modified_to = field_mod[field_mod.find(":") + 1:field_mod.find("}")]
 
-            if self.modified_field == "vlan_id":
-                self.field_modified_to = int(self.field_modified_to) - 0x1000
+            self.modified_field = ryu_field_names_mapping[self.action_json["field"]]
 
-        if self.action_json.startswith("GROUP"):
+            #TODO: Works fine for VLAN_ID mods, other fields may require special parsing here
+            if self.action_json["field"] == "vlan_vid":
+                self.field_modified_to = self.action_json["value"]
+                self.field_modified_to = int(self.field_modified_to)
+            else:
+                raise NotImplemented
+
+        if self.action_json["type"] == "GROUP":
             self.action_type = "group"
-            self.group_id = int(self.action_json[self.action_json.find(":") + 1:])
+            self.group_id = self.action_json["group_id"]
 
-        # if "push-vlan-action" in self.action_json:
-        #     self.action_type = "push_vlan"
-        #     self.vlan_ethernet_type = self.action_json["push-vlan-action"]["ethernet-type"]
-        #
-        # if "pop-vlan-action" in self.action_json:
-        #     self.action_type = "pop_vlan"
+        if self.action_json["type"] == "PUSH_VLAN":
+            self.action_type = "push_vlan"
+
+        if self.action_json["type"] == "POP_VLAN":
+            self.action_type = "pop_vlan"
 
     def is_failover_action(self):
         return (self.bucket and self.bucket.group.group_type == self.sw.network_graph.GROUP_FF)
@@ -202,14 +204,14 @@ class ActionSet():
         self.action_dict = defaultdict(list)
         self.sw = sw
 
-    def add_all_actions(self, action_list, intersection):
+    def add_all_actions(self, action_list):
 
         for action in action_list:
 
             if action.action_type == "group":
                 if action.group_id in self.sw.group_table.groups:
                     group_all_action_list =  self.sw.group_table.groups[action.group_id].get_action_list()
-                    self.add_all_actions(group_all_action_list, intersection)
+                    self.add_all_actions(group_all_action_list)
                 else:
                     raise Exception("Odd that a group_id is not provided in a group action")
             else:
@@ -223,11 +225,21 @@ class ActionSet():
 
         # Capture the value before (in principle and after) the modification in a tuple
         for set_action in self.action_dict["set_field"]:
-            modified_fields_dict[set_action.modified_field] = (flow_match_element, set_action.field_modified_to)
+            value_tree = IntervalTree([Interval(set_action.field_modified_to, set_action.field_modified_to + 1)])
+            modified_fields_dict[set_action.modified_field] = (flow_match_element, value_tree)
+
+        if "push_vlan" in self.action_dict:
+            value_tree = IntervalTree([Interval(1, 2)])
+            modified_fields_dict["has_vlan_tag"] = (flow_match_element, value_tree)
+
+        # A vlan tag popped means, the field does not matter anymore
+        if "pop_vlan" in self.action_dict:
+            value_tree = IntervalTree([Interval(0, 1)])
+            modified_fields_dict["has_vlan_tag"] = (flow_match_element, value_tree)
 
         return modified_fields_dict
 
-    def get_action_set_port_graph_edges(self):
+    def get_action_set_output_action_edges(self):
 
         port_graph_edges = []
 

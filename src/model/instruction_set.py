@@ -1,5 +1,7 @@
 __author__ = 'Rakesh Kumar'
 
+from copy import deepcopy
+
 from action_set import ActionSet
 from action_set import Action
 
@@ -25,7 +27,6 @@ class Instruction():
         else:
             raise NotImplementedError
 
-
     def parse_odl_instruction(self):
 
         if "write-actions" in self.instruction_json:
@@ -46,21 +47,19 @@ class Instruction():
 
     def parse_ryu_instruction(self):
 
-        instruction_name, instruction_actions = self.instruction_json
-
-        if instruction_name.startswith("WRITE_ACTIONS"):
+        if self.instruction_json["type"] == "WRITE_ACTIONS":
             self.instruction_type = "write-actions"
-            for action_json in instruction_actions:
+            for action_json in self.instruction_json["actions"]:
                 self.actions_list.append(Action(self.sw, action_json))
 
-        elif instruction_name.startswith("APPLY_ACTIONS"):
+        elif self.instruction_json["type"] == "APPLY_ACTIONS":
             self.instruction_type = "apply-actions"
-            for action_json in instruction_actions:
+            for action_json in self.instruction_json["actions"]:
                 self.actions_list.append(Action(self.sw, action_json))
 
-        elif instruction_name.startswith("GOTO_TABLE"):
+        elif self.instruction_json["type"] == "GOTO_TABLE":
             self.instruction_type = "go-to-table"
-            self.go_to_table = int(self.instruction_json[1])
+            self.go_to_table = self.instruction_json["table_id"]
 
         #TODO: Other instructions...
 
@@ -127,7 +126,6 @@ class InstructionSet():
         self.flow = flow
         self.network_graph = self.sw.network_graph
         self.instruction_list = []
-
         self.goto_table = None
 
         if self.sw.network_graph.controller == "odl":
@@ -153,10 +151,9 @@ class InstructionSet():
 
     def parse_ryu_instruction_set(self):
 
-        for instruction_name in self.instructions_json:
-            instruction = Instruction(self.sw, (instruction_name, self.instructions_json[instruction_name]))
+        for instruction_json in self.instructions_json:
+            instruction = Instruction(self.sw, instruction_json)
             self.instruction_list.append(instruction)
-
 
     def parse_sel_instruction_set(self):
 
@@ -164,19 +161,80 @@ class InstructionSet():
             instruction = Instruction(self.sw, instruction)
             self.instruction_list.append(instruction)
 
-
     def populate_action_sets_for_port_graph_edges(self):
 
         for instruction in self.instruction_list:
             if instruction.instruction_type == "apply-actions":
                 self.applied_action_set.remove_all_actions()
-                self.applied_action_set.add_all_actions(instruction.actions_list, self.flow.traffic_element)
+                self.applied_action_set.add_all_actions(instruction.actions_list)
             elif instruction.instruction_type == "write-actions":
                 self.written_action_set.remove_all_actions()
-                self.written_action_set.add_all_actions(instruction.actions_list, self.flow.traffic_element)
+                self.written_action_set.add_all_actions(instruction.actions_list)
             elif instruction.instruction_type == "go-to-table":
                 self.goto_table = instruction.go_to_table
 
             # TODO: Handle clear-actions case
             # TODO: Handle meter instruction
             # TODO: Write meta-data case
+
+    def get_applied_port_graph_edges(self):
+
+        applied_port_graph_edges = []
+
+        output_actions = self.applied_action_set.get_action_set_output_action_edges()
+
+        for out_port, output_action in output_actions:
+
+            # Avoid adding edges for actions when only reporting active state
+            if self.sw.port_graph.report_active_state:
+                if output_action.get_active_rank() != 0:
+                    continue
+
+            applied_modifications = self.applied_action_set.get_modified_fields_dict(self.flow.traffic_element)
+            written_modifications = self.written_action_set.get_modified_fields_dict(self.flow.traffic_element)
+
+            if output_action.bucket != None:
+                bucket_modifications = output_action.bucket.action_set.get_modified_fields_dict(self.flow.traffic_element)
+                applied_modifications.update(bucket_modifications)
+
+            output_action.instruction_type = "applied"
+            egress_node = self.sw.port_graph.get_egress_node(self.sw.node_id, out_port)
+
+            applied_port_graph_edges.append((egress_node,
+                                             (self.flow.applied_traffic,
+                                              output_action,
+                                              applied_modifications,
+                                              written_modifications)))
+
+        return applied_port_graph_edges
+
+    def get_written_port_graph_edges(self):
+
+        written_port_graph_edges = []
+
+        output_actions = self.written_action_set.get_action_set_output_action_edges()
+
+        for out_port, output_action in output_actions:
+
+            # Avoid adding edges for actions when only reporting active state
+            if self.sw.port_graph.report_active_state:
+                if output_action.get_active_rank() != 0:
+                    continue
+
+            applied_modifications = self.applied_action_set.get_modified_fields_dict(self.flow.traffic_element)
+            written_modifications = self.written_action_set.get_modified_fields_dict(self.flow.traffic_element)
+
+            if output_action.bucket != None:
+                bucket_modifications = output_action.bucket.action_set.get_modified_fields_dict(self.flow.traffic_element)
+                written_modifications.update(bucket_modifications)
+
+            output_action.instruction_type = "written"
+            egress_node = self.sw.port_graph.get_egress_node(self.sw.node_id, out_port)
+
+            written_port_graph_edges.append((egress_node,
+                                             (self.flow.applied_traffic,
+                                              output_action,
+                                              applied_modifications,
+                                              written_modifications)))
+
+        return written_port_graph_edges
