@@ -56,6 +56,6 @@ class FlowSpecification:
         self.max_latency = output_line_tokens[5]
 
     def __str__(self):
-        return "Send Rate: " + str(self.send_rate) + \
+        return "Send Rate: " + str(self.send_rate_bps/1000000.0) + \
                " Throughput: " + str(self.throughput) + \
                " 99th Percentile Latency: " + str(self.nn_perc_latency)
