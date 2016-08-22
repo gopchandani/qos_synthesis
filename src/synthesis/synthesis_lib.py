@@ -70,8 +70,8 @@ class SynthesisLib(object):
     def push_queue(self, sw, port, min_rate, max_rate):
 
         self.queue_id_cntr = self.queue_id_cntr + 1
-        min_rate_str = str(min_rate * 1000000)
-        max_rate_str = str(max_rate * 1000000)
+        min_rate_str = str(min_rate)
+        max_rate_str = str(max_rate)
         sw_port_str = sw + "-" + "eth" + str(port)
 
         queue_cmd = "sudo ovs-vsctl -- set Port " + sw_port_str + " qos=@newqos -- " + \

@@ -62,17 +62,17 @@ class NetworkConfiguration(object):
         # Setup the directory for saving configs, check if one does not exist,
         # if not, assume that the controller, mininet and rule synthesis needs to be triggered.
         self.conf_path = self.conf_root + str(self) + "/"
-        # if not os.path.exists(self.conf_path):
-        #     os.makedirs(self.conf_path)
-        #     self.load_config = False
-        #     self.save_config = True
-        # else:
-        #     self.load_config = True
-        #     self.save_config = False
-        #
+        if not os.path.exists(self.conf_path):
+            os.makedirs(self.conf_path)
+            self.load_config = False
+            self.save_config = True
+        else:
+            self.load_config = True
+            self.save_config = False
 
-        self.load_config = False
-        self.save_config = True
+        #
+        # self.load_config = False
+        # self.save_config = True
 
         # Initialize things to talk to controller
         self.baseUrlRyu = "http://localhost:8080/"
@@ -111,23 +111,7 @@ class NetworkConfiguration(object):
         elif self.synthesis_name == "AboresceneSynthesis":
             self.synthesis = AboresceneSynthesis(self.synthesis_params)
 
-    def trigger_synthesis(self):
-        if self.synthesis_name == "DijkstraSynthesis":
-            self.synthesis.network_graph = self.ng
-            self.synthesis.synthesis_lib = SynthesisLib("localhost", "8181", self.ng)
-            self.synthesis.synthesize_all_node_pairs()
-
-        elif self.synthesis_name == "SynthesizeQoS":
-            self.synthesis.network_graph = self.ng
-            self.synthesis.synthesis_lib = SynthesisLib("localhost", "8181", self.ng)
-            self.synthesis.synthesize_all_node_pairs()
-
-        elif self.synthesis_name == "AboresceneSynthesis":
-            self.synthesis.network_graph = self.ng
-            self.synthesis.synthesis_lib = SynthesisLib("localhost", "8181", self.ng)
-            flow_match = Match(is_wildcard=True)
-            flow_match["ethernet_type"] = 0x0800
-            self.synthesis.synthesize_all_switches(flow_match, 2)
+    def test_synthesis(self):
 
         self.mininet_obj.pingAll()
 
@@ -232,36 +216,32 @@ class NetworkConfiguration(object):
 
     def setup_network_graph(self, mininet_setup_gap=None, synthesis_setup_gap=None):
 
-        if not self.load_config and self.save_config:
-            self.cm = ControllerMan(controller=self.controller)
-            self.controller_port = self.cm.start_controller()
+        self.cm = ControllerMan(controller=self.controller)
+        self.controller_port = self.cm.start_controller()
 
-            self.start_mininet()
-            if mininet_setup_gap:
-                time.sleep(mininet_setup_gap)
+        self.start_mininet()
+        if mininet_setup_gap:
+            time.sleep(mininet_setup_gap)
 
-            # These things are needed by network graph...
-            self.get_host_nodes()
-            self.get_links()
-            self.get_switches()
+        # These things are needed by network graph...
+        self.get_host_nodes()
+        self.get_links()
+        self.get_switches()
 
-            self.ng = NetworkGraph(network_configuration=self)
-            self.ng.parse_network_graph()
+        self.ng = NetworkGraph(network_configuration=self)
+        self.ng.parse_network_graph()
 
-            # Now the synthesis...
-            self.trigger_synthesis()
-            if synthesis_setup_gap:
-                time.sleep(synthesis_setup_gap)
+        # Now the synthesis...
+        if synthesis_setup_gap:
+            time.sleep(synthesis_setup_gap)
 
-            # Refresh just the switches in the network graph, post synthesis
-            self.get_switches()
-            self.ng.parse_switches()
+        # Refresh just the switches in the network graph, post synthesis
+        self.get_switches()
+        self.ng.parse_switches()
 
-        else:
-            self.ng = NetworkGraph(network_configuration=self)
-            self.ng.parse_network_graph()
-
-        print "total_flow_rules:", self.ng.total_flow_rules
+        # TODO: Figure out a new home for these two
+        self.synthesis.network_graph = self.ng
+        self.synthesis.synthesis_lib = SynthesisLib("localhost", "8181", self.ng)
 
         return self.ng
 

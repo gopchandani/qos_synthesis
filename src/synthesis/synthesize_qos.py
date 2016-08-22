@@ -14,11 +14,10 @@ class SynthesizeQoS:
 
     def __init__(self, params):
 
-        self.network_graph = None
-
         self.params = params
 
-        self.synthesis_lib = SynthesisLib("localhost", "8181", self.network_graph)
+        self.network_graph = None
+        self.synthesis_lib = None
 
         # s represents the set of all switches that are
         # affected as a result of flow synthesis
@@ -225,34 +224,23 @@ class SynthesizeQoS:
                         combined_intent.flow_match,
                         combined_intent.apply_immediately)
 
-    def synthesize_all_node_pairs(self):
+    def synthesize_flow_specifications(self, flow_specifications):
 
-        print "Synthesizing backup paths between all possible host pairs..."
-        for src in self.network_graph.host_ids:
-            for dst in self.network_graph.host_ids:
+        for fs in flow_specifications:
 
-                # Ignore paths with same src/dst
-                if src == dst:
-                    continue
+            # Ignore paths with same src/dst
+            if fs.src_host == fs.dst_host:
+                continue
 
-                src_h_obj = self.network_graph.get_node_object(src)
-                dst_h_obj = self.network_graph.get_node_object(dst)
+            # Ignore installation of paths between switches on the same switch
+            if fs.src_host.sw.node_id == fs.dst_host.sw.node_id:
+                continue
 
-                # Ignore installation of paths between switches on the same switch
-                if src_h_obj.sw.node_id == dst_h_obj.sw.node_id:
-                    continue
+            flow_match = Match(is_wildcard=True)
+            flow_match["ethernet_type"] = 0x0800
 
-                print "-----------------------------------------------------------------------------------------------"
-                print 'Synthesizing primary and backup paths from', src, 'to', dst
-                print "-----------------------------------------------------------------------------------------------"
+            self.synthesize_flow_qos(fs.src_host, fs.dst_host, flow_match, fs.send_rate_bps, fs.send_rate_bps)
 
-                flow_match = Match(is_wildcard=True)
-                flow_match["ethernet_type"] = 0x0800
-
-                self.synthesize_flow_qos(src_h_obj, dst_h_obj, flow_match,
-                                         self.params["global_flow_rate"],
-                                         self.params["global_flow_rate"])
-
-                print "-----------------------------------------------------------------------------------------------"
+            print "-----------------------------------------------------------------------------------------------"
 
         self.push_switch_changes()
