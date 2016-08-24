@@ -32,7 +32,7 @@ class SynthesizeQoS:
         # Table contains the actual forwarding rules
         self.vlan_forwarding_table_id = 2
 
-        self.init_ifb()
+        self.ifb_interfaces_used = 0
 
     def __str__(self):
         params_str = ''
@@ -40,8 +40,9 @@ class SynthesizeQoS:
             params_str += "_" + str(k) + "_" + str(v)
         return self.__class__.__name__ + params_str
 
-    def init_ifb(self):
-        os.system("sudo modprobe ifb")
+    def init_ifb(self, num_ifb_interfaces):
+        os.system("sudo modprobe -r ifb")
+        os.system("sudo modprobe ifb numifbs=" + str(num_ifb_interfaces))
         os.system("sudo modprobe act_mirred")
 
     def compute_path_intents(self, src_host, dst_host, p, intent_type,
@@ -129,12 +130,17 @@ class SynthesizeQoS:
         # Set some options for this interface name
         os.system("sudo ethtool -K " + orig_intf_name + " tso off gso off gro off")
 
-        # Create a mirror ifb interface for this interface
-        ifb_intf_name = orig_intf_name + "-ifb"
+        os.system("tc qdisc add dev " + orig_intf_name + " handle ffff: ingress")
+
+        # Map a mirror ifb interface for this interface
+        ifb_intf_name = "ifb" + str(self.ifb_interfaces_used)
         os.system("ifconfig " + ifb_intf_name + " up")
+        os.system("tc filter add dev " + orig_intf_name +
+                  " parent ffff: protocol all u32 match u32 0 0 action mirred egress redirect dev " + ifb_intf_name)
+        self.ifb_interfaces_used += 1
 
-        print "here"
-
+        # Configure a tbf qdisc on the ingress interface
+        os.system("tc qdisc add dev " + ifb_intf_name + " root tbf rate " + str(rate) + "bps latency 50ms burst 1540")
 
     def compute_push_vlan_tag_intents(self, h_obj, flow_match, required_tag):
 
@@ -160,9 +166,6 @@ class SynthesizeQoS:
         # Tag packets leaving the source host with a vlan tag of the destination switch
         self.compute_push_vlan_tag_intents(fs.src_host, fs.flow_match, fs.dst_host.sw.synthesis_tag)
 
-        #  Install an ingress filter
-        self.install_ingress_ifb_filter(fs.src_host, fs.send_rate_bps)
-
         # Things at destination
         # Add a MAC based forwarding rule for the destination host at the last hop
         self.compute_destination_host_mac_intents(fs.dst_host, fs.flow_match, fs.dst_host.sw.synthesis_tag, fs.send_rate_bps)
@@ -185,6 +188,16 @@ class SynthesizeQoS:
                                      fs.dst_host.sw.synthesis_tag, fs.send_rate_bps)
 
     def push_switch_changes(self):
+
+        # Install ingress filters for each possible src in flow_specifications
+        hosts_rates_for_ifb = []
+        for fs in self.flow_specifications:
+            if (fs.src_host, fs.send_rate_bps)  not in hosts_rates_for_ifb:
+                hosts_rates_for_ifb.append((fs.src_host, fs.send_rate_bps))
+
+        self.init_ifb(len(hosts_rates_for_ifb))
+        for src_host, send_rate_bps in hosts_rates_for_ifb:
+            self.install_ingress_ifb_filter(src_host, send_rate_bps)
 
         for sw in self.network_graph.get_switches():
 
@@ -234,6 +247,8 @@ class SynthesizeQoS:
                             combined_intent.apply_immediately)
 
     def synthesize_flow_specifications(self, flow_specifications):
+
+        self.flow_specifications = flow_specifications
 
         for fs in flow_specifications:
 
