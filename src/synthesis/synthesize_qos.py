@@ -21,17 +21,14 @@ class SynthesizeQoS:
         self.apply_tag_intents_immediately = True
         self.apply_other_intents_immediately = True
 
-        # Table contains the rules that drop packets destined to the same MAC address as host of origin
-        self.loop_preventing_drop_table = 0
-
         # Table contains any rules that have to do with vlan tag push
-        self.vlan_tag_push_rules_table_id = 1
+        self.vlan_tag_push_rules_table_id = 0
 
         # Table contains any rules associated with forwarding host traffic
-        self.mac_forwarding_table_id = 2
+        self.mac_forwarding_table_id = 1
 
         # Table contains the actual forwarding rules
-        self.ip_forwarding_table_id = 3
+        self.vlan_forwarding_table_id = 2
 
     def __str__(self):
         params_str = ''
@@ -39,7 +36,7 @@ class SynthesizeQoS:
             params_str += "_" + str(k) + "_" + str(v)
         return self.__class__.__name__ + params_str
 
-    def compute_path_ip_intents(self, src_host, dst_host, p, intent_type,
+    def compute_path_intents(self, src_host, dst_host, p, intent_type,
                                  flow_match, first_in_port, dst_switch_tag, rate):
 
         edge_ports_dict = self.network_graph.get_link_ports_dict(p[0], p[1])
@@ -99,7 +96,7 @@ class SynthesizeQoS:
             intents[key] = defaultdict(int)
             intents[key][intent] = 1
 
-    def _compute_destination_host_mac_intents(self, h_obj, flow_match, matching_tag, rate):
+    def compute_destination_host_mac_intents(self, h_obj, flow_match, matching_tag, rate):
 
         edge_ports_dict = self.network_graph.get_link_ports_dict(h_obj.sw.node_id, h_obj.node_id)
         out_port = edge_ports_dict[h_obj.sw.node_id]
@@ -117,7 +114,7 @@ class SynthesizeQoS:
         # by using its mac address as the key
         self.add_intent(h_obj.sw.node_id, h_obj.mac_addr, host_mac_intent)
 
-    def _compute_push_vlan_tag_intents(self, h_obj, flow_match, required_tag):
+    def compute_push_vlan_tag_intents(self, h_obj, flow_match, required_tag):
 
         push_vlan_match= deepcopy(flow_match)
         push_vlan_match["in_port"] = int(h_obj.switch_port.port_number)
@@ -136,15 +133,14 @@ class SynthesizeQoS:
         # Handy info
         edge_ports_dict = self.network_graph.get_link_ports_dict(fs.src_host.node_id, fs.src_host.sw.node_id)
         in_port = edge_ports_dict[fs.src_host.sw.node_id]
-        dst_sw_obj = self.network_graph.get_node_object(fs.dst_host.sw.node_id)
 
         ## Things at source
         # Tag packets leaving the source host with a vlan tag of the destination switch
-        self._compute_push_vlan_tag_intents(fs.src_host, fs.flow_match, dst_sw_obj.synthesis_tag)
+        self.compute_push_vlan_tag_intents(fs.src_host, fs.flow_match, fs.dst_host.sw.synthesis_tag)
 
         ## Things at destination
         # Add a MAC based forwarding rule for the destination host at the last hop
-        self._compute_destination_host_mac_intents(fs.dst_host, fs.flow_match, dst_sw_obj.synthesis_tag, fs.send_rate_bps)
+        self.compute_destination_host_mac_intents(fs.dst_host, fs.flow_match, fs.dst_host.sw.synthesis_tag, fs.send_rate_bps)
 
         #  First find the shortest path between src and dst.
         p = nx.shortest_path(self.network_graph.graph, source=fs.src_host.sw.node_id, target=fs.dst_host.sw.node_id)
@@ -160,8 +156,8 @@ class SynthesizeQoS:
             self.primary_path_edge_dict[(fs.src_host.node_id, fs.dst_host.node_id)].append((p[i], p[i+1]))
 
         #  Compute all forwarding intents as a result of primary path
-        self.compute_path_ip_intents(fs.src_host, fs.dst_host, p, "primary", fs.flow_match, in_port,
-                                     dst_sw_obj.synthesis_tag, fs.send_rate_bps)
+        self.compute_path_intents(fs.src_host, fs.dst_host, p, "primary", fs.flow_match, in_port,
+                                     fs.dst_host.sw.synthesis_tag, fs.send_rate_bps)
 
     def push_switch_changes(self):
 
@@ -206,7 +202,7 @@ class SynthesizeQoS:
 
                     flow = self.synthesis_lib.push_match_per_in_port_destination_instruct_group_flow(
                             sw.node_id,
-                            self.ip_forwarding_table_id,
+                            self.vlan_forwarding_table_id,
                             group_id,
                             1,
                             combined_intent.flow_match,
