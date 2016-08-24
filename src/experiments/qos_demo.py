@@ -8,6 +8,7 @@ sys.path.append("./")
 from experiment import Experiment
 from network_configuration import NetworkConfiguration
 from flow_specification import FlowSpecification
+from model.match import Match
 
 
 class QosDemo(Experiment):
@@ -29,7 +30,11 @@ class QosDemo(Experiment):
             for src, dst in nc.ng.host_obj_pair_iter():
                 if src == dst:
                     continue
-                flow_specifications.append(FlowSpecification(src, dst, 50))
+
+                flow_match = Match(is_wildcard=True)
+                flow_match["ethernet_type"] = 0x0800
+
+                flow_specifications.append(FlowSpecification(src, dst, 50, flow_match))
 
             nc.synthesis.synthesize_flow_specifications(flow_specifications)
             self.measure_flow_rates(nc)
@@ -78,13 +83,16 @@ class QosDemo(Experiment):
 
         for i in range(num_traffic_profiles):
 
-            h1s2_to_h1s1_flow_measurement = FlowSpecification(h1s2, h1s1, i * 5 + 5, 100)
-            h2s2_to_h2s1_flow_measurement = FlowSpecification(h2s2, h2s1, i * 5 + 5, 100)
+            flow_match = Match(is_wildcard=True)
+            flow_match["ethernet_type"] = 0x0800
 
-            h1s2.cmd(h1s2_to_h1s1_flow_measurement.construct_netperf_cmd_str())
-            h2s2.cmd(h2s2_to_h2s1_flow_measurement.construct_netperf_cmd_str())
+            h1s2_to_h1s1_flow_measurement = FlowSpecification(h1s2, h1s1, i * 5 + 5, flow_match)
+            h2s2_to_h2s1_flow_measurement = FlowSpecification(h2s2, h2s1, i * 5 + 5, flow_match)
 
-            time.sleep(105 )
+            h1s2.cmd(h1s2_to_h1s1_flow_measurement.construct_netperf_cmd_str(10))
+            h2s2.cmd(h2s2_to_h2s1_flow_measurement.construct_netperf_cmd_str(10))
+
+            time.sleep(15)
 
             h1s2_to_h1s1_flow_measurement.parse_netperf_output(h1s2.read())
             h2s2_to_h2s1_flow_measurement.parse_netperf_output(h2s2.read())

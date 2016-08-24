@@ -1,10 +1,10 @@
 
 class FlowSpecification:
-    def __init__(self, src_host, dst_host, send_rate, duration=0):
+    def __init__(self, src_host, dst_host, send_rate, flow_match):
         self.src_host = src_host
         self.dst_host = dst_host
         self.send_rate = send_rate
-        self.duration = duration
+        self.flow_match = flow_match
 
         # netperf input parameters
 
@@ -31,11 +31,11 @@ class FlowSpecification:
         self.min_latency = None
         self.max_latency = None
 
-    def construct_netperf_cmd_str(self):
+    def construct_netperf_cmd_str(self, duration):
         self.netperf_cmd_str = "/usr/local/bin/netperf -H " + self.dst_host.IP() + \
                                " -w " + str(self.inter_burst_time) + \
                                " -b " + str(self.num_sends_in_burst) + \
-                               " -l " + str(self.duration) + \
+                               " -l " + str(duration) + \
                                " -t omni -- -d send" + \
                                " -o " + \
                                "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY'" + \
