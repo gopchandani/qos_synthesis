@@ -78,13 +78,13 @@ class QosDemo(Experiment):
 
         for i in range(num_traffic_profiles):
 
-            h1s2_to_h1s1_flow_measurement = FlowSpecification(h1s2, h1s1, i * 5 + 5)
-            h2s2_to_h2s1_flow_measurement = FlowSpecification(h2s2, h2s1, i * 5 + 5)
+            h1s2_to_h1s1_flow_measurement = FlowSpecification(h1s2, h1s1, i * 5 + 5, 100)
+            h2s2_to_h2s1_flow_measurement = FlowSpecification(h2s2, h2s1, i * 5 + 5, 100)
 
             h1s2.cmd(h1s2_to_h1s1_flow_measurement.construct_netperf_cmd_str())
             h2s2.cmd(h2s2_to_h2s1_flow_measurement.construct_netperf_cmd_str())
 
-            time.sleep(15)
+            time.sleep(105 )
 
             h1s2_to_h1s1_flow_measurement.parse_netperf_output(h1s2.read())
             h2s2_to_h2s1_flow_measurement.parse_netperf_output(h2s2.read())

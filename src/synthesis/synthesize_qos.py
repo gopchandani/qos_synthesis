@@ -2,10 +2,7 @@ __author__ = 'Rakesh Kumar'
 
 from collections import defaultdict
 from copy import deepcopy
-
 import networkx as nx
-
-from synthesis.synthesis_lib import SynthesisLib
 from model.intent import Intent
 from model.match import Match
 
@@ -46,7 +43,6 @@ class SynthesizeQoS:
         for k, v in self.params.items():
             params_str += "_" + str(k) + "_" + str(v)
         return self.__class__.__name__ + params_str
-
 
     def _compute_path_ip_intents(self, src_host, dst_host, p, intent_type,
                                  flow_match, first_in_port, dst_switch_tag, min_rate, max_rate):
