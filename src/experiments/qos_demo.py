@@ -51,7 +51,7 @@ class QosDemo(Experiment):
 
     def parse_ping_output(self,ping_output_string):
 
-        data_lines =  ping_output_string.split('\r\n')
+        data_lines = ping_output_string.split('\r\n')
         interesting_line_index = None
         for i in xrange(len(data_lines)):
             if data_lines[i].startswith('5 packets transmitted'):
@@ -128,7 +128,6 @@ def main():
 
     num_iterations = 1
     num_hosts_per_switch_list = [2]#[2, 4, 6, 8, 10]
-    global_flow_rate_list = [50]
     same_output_queue_list = [False, True]
     network_configurations = prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_list)
 

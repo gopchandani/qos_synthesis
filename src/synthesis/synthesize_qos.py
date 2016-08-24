@@ -1,5 +1,7 @@
 __author__ = 'Rakesh Kumar'
 
+import os
+
 from collections import defaultdict
 from copy import deepcopy
 import networkx as nx
@@ -30,11 +32,17 @@ class SynthesizeQoS:
         # Table contains the actual forwarding rules
         self.vlan_forwarding_table_id = 2
 
+        self.init_ifb()
+
     def __str__(self):
         params_str = ''
         for k, v in self.params.items():
             params_str += "_" + str(k) + "_" + str(v)
         return self.__class__.__name__ + params_str
+
+    def init_ifb(self):
+        os.system("sudo modprobe ifb")
+        os.system("sudo modprobe act_mirred")
 
     def compute_path_intents(self, src_host, dst_host, p, intent_type,
                                  flow_match, first_in_port, dst_switch_tag, rate):
@@ -114,6 +122,20 @@ class SynthesizeQoS:
         # by using its mac address as the key
         self.add_intent(h_obj.sw.node_id, h_obj.mac_addr, host_mac_intent)
 
+    def install_ingress_ifb_filter(self, h_obj, rate):
+
+        # Get the interface name where the host is connected
+        orig_intf_name = h_obj.sw.node_id + "-eth" + str(h_obj.switch_port.port_number)
+        # Set some options for this interface name
+        os.system("sudo ethtool -K " + orig_intf_name + " tso off gso off gro off")
+
+        # Create a mirror ifb interface for this interface
+        ifb_intf_name = orig_intf_name + "-ifb"
+        os.system("ifconfig " + ifb_intf_name + " up")
+
+        print "here"
+
+
     def compute_push_vlan_tag_intents(self, h_obj, flow_match, required_tag):
 
         push_vlan_match= deepcopy(flow_match)
@@ -134,11 +156,14 @@ class SynthesizeQoS:
         edge_ports_dict = self.network_graph.get_link_ports_dict(fs.src_host.node_id, fs.src_host.sw.node_id)
         in_port = edge_ports_dict[fs.src_host.sw.node_id]
 
-        ## Things at source
+        # Things at source
         # Tag packets leaving the source host with a vlan tag of the destination switch
         self.compute_push_vlan_tag_intents(fs.src_host, fs.flow_match, fs.dst_host.sw.synthesis_tag)
 
-        ## Things at destination
+        #  Install an ingress filter
+        self.install_ingress_ifb_filter(fs.src_host, fs.send_rate_bps)
+
+        # Things at destination
         # Add a MAC based forwarding rule for the destination host at the last hop
         self.compute_destination_host_mac_intents(fs.dst_host, fs.flow_match, fs.dst_host.sw.synthesis_tag, fs.send_rate_bps)
 
