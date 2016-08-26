@@ -44,6 +44,7 @@ class SynthesizeQoS:
         os.system("sudo modprobe -r ifb")
         os.system("sudo modprobe ifb numifbs=" + str(num_ifb_interfaces))
         os.system("sudo modprobe act_mirred")
+        os.system("sudo modprobe sch_fq_codel")
 
     def compute_path_intents(self, src_host, dst_host, p, intent_type,
                                  flow_match, first_in_port, dst_switch_tag, rate):
@@ -127,20 +128,45 @@ class SynthesizeQoS:
 
         # Get the interface name where the host is connected
         orig_intf_name = h_obj.sw.node_id + "-eth" + str(h_obj.switch_port.port_number)
-        # Set some options for this interface name
-        os.system("sudo ethtool -K " + orig_intf_name + " tso off gso off gro off")
-
-        os.system("tc qdisc add dev " + orig_intf_name + " handle ffff: ingress")
 
         # Map a mirror ifb interface for this interface
         ifb_intf_name = "ifb" + str(self.ifb_interfaces_used)
+
+        # Set some options for this interface name
+        os.system("sudo ethtool -K " + orig_intf_name + " tso off gso off gro off")
+
+        # Remove previous tc stuff on both of these interfaces
+        os.system("tc qdisc del dev " + orig_intf_name + " root")
+        os.system("tc qdisc del dev " + orig_intf_name + " ingress")
+        os.system("tc qdisc del dev " + ifb_intf_name + " root")
+        os.system("tc qdisc del dev " + ifb_intf_name + " ingress")
+
+        os.system("tc qdisc add dev " + orig_intf_name + " handle ffff: ingress")
+
         os.system("ifconfig " + ifb_intf_name + " up")
-        os.system("tc filter add dev " + orig_intf_name +
-                  " parent ffff: protocol all u32 match u32 0 0 action mirred egress redirect dev " + ifb_intf_name)
+
+        cmd = "tc filter add dev " + orig_intf_name + \
+              " parent ffff: protocol all u32 match u32 0 0 action mirred egress redirect dev " + ifb_intf_name
+
+        os.system(cmd)
         self.ifb_interfaces_used += 1
 
-        # Configure a tbf qdisc on the ingress interface
-        os.system("tc qdisc add dev " + ifb_intf_name + " root tbf rate " + str(rate) + "bps latency 50ms burst 1540")
+        # Create an EGRESS filter on the IFB device
+        os.system("tc qdisc add dev " + ifb_intf_name + " root handle 1: htb default 11")
+
+        # Add root class HTB with rate limiting
+        os.system("tc class add dev " + ifb_intf_name + " parent 1: classid 1:1 htb rate " + str(rate) + "bit")
+        os.system("tc class add dev " + ifb_intf_name + " parent 1:1 classid 1:11 htb rate " + str(rate) + "bit" + " prio 0 quantum 1514")
+
+        # Add FQ_CODEL qdisc with ECN support (if you want ecn)
+        os.system("tc qdisc add dev " + ifb_intf_name + " parent 1:11 fq_codel quantum 1514 ecn")
+
+
+
+
+        # # Configure a tbf qdisc on the ingress interface
+        # os.system("tc qdisc add dev " + ifb_intf_name + " root tbf rate " + str(rate) + "bit latency 50ms burst 1540")
+        # print "Installed ifb interface named:", ifb_intf_name, "for interface:", orig_intf_name, "rate:", rate
 
     def compute_push_vlan_tag_intents(self, h_obj, flow_match, required_tag):
 
@@ -192,7 +218,7 @@ class SynthesizeQoS:
         # Install ingress filters for each possible src in flow_specifications
         hosts_rates_for_ifb = []
         for fs in self.flow_specifications:
-            if (fs.src_host, fs.send_rate_bps)  not in hosts_rates_for_ifb:
+            if (fs.src_host, fs.send_rate_bps) not in hosts_rates_for_ifb:
                 hosts_rates_for_ifb.append((fs.src_host, fs.send_rate_bps))
 
         self.init_ifb(len(hosts_rates_for_ifb))
