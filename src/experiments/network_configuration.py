@@ -13,6 +13,9 @@ from functools import partial
 from mininet.net import Mininet
 from mininet.node import RemoteController
 from mininet.node import OVSSwitch
+from mininet.link import TCIntf, TCLink
+
+from mininet.util import custom
 from controller_man import ControllerMan
 from model.network_graph import NetworkGraph
 from model.match import Match
@@ -34,7 +37,7 @@ from synthesis.synthesis_lib import SynthesisLib
 
 class NetworkConfiguration(object):
 
-    def __init__(self, controller, 
+    def __init__(self, controller,
                  topo_name,
                  topo_params,
                  conf_root,
@@ -99,7 +102,7 @@ class NetworkConfiguration(object):
             self.nc_topo_str = "Linear topology with " + str(self.topo_params["num_switches"]) + " switches"
         else:
             raise NotImplementedError("Topology: %s" % self.topo_name)
-            
+
     def init_synthesis(self):
         if self.synthesis_name == "DijkstraSynthesis":
             self.synthesis_params["master_switch"] = self.topo_name == "linear"
@@ -241,6 +244,7 @@ class NetworkConfiguration(object):
 
         # TODO: Figure out a new home for these two
         self.synthesis.network_graph = self.ng
+        self.synthesis.mininet_obj = self.mininet_obj
         self.synthesis.synthesis_lib = SynthesisLib("localhost", "8181", self.ng)
 
         return self.ng
@@ -249,11 +253,16 @@ class NetworkConfiguration(object):
 
         self.cleanup_mininet()
 
+        intf = custom(TCIntf, bw=1000)
+
         self.mininet_obj = Mininet(topo=self.topo,
-                           cleanup=True,
-                           autoStaticArp=True,
-                           controller=lambda name: RemoteController(name, ip='127.0.0.1', port=self.controller_port),
-                           switch=partial(OVSSwitch, protocols='OpenFlow14'))
+                                   intf=TCIntf,
+                                   link=TCLink,
+                                   cleanup=True,
+                                   autoStaticArp=True,
+                                   controller=lambda name: RemoteController(name, ip='127.0.0.1',
+                                                                            port=self.controller_port),
+                                   switch=partial(OVSSwitch, protocols='OpenFlow14'))
 
         self.mininet_obj.start()
 

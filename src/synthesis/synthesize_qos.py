@@ -16,6 +16,7 @@ class SynthesizeQoS:
 
         self.network_graph = None
         self.synthesis_lib = None
+        self.mininet_obj = None
 
         self.primary_path_edges = []
         self.primary_path_edge_dict = {}
@@ -129,7 +130,7 @@ class SynthesizeQoS:
         # Get the interface name where the host is connected
         orig_intf_name = h_obj.sw.node_id + "-eth" + str(h_obj.switch_port.port_number)
 
-        #orig_intf_name = "eth0"
+        orig_intf_name = "eth0"
 
         # Map a mirror ifb interface for this interface
         ifb_intf_name = "ifb" + str(self.ifb_interfaces_used)
@@ -154,19 +155,24 @@ class SynthesizeQoS:
         os.system(cmd)
 
         # Create an EGRESS filter on the IFB device
-        os.system("tc qdisc add dev " + ifb_intf_name + " root handle 1: htb default 11")
+        # os.system("tc qdisc add dev " + ifb_intf_name + " root handle 1: htb default 11")
+        #
+        # # Add root class HTB with rate limiting
+        # os.system("tc class add dev " + ifb_intf_name + " parent 1: classid 1:1 htb rate " + str(rate) + "bit")
+        # os.system("tc class add dev " + ifb_intf_name + " parent 1:1 classid 1:11 htb rate " + str(rate) + "bit" + " prio 0 quantum 1514")
+        #
+        # # Add FQ_CODEL qdisc with ECN support (if you want ecn)
+        # os.system("tc qdisc add dev " + ifb_intf_name + " parent 1:11 fq_codel quantum 1514 ecn")
+        #
 
-        # Add root class HTB with rate limiting
-        os.system("tc class add dev " + ifb_intf_name + " parent 1: classid 1:1 htb rate " + str(rate) + "bit")
-        os.system("tc class add dev " + ifb_intf_name + " parent 1:1 classid 1:11 htb rate " + str(rate) + "bit" + " prio 0 quantum 1514")
+        # Configure a tbf qdisc on the ingress interface
+        os.system("tc qdisc add dev " + ifb_intf_name + " root tbf rate " + str(rate) + "bit latency 50ms burst 1540")
+        print "Installed ifb interface named:", ifb_intf_name, "for interface:", orig_intf_name, "rate:", rate
 
-        # Add FQ_CODEL qdisc with ECN support (if you want ecn)
-        os.system("tc qdisc add dev " + ifb_intf_name + " parent 1:11 fq_codel quantum 1514 ecn")
-
-
-        # # Configure a tbf qdisc on the ingress interface
-        # os.system("tc qdisc add dev " + ifb_intf_name + " root tbf rate " + str(rate) + "bit latency 50ms burst 1540")
-        # print "Installed ifb interface named:", ifb_intf_name, "for interface:", orig_intf_name, "rate:", rate
+    def setup_host_mininet_intf_rate(self, h_obj, rate):
+        mininet_h_obj = self.mininet_obj.getNodeByName(h_obj.node_id)
+        host_intf = mininet_h_obj.intfs[0]
+        mininet_h_obj.intfs[0].config(bw=rate/1000000)
 
     def compute_push_vlan_tag_intents(self, h_obj, flow_match, required_tag):
 
@@ -223,7 +229,8 @@ class SynthesizeQoS:
 
         self.init_ifb(len(hosts_rates_for_ifb))
         for src_host, send_rate_bps in hosts_rates_for_ifb:
-            self.install_ingress_ifb_filter(src_host, send_rate_bps)
+            #self.install_ingress_ifb_filter(src_host, send_rate_bps)
+            self.setup_host_mininet_intf_rate(src_host, send_rate_bps)
 
         for sw in self.network_graph.get_switches():
 
