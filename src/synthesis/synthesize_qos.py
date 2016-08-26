@@ -129,8 +129,11 @@ class SynthesizeQoS:
         # Get the interface name where the host is connected
         orig_intf_name = h_obj.sw.node_id + "-eth" + str(h_obj.switch_port.port_number)
 
+        #orig_intf_name = "eth0"
+
         # Map a mirror ifb interface for this interface
         ifb_intf_name = "ifb" + str(self.ifb_interfaces_used)
+        self.ifb_interfaces_used += 1
 
         # Set some options for this interface name
         os.system("sudo ethtool -K " + orig_intf_name + " tso off gso off gro off")
@@ -149,7 +152,6 @@ class SynthesizeQoS:
               " parent ffff: protocol all u32 match u32 0 0 action mirred egress redirect dev " + ifb_intf_name
 
         os.system(cmd)
-        self.ifb_interfaces_used += 1
 
         # Create an EGRESS filter on the IFB device
         os.system("tc qdisc add dev " + ifb_intf_name + " root handle 1: htb default 11")
@@ -160,8 +162,6 @@ class SynthesizeQoS:
 
         # Add FQ_CODEL qdisc with ECN support (if you want ecn)
         os.system("tc qdisc add dev " + ifb_intf_name + " parent 1:11 fq_codel quantum 1514 ecn")
-
-
 
 
         # # Configure a tbf qdisc on the ingress interface
