@@ -16,7 +16,6 @@ from mininet.node import OVSSwitch
 from mininet.link import TCIntf, TCLink
 
 from mininet.util import custom
-from controller_man import ControllerMan
 from model.network_graph import NetworkGraph
 from model.match import Match
 
@@ -52,14 +51,13 @@ class NetworkConfiguration(object):
         self.synthesis_name = synthesis_name
         self.synthesis_params = synthesis_params
 
-        self.controller_port = None
+        self.controller_port = 6633
         self.topo = None
         self.nc_topo_str = None
         self.init_topo()
         self.init_synthesis()
 
         self.mininet_obj = None
-        self.cm = None
         self.ng = None
 
         # Setup the directory for saving configs, check if one does not exist,
@@ -215,10 +213,6 @@ class NetworkConfiguration(object):
 
     def setup_network_graph(self, mininet_setup_gap=None, synthesis_setup_gap=None):
 
-        self.cm = ControllerMan(controller=self.controller)
-        self.cm.stop_controller()
-        self.controller_port = self.cm.start_controller()
-
         self.start_mininet()
         if mininet_setup_gap:
             time.sleep(mininet_setup_gap)
@@ -267,7 +261,7 @@ class NetworkConfiguration(object):
 
         if self.mininet_obj:
             print "Mininet cleanup..."
-            self.mininet_obj.stop()
+            #self.mininet_obj.stop()
 
         os.system("sudo mn -c")
 

@@ -6,6 +6,7 @@ from collections import defaultdict
 
 sys.path.append("./")
 
+from controller_man import ControllerMan
 from experiment import Experiment
 from network_configuration import NetworkConfiguration
 from flow_specification import FlowSpecification
@@ -25,6 +26,11 @@ class QosDemo(Experiment):
         self.flow_rates = flow_rates
         self.network_configurations = network_configurations
         self.flow_measurements = []
+
+        self.cm = ControllerMan(controller="ryu")
+        self.cm.stop_controller()
+        time.sleep(5)
+        self.controller_port = self.cm.start_controller()
 
         self.data = {
             "Throughput": defaultdict(defaultdict),
@@ -51,7 +57,7 @@ class QosDemo(Experiment):
 
         for i in range(self.num_iterations):
 
-            print "iteration:", i
+            print "iteration:", i + 1
 
             for nc in self.network_configurations:
                 print "network_configuration:", nc
@@ -162,7 +168,7 @@ def main():
 
     num_iterations = 2
     flow_duration = 5
-    flow_rates = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+    flow_rates = [40, 45, 50]
     num_hosts_per_switch_list = [2]
     same_output_queue_list = [False, True]
     network_configurations = prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_list)
