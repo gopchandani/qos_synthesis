@@ -86,10 +86,6 @@ class NetworkConfiguration(object):
     def __str__(self):
         return self.controller + "_" + str(self.synthesis) + "_" + str(self.topo)
 
-    def __del__(self):
-        self.cm.stop_controller()
-        self.cleanup_mininet()
-
     def init_topo(self):
         if self.topo_name == "ring":
             self.topo = RingTopo(self.topo_params)
@@ -220,6 +216,7 @@ class NetworkConfiguration(object):
     def setup_network_graph(self, mininet_setup_gap=None, synthesis_setup_gap=None):
 
         self.cm = ControllerMan(controller=self.controller)
+        self.cm.stop_controller()
         self.controller_port = self.cm.start_controller()
 
         self.start_mininet()

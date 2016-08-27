@@ -2,6 +2,7 @@ __author__ = 'Rakesh Kumar'
 
 import sys
 import time
+from collections import defaultdict
 
 sys.path.append("./")
 
@@ -15,29 +16,60 @@ class QosDemo(Experiment):
 
     def __init__(self,
                  num_iterations,
+                 flow_duration,
+                 flow_rates,
                  network_configurations):
 
         super(QosDemo, self).__init__("number_of_hosts", num_iterations)
+        self.flow_duration = flow_duration
+        self.flow_rates = flow_rates
         self.network_configurations = network_configurations
+        self.flow_measurements = []
 
-    def trigger(self):
+        self.data = {
+            "Throughput": defaultdict(defaultdict),
+            "99th Percentile Latency": defaultdict(defaultdict),
+            "Maximum Latency": defaultdict(defaultdict)
+        }
+
+    def populate_data(self):
         for nc in self.network_configurations:
             print "network_configuration:", nc
 
-            nc.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
+            for i in range(len(self.flow_rates)):
 
-            flow_specifications = []
-            for src, dst in nc.ng.host_obj_pair_iter():
-                if src == dst:
-                    continue
+                self.data["Throughput"][nc.topo_params["num_hosts_per_switch"]][self.flow_rates[i]] = []
+                self.data["99th Percentile Latency"][nc.topo_params["num_hosts_per_switch"]][self.flow_rates[i]] = []
+                self.data["Maximum Latency"][nc.topo_params["num_hosts_per_switch"]][self.flow_rates[i]] = []
 
-                flow_match = Match(is_wildcard=True)
-                flow_match["ethernet_type"] = 0x0800
+        print self.data
 
-                flow_specifications.append(FlowSpecification(src, dst, 50, flow_match))
+    def plot_data(self):
+        pass
 
-            nc.synthesis.synthesize_flow_specifications(flow_specifications)
-            self.measure_flow_rates(nc)
+    def trigger(self):
+
+        for i in range(self.num_iterations):
+
+            print "iteration:", i
+
+            for nc in self.network_configurations:
+                print "network_configuration:", nc
+
+                nc.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
+
+                flow_specifications = []
+                for src, dst in nc.ng.host_obj_pair_iter():
+                    if src == dst:
+                        continue
+
+                    flow_match = Match(is_wildcard=True)
+                    flow_match["ethernet_type"] = 0x0800
+
+                    flow_specifications.append(FlowSpecification(src, dst, 50, flow_match))
+
+                nc.synthesis.synthesize_flow_specifications(flow_specifications)
+                self.flow_measurements.append(self.measure_flow_rates(nc))
 
     def parse_iperf_output(self, iperf_output_string):
         data_lines =  iperf_output_string.split('\r\n')
@@ -77,22 +109,22 @@ class QosDemo(Experiment):
         print h2s1_output
 
         # Initialize flow measurements
-        num_traffic_profiles = 10
         h1s2_to_h1s1_flow_measurements = []
         h2s2_to_h2s1_flow_measurements = []
 
-        for i in range(num_traffic_profiles):
+        for flow_rate in self.flow_rates:
 
             flow_match = Match(is_wildcard=True)
             flow_match["ethernet_type"] = 0x0800
 
-            h1s2_to_h1s1_flow_measurement = FlowSpecification(h1s2, h1s1, i * 5 + 5, flow_match)
-            h2s2_to_h2s1_flow_measurement = FlowSpecification(h2s2, h2s1, i * 5 + 5, flow_match)
+            h1s2_to_h1s1_flow_measurement = FlowSpecification(h1s2, h1s1, flow_rate, flow_match)
+            h2s2_to_h2s1_flow_measurement = FlowSpecification(h2s2, h2s1, flow_rate, flow_match)
 
-            h1s2.cmd(h1s2_to_h1s1_flow_measurement.construct_netperf_cmd_str(10))
-            h2s2.cmd(h2s2_to_h2s1_flow_measurement.construct_netperf_cmd_str(10))
+            h1s2.cmd(h1s2_to_h1s1_flow_measurement.construct_netperf_cmd_str(self.flow_duration))
+            h2s2.cmd(h2s2_to_h2s1_flow_measurement.construct_netperf_cmd_str(self.flow_duration))
 
-            time.sleep(15)
+            # Sleep for 5 seconds more than flow duration to make sure netperf has finished.
+            time.sleep(self.flow_duration + 5)
 
             h1s2_to_h1s1_flow_measurement.parse_netperf_output(h1s2.read())
             h2s2_to_h2s1_flow_measurement.parse_netperf_output(h2s2.read())
@@ -102,6 +134,8 @@ class QosDemo(Experiment):
 
             print h1s2_to_h1s1_flow_measurement
             print h2s2_to_h2s1_flow_measurement
+
+        return h1s2_to_h1s1_flow_measurements, h2s2_to_h2s1_flow_measurements
 
 
 def prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_list):
@@ -126,14 +160,18 @@ def prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_
 
 def main():
 
-    num_iterations = 1
-    num_hosts_per_switch_list = [2]#[2, 4, 6, 8, 10]
+    num_iterations = 2
+    flow_duration = 5
+    flow_rates = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+    num_hosts_per_switch_list = [2]
     same_output_queue_list = [False, True]
     network_configurations = prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_list)
 
-    exp = QosDemo(num_iterations, network_configurations)
+    exp = QosDemo(num_iterations, flow_duration, flow_rates, network_configurations)
 
     exp.trigger()
+    exp.populate_data()
+    exp.plot_data()
 
 if __name__ == "__main__":
     main()

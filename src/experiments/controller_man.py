@@ -1,5 +1,5 @@
 import subprocess
-
+import os
 
 class ControllerMan(object):
     def __init__(self,  controller):
@@ -31,8 +31,10 @@ class ControllerMan(object):
     def stop_controller(self):
 
         if self.controller == "ryu":
-            self.ryu_proc.kill()
-            subprocess.Popen.wait(self.ryu_proc)
+            # self.ryu_proc.kill()
+            # subprocess.Popen.wait(self.ryu_proc)
+            os.system("sudo pkill ryu-manager")
+
         elif self.controller == "sel":
             pass
         else:
