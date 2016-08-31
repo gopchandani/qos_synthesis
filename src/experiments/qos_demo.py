@@ -72,7 +72,14 @@ class QosDemo(Experiment):
                     flow_match = Match(is_wildcard=True)
                     flow_match["ethernet_type"] = 0x0800
 
-                    flow_specifications.append(FlowSpecification(src, dst, 50, flow_match))
+                    if src.node_id == "h11" and dst.node_id == "h21":
+                        flow_specifications.append(FlowSpecification(src, dst, 1, flow_match))
+                    if src.node_id == "h21" and dst.node_id == "h11":
+                        flow_specifications.append(FlowSpecification(src, dst, 1, flow_match))
+                    if src.node_id == "h12" and dst.node_id == "h22":
+                        flow_specifications.append(FlowSpecification(src, dst, 150, flow_match))
+                    if src.node_id == "h22" and dst.node_id == "h12":
+                        flow_specifications.append(FlowSpecification(src, dst, 150, flow_match))
 
                 nc.synthesis.synthesize_flow_specifications(flow_specifications)
                 self.flow_measurements.append(self.measure_flow_rates(nc))
@@ -103,37 +110,40 @@ class QosDemo(Experiment):
     def measure_flow_rates(self, nc):
 
         # Get all the nodes
-        h1s1 = nc.mininet_obj.getNodeByName("h1s1")
-        h1s2 = nc.mininet_obj.getNodeByName("h1s2")
-        h2s1 = nc.mininet_obj.getNodeByName("h2s1")
-        h2s2 = nc.mininet_obj.getNodeByName("h2s2")
+        h11 = nc.mininet_obj.getNodeByName("h11")
+        h21 = nc.mininet_obj.getNodeByName("h21")
+        h12 = nc.mininet_obj.getNodeByName("h12")
+        h22 = nc.mininet_obj.getNodeByName("h22")
 
-        h1s1_output = h1s1.cmd("/usr/local/bin/netserver")
+        h1s1_output = h11.cmd("/usr/local/bin/netserver")
         print h1s1_output
 
-        h2s1_output = h2s1.cmd("/usr/local/bin/netserver")
+        h2s1_output = h12.cmd("/usr/local/bin/netserver")
         print h2s1_output
 
         # Initialize flow measurements
         h1s2_to_h1s1_flow_measurements = []
         h2s2_to_h2s1_flow_measurements = []
 
-        for flow_rate in self.flow_rates:
+        flow_1_rate = [0.1, 0.1, 0.1, 0.1]
+        flow_2_rate = [10, 40, 60, 80]
+
+        for i in range(len(self.flow_rates)):# in self.flow_rates:
 
             flow_match = Match(is_wildcard=True)
             flow_match["ethernet_type"] = 0x0800
 
-            h1s2_to_h1s1_flow_measurement = FlowSpecification(h1s2, h1s1, flow_rate, flow_match)
-            h2s2_to_h2s1_flow_measurement = FlowSpecification(h2s2, h2s1, flow_rate, flow_match)
+            h1s2_to_h1s1_flow_measurement = FlowSpecification(h21, h11, flow_1_rate[i], flow_match)
+            h2s2_to_h2s1_flow_measurement = FlowSpecification(h22, h12, flow_2_rate[i], flow_match)
 
-            h1s2.cmd(h1s2_to_h1s1_flow_measurement.construct_netperf_cmd_str(self.flow_duration))
-            h2s2.cmd(h2s2_to_h2s1_flow_measurement.construct_netperf_cmd_str(self.flow_duration))
+            h21.cmd(h1s2_to_h1s1_flow_measurement.construct_netperf_cmd_str(self.flow_duration))
+            h22.cmd(h2s2_to_h2s1_flow_measurement.construct_netperf_cmd_str(self.flow_duration))
 
             # Sleep for 5 seconds more than flow duration to make sure netperf has finished.
-            time.sleep(self.flow_duration + 5)
+            time.sleep(self.flow_duration + 10)
 
-            h1s2_to_h1s1_flow_measurement.parse_netperf_output(h1s2.read())
-            h2s2_to_h2s1_flow_measurement.parse_netperf_output(h2s2.read())
+            h1s2_to_h1s1_flow_measurement.parse_netperf_output(h21.read())
+            h2s2_to_h2s1_flow_measurement.parse_netperf_output(h22.read())
 
             h1s2_to_h1s1_flow_measurements.append(h1s2_to_h1s1_flow_measurement)
             h2s2_to_h2s1_flow_measurements.append(h2s2_to_h2s1_flow_measurement)
@@ -152,7 +162,7 @@ def prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_
         for hps in num_hosts_per_switch_list:
 
             nc = NetworkConfiguration("ryu",
-                                      "linear",
+                                      "linear_modified",
                                       {"num_switches": 2,
                                        "num_hosts_per_switch": hps},
                                       conf_root="configurations/",
@@ -167,10 +177,10 @@ def prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_
 def main():
 
     num_iterations = 2
-    flow_duration = 5
-    flow_rates = [40, 45, 50]
+    flow_duration = 15
+    flow_rates = [40, 45, 50, 55]#, 60]
     num_hosts_per_switch_list = [2]
-    same_output_queue_list = [False, True]
+    same_output_queue_list = [True]#[False, True]
     network_configurations = prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_list)
 
     exp = QosDemo(num_iterations, flow_duration, flow_rates, network_configurations)

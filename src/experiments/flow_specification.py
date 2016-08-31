@@ -61,5 +61,7 @@ class FlowSpecification:
     def __str__(self):
         return "Send Rate: " + str(self.send_rate_bps/1000000.0) + \
                " Throughput: " + str(self.throughput) + \
+               " Mean Latency: " + str(self.mean_latency) + \
+               " Stdev Latency: " + str(self.stdev_latency) + \
                " 99th Percentile Latency: " + str(self.nn_perc_latency) + \
                " Max Latency: " + str(self.max_latency)

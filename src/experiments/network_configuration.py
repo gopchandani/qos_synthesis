@@ -22,6 +22,7 @@ from model.match import Match
 from experiments.topologies.ring_topo import RingTopo
 from experiments.topologies.clos_topo import ClosTopo
 from experiments.topologies.linear_topo import LinearTopo
+from experiments.topologies.linear_modified_topo import LinearModifiedTopo
 from experiments.topologies.fat_tree import FatTree
 from experiments.topologies.two_ring_topo import TwoRingTopo
 from experiments.topologies.ring_line_topo import RingLineTopo
@@ -91,15 +92,15 @@ class NetworkConfiguration(object):
         elif self.topo_name == "clostopo":
             self.topo = ClosTopo(self.topo_params)
             self.nc_topo_str = "Clos topology with " + str(self.topo.total_switches) + " switches"
-        elif self.topo_name == "linear":
-            self.topo = LinearTopo(self.topo_params)
-            self.nc_topo_str = "Linear topology with " + str(self.topo_params["num_switches"]) + " switches"
+        elif self.topo_name == "linear_modified":
+            self.topo = LinearModifiedTopo(self.topo_params)
+            self.nc_topo_str = "linear_modified topology with " + str(self.topo_params["num_switches"]) + " switches"
         else:
             raise NotImplementedError("Topology: %s" % self.topo_name)
 
     def init_synthesis(self):
         if self.synthesis_name == "DijkstraSynthesis":
-            self.synthesis_params["master_switch"] = self.topo_name == "linear"
+            self.synthesis_params["master_switch"] = self.topo_name == "linear_modified"
             self.synthesis = DijkstraSynthesis(self.synthesis_params)
 
         elif self.synthesis_name == "SynthesizeQoS":
@@ -246,6 +247,8 @@ class NetworkConfiguration(object):
 
         intf = custom(TCIntf, bw=1000)
 
+        self.topo.addLink("s1", "s2", bw=10, delay='5m', use_htb=True)
+
         self.mininet_obj = Mininet(topo=self.topo,
                                    intf=TCIntf,
                                    link=TCLink,
@@ -321,116 +324,3 @@ class NetworkConfiguration(object):
             return True
         else:
             return False
-
-    def get_intf_status(self, ifname):
-
-        # set some symbolic constants
-        SIOCGIFFLAGS = 0x8913
-        null256 = '\0'*256
-
-        # create a socket so we have a handle to query
-        s = socket(AF_INET, SOCK_DGRAM)
-
-        # call ioctl() to get the flags for the given interface
-        result = fcntl.ioctl(s.fileno(), SIOCGIFFLAGS, ifname + null256)
-
-        # extract the interface's flags from the return value
-        flags, = struct.unpack('H', result[16:18])
-
-        # check "UP" bit and print a message
-        up = flags & 1
-
-        return ('down', 'up')[up]
-
-    def wait_until_link_status(self, sw_i, sw_j, intended_status):
-
-        num_seconds = 0
-
-        for link in self.mininet_obj.links:
-            if (sw_i in link.intf1.name and sw_j in link.intf2.name) or (sw_i in link.intf2.name and sw_j in link.intf1.name):
-
-                while True:
-                    status_i = self.get_intf_status(link.intf1.name)
-                    status_j = self.get_intf_status(link.intf2.name)
-
-                    if status_i == intended_status and status_j == intended_status:
-                        break
-
-                    time.sleep(1)
-                    num_seconds +=1
-
-        return num_seconds
-
-    def is_bi_connected_manual_ping_test(self, experiment_host_pairs_to_check, edges_to_try=None):
-
-        is_bi_connected= True
-
-        if not edges_to_try:
-            edges_to_try = self.topo.g.edges()
-
-        for edge in edges_to_try:
-
-            # Only try and break switch-switch edges
-            if edge[0].startswith("h") or edge[1].startswith("h"):
-                continue
-
-            for (src_host, dst_host) in experiment_host_pairs_to_check:
-
-                is_pingable_before_failure = self.is_host_pair_pingable(src_host, dst_host)
-
-                if not is_pingable_before_failure:
-                    print "src_host:", src_host, "dst_host:", dst_host, "are not connected."
-                    is_bi_connected = False
-                    break
-
-                self.mininet_obj.configLinkStatus(edge[0], edge[1], 'down')
-                self.wait_until_link_status(edge[0], edge[1], 'down')
-                time.sleep(5)
-                is_pingable_after_failure = self.is_host_pair_pingable(src_host, dst_host)
-                self.mininet_obj.configLinkStatus(edge[0], edge[1], 'up')
-                self.wait_until_link_status(edge[0], edge[1], 'up')
-
-                time.sleep(5)
-                is_pingable_after_restoration = self.is_host_pair_pingable(src_host, dst_host)
-
-                if not is_pingable_after_failure == True:
-                    is_bi_connected = False
-                    print "Got a problem with edge:", edge, " for src_host:", src_host, "dst_host:", dst_host
-                    break
-
-        return is_bi_connected
-
-    def is_bi_connected_manual_ping_test_all_hosts(self,  edges_to_try=None):
-
-        is_bi_connected= True
-
-        if not edges_to_try:
-            edges_to_try = self.topo.g.edges()
-
-        for edge in edges_to_try:
-
-            # Only try and break switch-switch edges
-            if edge[0].startswith("h") or edge[1].startswith("h"):
-                continue
-
-            is_pingable_before_failure = self.are_all_hosts_pingable()
-
-            if not is_pingable_before_failure:
-                is_bi_connected = False
-                break
-
-            self.mininet_obj.configLinkStatus(edge[0], edge[1], 'down')
-            self.wait_until_link_status(edge[0], edge[1], 'down')
-            time.sleep(5)
-            is_pingable_after_failure = self.are_all_hosts_pingable()
-            self.mininet_obj.configLinkStatus(edge[0], edge[1], 'up')
-            self.wait_until_link_status(edge[0], edge[1], 'up')
-
-            time.sleep(5)
-            is_pingable_after_restoration = self.are_all_hosts_pingable()
-
-            if not is_pingable_after_failure == True:
-                is_bi_connected = False
-                break
-
-        return is_bi_connected

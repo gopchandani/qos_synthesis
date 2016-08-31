@@ -230,7 +230,8 @@ class SynthesizeQoS:
         self.init_ifb(len(hosts_rates_for_ifb))
         for src_host, send_rate_bps in hosts_rates_for_ifb:
             #self.install_ingress_ifb_filter(src_host, send_rate_bps)
-            self.setup_host_mininet_intf_rate(src_host, send_rate_bps)
+            #self.setup_host_mininet_intf_rate(src_host, send_rate_bps)
+            pass
 
         for sw in self.network_graph.get_switches():
 
@@ -262,12 +263,14 @@ class SynthesizeQoS:
                     combined_intent = deepcopy(primary_intents[0])
 
                     if self.params["same_output_queue"]:
-                        combined_intent.min_rate = 0
-                        combined_intent.max_rate = 0
+                        combined_intent.min_rate = None#100 * 1000 * 1000
+                        combined_intent.max_rate = None#100 * 1000 * 1000
 
-                        for primary_intent in primary_intents:
-                            combined_intent.min_rate += primary_intent.min_rate
-                            combined_intent.max_rate += primary_intent.max_rate
+                        # for primary_intent in primary_intents:
+                        #     combined_intent.min_rate += primary_intent.min_rate
+                        #     combined_intent.max_rate += primary_intent.max_rate
+                        #
+                        #
 
                     group_id = self.synthesis_lib.push_select_all_group(sw.node_id, [combined_intent])
 
@@ -289,7 +292,7 @@ class SynthesizeQoS:
             if fs.src_host == fs.dst_host:
                 continue
 
-            # Ignore installation of paths between switches on the same switch
+            # Ignore installation of paths between hosts on the same switch
             if fs.src_host.sw.node_id == fs.dst_host.sw.node_id:
                 continue
 
