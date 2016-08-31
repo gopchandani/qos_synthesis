@@ -30,6 +30,7 @@ class FlowSpecification:
         self.nn_perc_latency = None
         self.min_latency = None
         self.max_latency = None
+        self.throughput_confid = None
 
     def construct_netperf_cmd_str(self, duration):
         self.netperf_cmd_str = "/usr/local/bin/netperf -H " + self.dst_host.IP() + \
@@ -38,7 +39,7 @@ class FlowSpecification:
                                " -l " + str(duration) + \
                                " -t omni -- -d send" + \
                                " -o " + \
-                               "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY'" + \
+                               "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY, THROUGHPUT_CONFID'" + \
                                " -T UDP_RR " + \
                                "-m " + str(self.send_size) + " &"
 
@@ -55,6 +56,7 @@ class FlowSpecification:
         self.nn_perc_latency = output_line_tokens[3]
         self.min_latency = output_line_tokens[4]
         self.max_latency = output_line_tokens[5]
+        self.throughput_confid = output_line_tokens[6]
 
     def __str__(self):
         return "Send Rate: " + str(self.send_rate_bps/1000000.0) + \
