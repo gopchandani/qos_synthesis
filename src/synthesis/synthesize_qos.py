@@ -191,41 +191,41 @@ class SynthesizeQoS:
     def synthesize_flow_qos(self, fs):
 
         # Handy info
-        edge_ports_dict = self.network_graph.get_link_ports_dict(fs.src_host.node_id, fs.src_host.sw.node_id)
-        in_port = edge_ports_dict[fs.src_host.sw.node_id]
+        edge_ports_dict = self.network_graph.get_link_ports_dict(fs.ng_src_host.node_id, fs.ng_src_host.sw.node_id)
+        in_port = edge_ports_dict[fs.ng_src_host.sw.node_id]
 
         # Things at source
         # Tag packets leaving the source host with a vlan tag of the destination switch
-        self.compute_push_vlan_tag_intents(fs.src_host, fs.flow_match, fs.dst_host.sw.synthesis_tag)
+        self.compute_push_vlan_tag_intents(fs.ng_src_host, fs.flow_match, fs.ng_dst_host.sw.synthesis_tag)
 
         # Things at destination
         # Add a MAC based forwarding rule for the destination host at the last hop
-        self.compute_destination_host_mac_intents(fs.dst_host, fs.flow_match, fs.dst_host.sw.synthesis_tag, fs.send_rate_bps)
+        self.compute_destination_host_mac_intents(fs.ng_dst_host, fs.flow_match, fs.ng_dst_host.sw.synthesis_tag, fs.send_rate_bps)
 
         #  First find the shortest path between src and dst.
-        p = nx.shortest_path(self.network_graph.graph, source=fs.src_host.sw.node_id, target=fs.dst_host.sw.node_id)
+        p = nx.shortest_path(self.network_graph.graph, source=fs.ng_src_host.sw.node_id, target=fs.ng_dst_host.sw.node_id)
         print "Primary Path:", p
 
-        self.primary_path_edge_dict[(fs.src_host.node_id, fs.dst_host.node_id)] = []
+        self.primary_path_edge_dict[(fs.ng_src_host.node_id, fs.ng_dst_host.node_id)] = []
 
         for i in range(len(p)-1):
 
             if (p[i], p[i+1]) not in self.primary_path_edges and (p[i+1], p[i]) not in self.primary_path_edges:
                 self.primary_path_edges.append((p[i], p[i+1]))
 
-            self.primary_path_edge_dict[(fs.src_host.node_id, fs.dst_host.node_id)].append((p[i], p[i+1]))
+            self.primary_path_edge_dict[(fs.ng_src_host.node_id, fs.ng_dst_host.node_id)].append((p[i], p[i+1]))
 
         #  Compute all forwarding intents as a result of primary path
-        self.compute_path_intents(fs.src_host, fs.dst_host, p, "primary", fs.flow_match, in_port,
-                                     fs.dst_host.sw.synthesis_tag, fs.send_rate_bps)
+        self.compute_path_intents(fs.ng_src_host, fs.ng_dst_host, p, "primary", fs.flow_match, in_port,
+                                     fs.ng_dst_host.sw.synthesis_tag, fs.send_rate_bps)
 
     def push_switch_changes(self):
 
         # Install ingress filters for each possible src in flow_specifications
         hosts_rates_for_ifb = []
         for fs in self.flow_specifications:
-            if (fs.src_host, fs.send_rate_bps) not in hosts_rates_for_ifb:
-                hosts_rates_for_ifb.append((fs.src_host, fs.send_rate_bps))
+            if (fs.ng_src_host, fs.send_rate_bps) not in hosts_rates_for_ifb:
+                hosts_rates_for_ifb.append((fs.ng_src_host, fs.send_rate_bps))
 
         self.init_ifb(len(hosts_rates_for_ifb))
         for src_host, send_rate_bps in hosts_rates_for_ifb:
@@ -289,11 +289,8 @@ class SynthesizeQoS:
             if fs.src_host_id == fs.dst_host_id:
                 continue
 
-            fs.src_host = self.network_graph.get_node_object(fs.src_host_id)
-            fs.dst_host = self.network_graph.get_node_object(fs.dst_host_id)
-
             # Ignore installation of paths between switches on the same switch
-            if fs.src_host.sw.node_id == fs.dst_host.sw.node_id:
+            if fs.ng_src_host.sw.node_id == fs.ng_dst_host.sw.node_id:
                 continue
 
             self.synthesize_flow_qos(fs)

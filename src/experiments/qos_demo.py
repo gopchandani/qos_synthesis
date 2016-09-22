@@ -64,7 +64,11 @@ class QosDemo(Experiment):
                 nc.init_flow_specs(self.flow_specs)
 
                 nc.synthesis.synthesize_flow_specifications(self.flow_specs)
+
+                nc.test_synthesis()
+
                 self.measure_flow_rates(nc)
+
 
     def parse_iperf_output(self, iperf_output_string):
         data_lines =  iperf_output_string.split('\r\n')
@@ -94,9 +98,11 @@ class QosDemo(Experiment):
         fs = None
 
         for fs in self.flow_specs:
-            fs.mn_dst_host.cmd("/usr/local/bin/netserver")
+            server_output = fs.mn_dst_host.cmd("/usr/local/bin/netserver")
+            print server_output
             time.sleep(5)
-            fs.mn_src_host.cmd(fs.construct_netperf_cmd_str())
+            client_output = fs.mn_src_host.cmd(fs.construct_netperf_cmd_str())
+            print client_output
 
             time.sleep(fs.tests_duration + 5)
             fs.store_measurements(fs.mn_src_host.read())

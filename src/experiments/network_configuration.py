@@ -108,6 +108,7 @@ class NetworkConfiguration(object):
         elif self.synthesis_name == "AboresceneSynthesis":
             self.synthesis = AboresceneSynthesis(self.synthesis_params)
 
+
     def test_synthesis(self):
 
         self.mininet_obj.pingAll()
