@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 
 class FlowSpecification:
     def __init__(self, src_host_id, dst_host_id, configured_rate, flow_match, measurement_rates, tests_duration):
@@ -8,7 +10,9 @@ class FlowSpecification:
 
         self.measurement_rates = measurement_rates
         self.tests_duration = tests_duration
-        self.measurements = []
+
+        # Store per_rate, list of measurements, each representing a list containing values per iteration
+        self.measurements = defaultdict(list)
 
         self.ng_src_host = None
         self.ng_dst_host = None
@@ -46,17 +50,21 @@ class FlowSpecification:
 
         return netperf_cmd_str
 
-    def store_measurements(self, netperf_output_string):
+    def parse_measurements(self, netperf_output_string):
 
         data_lines = netperf_output_string.split('\r\n')
         output_line_tokens = data_lines[2].split(',')
 
-        self.throughput = output_line_tokens[0]
-        self.mean_latency = output_line_tokens[1]
-        self.stdev_latency = output_line_tokens[2]
-        self.nn_perc_latency = output_line_tokens[3]
-        self.min_latency = output_line_tokens[4]
-        self.max_latency = output_line_tokens[5]
+        measurements = dict()
+
+        measurements["throughput"] = output_line_tokens[0]
+        measurements["mean_latency"] = output_line_tokens[1]
+        measurements["stdev_latency"] = output_line_tokens[2]
+        measurements["nn_perc_latency"] = output_line_tokens[3]
+        measurements["min_latency"] = output_line_tokens[4]
+        measurements["max_latency"] = output_line_tokens[5]
+
+        return measurements
 
     def __str__(self):
         return "Send Rate: " + str(self.configured_rate/1000000.0) + \

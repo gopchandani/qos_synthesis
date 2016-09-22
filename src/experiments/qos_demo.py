@@ -98,7 +98,7 @@ class QosDemo(Experiment):
                     if not fs.measurement_rates:
                         continue
 
-                    fs.store_measurements(fs.mn_src_host.read())
+                    fs.measurements[fs.measurement_rates[j]].append(fs.parse_measurements(fs.mn_src_host.read()))
 
 
 def prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_list, measurement_rates, tests_duration):
@@ -148,7 +148,7 @@ def prepare_flow_specifications(measurement_rates, tests_duration):
 
 def main():
 
-    num_iterations = 2
+    num_iterations = 10
 
     tests_duration = 5
     measurement_rates = [40, 45, 50]
