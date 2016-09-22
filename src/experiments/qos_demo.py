@@ -65,8 +65,6 @@ class QosDemo(Experiment):
 
                 nc.synthesis.synthesize_flow_specifications(self.flow_specs)
 
-                nc.test_synthesis()
-
                 self.measure_flow_rates(nc)
 
 
@@ -143,11 +141,17 @@ def prepare_flow_specifications(measurement_rates, tests_duration):
     flow_match = Match(is_wildcard=True)
     flow_match["ethernet_type"] = 0x0800
 
-    h1s2_to_h1s1_flow_measurement = FlowSpecification("h1s2", "h1s1", 50, flow_match, measurement_rates, tests_duration)
-    h2s2_to_h2s1_flow_measurement = FlowSpecification("h2s2", "h2s1", 50, flow_match, measurement_rates, tests_duration)
+    h1s2_to_h1s1 = FlowSpecification("h1s2", "h1s1", 50, flow_match, measurement_rates, tests_duration)
+    h2s2_to_h2s1 = FlowSpecification("h2s2", "h2s1", 50, flow_match, measurement_rates, tests_duration)
 
-    flow_specs.append(h1s2_to_h1s1_flow_measurement)
-    flow_specs.append(h2s2_to_h2s1_flow_measurement)
+    h1s1_to_h1s2 = FlowSpecification("h1s1", "h1s2", 50, flow_match, [], tests_duration)
+    h2s1_to_h2s2 = FlowSpecification("h2s1", "h2s2", 50, flow_match, [], tests_duration)
+
+    flow_specs.append(h1s2_to_h1s1)
+    flow_specs.append(h2s2_to_h2s1)
+
+    flow_specs.append(h1s1_to_h1s2)
+    flow_specs.append(h2s1_to_h2s2)
 
     return flow_specs
 

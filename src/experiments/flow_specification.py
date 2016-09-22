@@ -5,9 +5,9 @@ class FlowSpecification:
         self.dst_host_id = dst_host_id
         self.send_rate = send_rate
         self.flow_match = flow_match
+
         self.measurement_rates = measurement_rates
         self.tests_duration = tests_duration
-
         self.measurements = []
 
         self.ng_src_host = None
