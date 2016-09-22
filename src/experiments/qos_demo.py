@@ -17,12 +17,10 @@ class QosDemo(Experiment):
 
     def __init__(self,
                  num_iterations,
-                 flow_specs,
                  network_configurations,
                  num_measurements):
 
         super(QosDemo, self).__init__("number_of_hosts", num_iterations)
-        self.flow_specs = flow_specs
         self.network_configurations = network_configurations
         self.num_measurements = num_measurements
 
@@ -39,20 +37,15 @@ class QosDemo(Experiment):
 
     def trigger(self):
 
-        for i in range(self.num_iterations):
+        for nc in self.network_configurations:
+            print "network_configuration:", nc
 
-            print "iteration:", i + 1
+            nc.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
+            nc.init_flow_specs()
+            nc.synthesis.synthesize_flow_specifications(nc.flow_specs)
+            self.measure_flow_rates(nc)
 
-            for nc in self.network_configurations:
-                print "network_configuration:", nc
-
-                nc.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
-
-                nc.init_flow_specs(self.flow_specs)
-
-                nc.synthesis.synthesize_flow_specifications(self.flow_specs)
-
-                self.measure_flow_rates(nc)
+        print "here"
 
     def parse_iperf_output(self, iperf_output_string):
         data_lines =  iperf_output_string.split('\r\n')
@@ -79,38 +72,43 @@ class QosDemo(Experiment):
 
     def measure_flow_rates(self, nc):
 
-        for i in range(self.num_measurements):
+        for i in range(self.num_iterations):
+            print "iteration:", i + 1
 
-            max_fs_duration = 0
+            for j in range(self.num_measurements):
 
-            for fs in self.flow_specs:
+                max_fs_duration = 0
 
-                if not fs.measurement_rates:
-                    continue
+                for fs in nc.flow_specs:
 
-                server_output = fs.mn_dst_host.cmd("/usr/local/bin/netserver")
-                client_output = fs.mn_src_host.cmd(fs.construct_netperf_cmd_str(fs.measurement_rates[i]))
+                    if not fs.measurement_rates:
+                        continue
 
-                if fs.tests_duration > max_fs_duration:
-                    max_fs_duration = fs.tests_duration
+                    server_output = fs.mn_dst_host.cmd("/usr/local/bin/netserver")
+                    client_output = fs.mn_src_host.cmd(fs.construct_netperf_cmd_str(fs.measurement_rates[j]))
 
-            # Sleep for 5 seconds more than flow duration to make sure netperf has finished.
-            time.sleep(max_fs_duration + 5)
+                    if fs.tests_duration > max_fs_duration:
+                        max_fs_duration = fs.tests_duration
 
-            for fs in self.flow_specs:
+                # Sleep for 5 seconds more than flow duration to make sure netperf has finished.
+                time.sleep(max_fs_duration + 5)
 
-                if not fs.measurement_rates:
-                    continue
+                for fs in nc.flow_specs:
 
-                fs.store_measurements(fs.mn_src_host.read())
+                    if not fs.measurement_rates:
+                        continue
+
+                    fs.store_measurements(fs.mn_src_host.read())
 
 
-def prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_list):
+def prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_list, measurement_rates, tests_duration):
     nc_list = []
 
     for same_output_queue in same_output_queue_list:
 
         for hps in num_hosts_per_switch_list:
+
+            flow_specs = prepare_flow_specifications(measurement_rates, tests_duration)
 
             nc = NetworkConfiguration("ryu",
                                       "linear",
@@ -118,7 +116,8 @@ def prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_
                                        "num_hosts_per_switch": hps},
                                       conf_root="configurations/",
                                       synthesis_name="SynthesizeQoS",
-                                      synthesis_params={"same_output_queue": same_output_queue})
+                                      synthesis_params={"same_output_queue": same_output_queue},
+                                      flow_specs=flow_specs)
 
             nc_list.append(nc)
 
@@ -153,13 +152,15 @@ def main():
 
     tests_duration = 5
     measurement_rates = [40, 45, 50]
-    flow_specs = prepare_flow_specifications(measurement_rates, tests_duration)
 
     num_hosts_per_switch_list = [2]
     same_output_queue_list = [False, True]
-    network_configurations = prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_list)
+    network_configurations = prepare_network_configurations(num_hosts_per_switch_list,
+                                                            same_output_queue_list,
+                                                            measurement_rates,
+                                                            tests_duration)
 
-    exp = QosDemo(num_iterations, flow_specs, network_configurations, len(measurement_rates))
+    exp = QosDemo(num_iterations, network_configurations, len(measurement_rates))
 
     exp.trigger()
 

@@ -41,7 +41,8 @@ class NetworkConfiguration(object):
                  topo_params,
                  conf_root,
                  synthesis_name,
-                 synthesis_params):
+                 synthesis_params,
+                 flow_specs):
 
         self.controller = controller
         self.topo_name = topo_name
@@ -50,6 +51,7 @@ class NetworkConfiguration(object):
         self.conf_root = conf_root
         self.synthesis_name = synthesis_name
         self.synthesis_params = synthesis_params
+        self.flow_specs = flow_specs
 
         self.controller_port = 6633
         self.topo = None
@@ -212,8 +214,8 @@ class NetworkConfiguration(object):
         else:
             raise NotImplemented
 
-    def init_flow_specs(self, flow_specs):
-        for fs in flow_specs:
+    def init_flow_specs(self):
+        for fs in self.flow_specs:
             fs.ng_src_host = self.ng.get_node_object(fs.src_host_id)
             fs.ng_dst_host = self.ng.get_node_object(fs.dst_host_id)
 
