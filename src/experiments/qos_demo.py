@@ -18,11 +18,13 @@ class QosDemo(Experiment):
     def __init__(self,
                  num_iterations,
                  flow_specs,
-                 network_configurations):
+                 network_configurations,
+                 num_measurements):
 
         super(QosDemo, self).__init__("number_of_hosts", num_iterations)
         self.flow_specs = flow_specs
         self.network_configurations = network_configurations
+        self.num_measurements = num_measurements
 
         self.cm = ControllerMan(controller="ryu")
         self.cm.stop_controller()
@@ -34,21 +36,6 @@ class QosDemo(Experiment):
             "99th Percentile Latency": defaultdict(defaultdict),
             "Maximum Latency": defaultdict(defaultdict)
         }
-
-    def populate_data(self):
-        for nc in self.network_configurations:
-            print "network_configuration:", nc
-
-            for i in range(len(self.flow_rates)):
-
-                self.data["Throughput"][nc.topo_params["num_hosts_per_switch"]][self.flow_rates[i]] = []
-                self.data["99th Percentile Latency"][nc.topo_params["num_hosts_per_switch"]][self.flow_rates[i]] = []
-                self.data["Maximum Latency"][nc.topo_params["num_hosts_per_switch"]][self.flow_rates[i]] = []
-
-        print self.data
-
-    def plot_data(self):
-        pass
 
     def trigger(self):
 
@@ -67,7 +54,6 @@ class QosDemo(Experiment):
 
                 self.measure_flow_rates(nc)
 
-
     def parse_iperf_output(self, iperf_output_string):
         data_lines =  iperf_output_string.split('\r\n')
         interesting_line_index = None
@@ -85,27 +71,37 @@ class QosDemo(Experiment):
         for i in xrange(len(data_lines)):
             if data_lines[i].startswith('5 packets transmitted'):
                 interesting_line_index = i + 1
-        data_tokens =  data_lines[interesting_line_index].split()
-        data_tokens =  data_tokens[3].split('/')
+        data_tokens = data_lines[interesting_line_index].split()
+        data_tokens = data_tokens[3].split('/')
         print 'Min Delay:', data_tokens[0]
         print 'Avg Delay:', data_tokens[1]
         print 'Max Delay:', data_tokens[2]
 
     def measure_flow_rates(self, nc):
 
-        # Hold on to the first fs
-        fs1 = self.flow_specs[0]
+        for i in range(self.num_measurements):
 
-        for measurement_rate in fs1.measurement_rates:
+            max_fs_duration = 0
 
             for fs in self.flow_specs:
+
+                if not fs.measurement_rates:
+                    continue
+
                 server_output = fs.mn_dst_host.cmd("/usr/local/bin/netserver")
-                client_output = fs.mn_src_host.cmd(fs.construct_netperf_cmd_str(measurement_rate))
+                client_output = fs.mn_src_host.cmd(fs.construct_netperf_cmd_str(fs.measurement_rates[i]))
+
+                if fs.tests_duration > max_fs_duration:
+                    max_fs_duration = fs.tests_duration
 
             # Sleep for 5 seconds more than flow duration to make sure netperf has finished.
-            time.sleep(fs1.tests_duration + 5)
+            time.sleep(max_fs_duration + 5)
 
             for fs in self.flow_specs:
+
+                if not fs.measurement_rates:
+                    continue
+
                 fs.store_measurements(fs.mn_src_host.read())
 
 
@@ -163,11 +159,9 @@ def main():
     same_output_queue_list = [False, True]
     network_configurations = prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_list)
 
-    exp = QosDemo(num_iterations, flow_specs, network_configurations)
+    exp = QosDemo(num_iterations, flow_specs, network_configurations, len(measurement_rates))
 
     exp.trigger()
-    exp.populate_data()
-    exp.plot_data()
 
 if __name__ == "__main__":
     main()

@@ -22,7 +22,6 @@ class FlowSpecification:
         self.send_size = configured_rate * 1000 / (8 * self.num_sends_in_burst)
         self.configured_rate_bps = self.send_size * 8 * self.num_sends_in_burst * 1000
 
-
     def construct_netperf_cmd_str(self, measurement_rate):
 
         # netperf input parameters
