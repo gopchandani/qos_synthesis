@@ -286,8 +286,11 @@ class SynthesizeQoS:
         for fs in flow_specifications:
 
             # Ignore paths with same src/dst
-            if fs.src_host == fs.dst_host:
+            if fs.src_host_id == fs.dst_host_id:
                 continue
+
+            fs.src_host = self.network_graph.get_node_object(fs.src_host_id)
+            fs.dst_host = self.network_graph.get_node_object(fs.dst_host_id)
 
             # Ignore installation of paths between switches on the same switch
             if fs.src_host.sw.node_id == fs.dst_host.sw.node_id:

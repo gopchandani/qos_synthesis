@@ -1,10 +1,20 @@
 
 class FlowSpecification:
-    def __init__(self, src_host, dst_host, send_rate, flow_match):
-        self.src_host = src_host
-        self.dst_host = dst_host
+    def __init__(self, src_host_id, dst_host_id, send_rate, flow_match, measurement_rates, tests_duration):
+        self.src_host_id = src_host_id
+        self.dst_host_id = dst_host_id
         self.send_rate = send_rate
         self.flow_match = flow_match
+        self.measurement_rates = measurement_rates
+        self.tests_duration = tests_duration
+
+        self.measurements = []
+
+        self.ng_src_host = None
+        self.ng_dst_host = None
+
+        self.mn_src_host = None
+        self.mn_dst_host = None
 
         # netperf input parameters
 
@@ -31,11 +41,11 @@ class FlowSpecification:
         self.min_latency = None
         self.max_latency = None
 
-    def construct_netperf_cmd_str(self, duration):
-        self.netperf_cmd_str = "/usr/local/bin/netperf -H " + self.dst_host.IP() + \
+    def construct_netperf_cmd_str(self):
+        self.netperf_cmd_str = "/usr/local/bin/netperf -H " + self.mn_dst_host.IP() + \
                                " -w " + str(self.inter_burst_time) + \
                                " -b " + str(self.num_sends_in_burst) + \
-                               " -l " + str(duration) + \
+                               " -l " + str(self.tests_duration) + \
                                " -t omni -- -d send" + \
                                " -o " + \
                                "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY'" + \
@@ -44,7 +54,7 @@ class FlowSpecification:
 
         return self.netperf_cmd_str
 
-    def parse_netperf_output(self, netperf_output_string):
+    def store_measurements(self, netperf_output_string):
 
         data_lines = netperf_output_string.split('\r\n')
         output_line_tokens = data_lines[2].split(',')

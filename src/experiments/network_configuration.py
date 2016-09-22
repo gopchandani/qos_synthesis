@@ -211,6 +211,15 @@ class NetworkConfiguration(object):
         else:
             raise NotImplemented
 
+    def init_flow_specs(self, flow_specs):
+        for fs in flow_specs:
+            fs.ng_src_host = self.ng.get_node_object(fs.src_host_id)
+            fs.ng_dst_host = self.ng.get_node_object(fs.dst_host_id)
+
+            if self.mininet_obj:
+                fs.mn_src_host = self.mininet_obj.getNodeByName(fs.src_host_id)
+                fs.mn_dst_host = self.mininet_obj.getNodeByName(fs.dst_host_id)
+
     def setup_network_graph(self, mininet_setup_gap=None, synthesis_setup_gap=None):
 
         self.start_mininet()
