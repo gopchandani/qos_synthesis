@@ -200,7 +200,7 @@ class SynthesizeQoS:
 
         # Things at destination
         # Add a MAC based forwarding rule for the destination host at the last hop
-        self.compute_destination_host_mac_intents(fs.ng_dst_host, fs.flow_match, fs.ng_dst_host.sw.synthesis_tag, fs.send_rate_bps)
+        self.compute_destination_host_mac_intents(fs.ng_dst_host, fs.flow_match, fs.ng_dst_host.sw.synthesis_tag, fs.configured_rate_bps)
 
         #  First find the shortest path between src and dst.
         p = nx.shortest_path(self.network_graph.graph, source=fs.ng_src_host.sw.node_id, target=fs.ng_dst_host.sw.node_id)
@@ -217,20 +217,20 @@ class SynthesizeQoS:
 
         #  Compute all forwarding intents as a result of primary path
         self.compute_path_intents(fs.ng_src_host, fs.ng_dst_host, p, "primary", fs.flow_match, in_port,
-                                     fs.ng_dst_host.sw.synthesis_tag, fs.send_rate_bps)
+                                     fs.ng_dst_host.sw.synthesis_tag, fs.configured_rate_bps)
 
     def push_switch_changes(self):
 
         # Install ingress filters for each possible src in flow_specifications
         hosts_rates_for_ifb = []
         for fs in self.flow_specifications:
-            if (fs.ng_src_host, fs.send_rate_bps) not in hosts_rates_for_ifb:
-                hosts_rates_for_ifb.append((fs.ng_src_host, fs.send_rate_bps))
+            if (fs.ng_src_host, fs.configured_rate_bps) not in hosts_rates_for_ifb:
+                hosts_rates_for_ifb.append((fs.ng_src_host, fs.configured_rate_bps))
 
         self.init_ifb(len(hosts_rates_for_ifb))
-        for src_host, send_rate_bps in hosts_rates_for_ifb:
-            #self.install_ingress_ifb_filter(src_host, send_rate_bps)
-            self.setup_host_mininet_intf_rate(src_host, send_rate_bps)
+        for src_host, configured_rate_bps in hosts_rates_for_ifb:
+            #self.install_ingress_ifb_filter(src_host, configured_rate_bps)
+            self.setup_host_mininet_intf_rate(src_host, configured_rate_bps)
 
         for sw in self.network_graph.get_switches():
 

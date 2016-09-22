@@ -93,25 +93,20 @@ class QosDemo(Experiment):
 
     def measure_flow_rates(self, nc):
 
-        fs = None
+        # Hold on to the first fs
+        fs1 = self.flow_specs[0]
 
-        for fs in self.flow_specs:
-            server_output = fs.mn_dst_host.cmd("/usr/local/bin/netserver")
-            print server_output
-            time.sleep(5)
-            client_output = fs.mn_src_host.cmd(fs.construct_netperf_cmd_str())
-            print client_output
+        for measurement_rate in fs1.measurement_rates:
 
-            time.sleep(fs.tests_duration + 5)
-            fs.store_measurements(fs.mn_src_host.read())
+            for fs in self.flow_specs:
+                server_output = fs.mn_dst_host.cmd("/usr/local/bin/netserver")
+                client_output = fs.mn_src_host.cmd(fs.construct_netperf_cmd_str(measurement_rate))
 
-        # Sleep for 5 seconds more than flow duration to make sure netperf has finished.
-        time.sleep(fs.tests_duration + 5)
+            # Sleep for 5 seconds more than flow duration to make sure netperf has finished.
+            time.sleep(fs1.tests_duration + 5)
 
-        for fs in self.flow_specs:
-            fs.store_measurements(fs.mn_src_host.read())
-
-        print "here"
+            for fs in self.flow_specs:
+                fs.store_measurements(fs.mn_src_host.read())
 
 
 def prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_list):
