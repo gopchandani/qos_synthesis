@@ -46,30 +46,45 @@ class QosDemo(Experiment):
                 if not fs.measurement_rates:
                     continue
 
-                first_key = fs.src_host_id + "->" + fs.dst_host_id +\
-                            " same_output_queue = " + str(nc.synthesis_params["same_output_queue"])
+                for measurement_rate in fs.measurement_rates:
 
-                second_key = nc.topo_params["num_hosts_per_switch"]
+                    first_key = fs.src_host_id + "->" + fs.dst_host_id +\
+                                " same_output_queue = " + str(nc.synthesis_params["same_output_queue"])
 
-                self.data["Throughput"][first_key][second_key] = []
-                self.data["Mean Latency"][first_key][second_key] = []
-                self.data["99th Percentile Latency"][first_key][second_key] = []
-                self.data["Maximum Latency"][first_key][second_key] = []
+                    second_key = measurement_rate
 
-                for measurement in fs.measurements[fs.configured_rate]:
-                    self.data["Throughput"][first_key][second_key].append(float(measurement["throughput"]))
-                    self.data["Mean Latency"][first_key][second_key].append(float(measurement["mean_latency"]))
-                    self.data["99th Percentile Latency"][first_key][second_key].append(float(measurement["nn_perc_latency"]))
-                    self.data["Maximum Latency"][first_key][second_key].append(float(measurement["max_latency"]))
+                    self.data["Throughput"][first_key][second_key] = []
+                    self.data["Mean Latency"][first_key][second_key] = []
+                    self.data["99th Percentile Latency"][first_key][second_key] = []
+                    self.data["Maximum Latency"][first_key][second_key] = []
 
-        print "here"
+        for nc in self.network_configurations:
+
+            for fs in nc.flow_specs:
+
+                if not fs.measurement_rates:
+                    continue
+
+                for measurement_rate in fs.measurement_rates:
+
+                    first_key = fs.src_host_id + "->" + fs.dst_host_id +\
+                                " same_output_queue = " + str(nc.synthesis_params["same_output_queue"])
+
+                    second_key = measurement_rate
+
+                    for measurement in fs.measurements[measurement_rate]:
+                        self.data["Throughput"][first_key][second_key].append(float(measurement["throughput"]))
+                        self.data["Mean Latency"][first_key][second_key].append(float(measurement["mean_latency"]))
+                        self.data["99th Percentile Latency"][first_key][second_key].append(float(measurement["nn_perc_latency"]))
+                        self.data["Maximum Latency"][first_key][second_key].append(float(measurement["max_latency"]))
+
 
     def plot_qos(self):
 
         f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=False, sharey=False, figsize=(9.5, 3.0))
 
-        data_xticks = [2]#self.network_configurations[0].topo_params["num_hosts_per_switch"]
-        data_xtick_labels = ["2"]# [str(x) for x in data_xticks]
+        data_xticks = self.network_configurations[0].flow_specs[0].measurement_rates
+        data_xtick_labels = [str(x) for x in data_xticks]
 
         self.plot_lines_with_error_bars(ax1,
                                         "Throughput",
@@ -77,23 +92,23 @@ class QosDemo(Experiment):
                                         "Throughput(Mbps)",
                                         "(a)",
                                         y_scale='linear',
-                                        x_min_factor=1.0,
-                                        x_max_factor=1.0,
+                                        x_min_factor=0.95,
+                                        x_max_factor=1.05,
                                         y_min_factor=0.01,
                                         y_max_factor=1,
                                         xticks=data_xticks,
                                         xtick_labels=data_xtick_labels)
 
-        ax1.set_ylim(46.5, 47.5)
+        ax1.set_ylim(40, 47.5)
 
         self.plot_lines_with_error_bars(ax2,
                                         "Mean Latency",
-                                        "",
+                                        "Flow Rate",
                                         "Mean Latency(ms)",
                                         "(b)",
                                         y_scale='linear',
-                                        x_min_factor=1.0,
-                                        x_max_factor=1.0,
+                                        x_min_factor=0.95,
+                                        x_max_factor=1.05,
                                         y_min_factor=0.1,
                                         y_max_factor=1.2,
                                         xticks=data_xticks,
@@ -101,12 +116,12 @@ class QosDemo(Experiment):
 
         self.plot_lines_with_error_bars(ax3,
                                         "99th Percentile Latency",
-                                        "Number of host pairs per switch",
+                                        "",
                                         "99th Percentile Latency(ms)",
                                         "(c)",
                                         y_scale='linear',
-                                        x_min_factor=1.0,
-                                        x_max_factor=1.0,
+                                        x_min_factor=0.95,
+                                        x_max_factor=1.05,
                                         y_min_factor=0.01,
                                         y_max_factor=1,
                                         xticks=data_xticks,
@@ -215,25 +230,23 @@ class QosDemo(Experiment):
                     fs.measurements[fs.measurement_rates[j]].append(fs.parse_measurements(fs.mn_src_host.read()))
 
 
-def prepare_network_configurations(num_hosts_per_switch_list, same_output_queue_list, measurement_rates, tests_duration):
+def prepare_network_configurations(same_output_queue_list, measurement_rates, tests_duration):
     nc_list = []
 
     for same_output_queue in same_output_queue_list:
 
-        for hps in num_hosts_per_switch_list:
+        flow_specs = prepare_flow_specifications(measurement_rates, tests_duration)
 
-            flow_specs = prepare_flow_specifications(measurement_rates, tests_duration)
+        nc = NetworkConfiguration("ryu",
+                                  "linear",
+                                  {"num_switches": 2,
+                                   "num_hosts_per_switch": 2},
+                                  conf_root="configurations/",
+                                  synthesis_name="SynthesizeQoS",
+                                  synthesis_params={"same_output_queue": same_output_queue},
+                                  flow_specs=flow_specs)
 
-            nc = NetworkConfiguration("ryu",
-                                      "linear",
-                                      {"num_switches": 2,
-                                       "num_hosts_per_switch": hps},
-                                      conf_root="configurations/",
-                                      synthesis_name="SynthesizeQoS",
-                                      synthesis_params={"same_output_queue": same_output_queue},
-                                      flow_specs=flow_specs)
-
-            nc_list.append(nc)
+        nc_list.append(nc)
 
     return nc_list
 
@@ -262,15 +275,12 @@ def prepare_flow_specifications(measurement_rates, tests_duration):
 
 def main():
 
-    num_iterations = 10
+    num_iterations = 25
+    tests_duration = 10
 
-    tests_duration = 5
-    measurement_rates = [40, 45, 50]
-
-    num_hosts_per_switch_list = [2]
+    measurement_rates = [45, 46, 47, 48, 49, 50]
     same_output_queue_list = [False, True]
-    network_configurations = prepare_network_configurations(num_hosts_per_switch_list,
-                                                            same_output_queue_list,
+    network_configurations = prepare_network_configurations(same_output_queue_list,
                                                             measurement_rates,
                                                             tests_duration)
 
@@ -280,8 +290,7 @@ def main():
     # exp.prepare_data()
     # exp.dump_data()
 
-    #exp.load_data("data/qos_demo_2_iterations_20161001_125409.json")
-    exp.load_data("data/qos_demo_10_iterations_20161001_125929.json")
+    exp.load_data("data/qos_demo_25_iterations_20161001_202626.json")
 
     exp.plot_qos()
 
