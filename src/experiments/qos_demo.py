@@ -48,8 +48,10 @@ class QosDemo(Experiment):
 
                 for measurement_rate in fs.measurement_rates:
 
-                    first_key = fs.src_host_id + "->" + fs.dst_host_id +\
-                                " same_output_queue = " + str(nc.synthesis_params["same_output_queue"])
+                    if nc.synthesis_params["same_output_queue"]:
+                        first_key = fs.src_host_id + "->" + fs.dst_host_id + " Same output queue"
+                    else:
+                        first_key = fs.src_host_id + "->" + fs.dst_host_id + " Different output queue"
 
                     second_key = measurement_rate
 
@@ -67,8 +69,10 @@ class QosDemo(Experiment):
 
                 for measurement_rate in fs.measurement_rates:
 
-                    first_key = fs.src_host_id + "->" + fs.dst_host_id +\
-                                " same_output_queue = " + str(nc.synthesis_params["same_output_queue"])
+                    if nc.synthesis_params["same_output_queue"]:
+                        first_key = fs.src_host_id + "->" + fs.dst_host_id + " Same output queue"
+                    else:
+                        first_key = fs.src_host_id + "->" + fs.dst_host_id + " Different output queue"
 
                     second_key = measurement_rate
 
@@ -78,58 +82,58 @@ class QosDemo(Experiment):
                         self.data["99th Percentile Latency"][first_key][second_key].append(float(measurement["nn_perc_latency"]))
                         self.data["Maximum Latency"][first_key][second_key].append(float(measurement["max_latency"]))
 
-
     def plot_qos(self):
 
-        f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=False, sharey=False, figsize=(9.5, 3.0))
+        f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 3.0))
+        f.tight_layout()
 
         data_xticks = self.network_configurations[0].flow_specs[0].measurement_rates
         data_xtick_labels = [str(x) for x in data_xticks]
 
-        self.plot_lines_with_error_bars(ax1,
-                                        "Throughput",
-                                        "",
-                                        "Throughput(Mbps)",
-                                        "(a)",
-                                        y_scale='linear',
-                                        x_min_factor=0.95,
-                                        x_max_factor=1.05,
-                                        y_min_factor=0.01,
-                                        y_max_factor=1,
-                                        xticks=data_xticks,
-                                        xtick_labels=data_xtick_labels)
-
-        ax1.set_ylim(40, 47.5)
+        # self.plot_lines_with_error_bars(ax1,
+        #                                 "Throughput",
+        #                                 "",
+        #                                 "Throughput(Mbps)",
+        #                                 "(a)",
+        #                                 y_scale='linear',
+        #                                 x_min_factor=0.98,
+        #                                 x_max_factor=1.02,
+        #                                 y_min_factor=0.01,
+        #                                 y_max_factor=1,
+        #                                 xticks=data_xticks,
+        #                                 xtick_labels=data_xtick_labels)
+        #
+        # ax1.set_ylim(40, 47.5)
 
         self.plot_lines_with_error_bars(ax2,
                                         "Mean Latency",
-                                        "Flow Rate",
-                                        "Mean Latency(ms)",
-                                        "(b)",
+                                        "Flow Rate (Mbps)",
+                                        "Mean Latency (ms)",
+                                        "",
                                         y_scale='linear',
-                                        x_min_factor=0.95,
-                                        x_max_factor=1.05,
-                                        y_min_factor=0.1,
-                                        y_max_factor=1.2,
+                                        x_min_factor=0.98,
+                                        x_max_factor=1.02,
+                                        y_min_factor=0.9,
+                                        y_max_factor=1.05,
                                         xticks=data_xticks,
                                         xtick_labels=data_xtick_labels)
 
         self.plot_lines_with_error_bars(ax3,
                                         "99th Percentile Latency",
+                                        "Flow Rate (Mbps)",
+                                        "99th Percentile Latency (ms)",
                                         "",
-                                        "99th Percentile Latency(ms)",
-                                        "(c)",
                                         y_scale='linear',
-                                        x_min_factor=0.95,
-                                        x_max_factor=1.05,
-                                        y_min_factor=0.01,
-                                        y_max_factor=1,
+                                        x_min_factor=0.98,
+                                        x_max_factor=1.02,
+                                        y_min_factor=0.9,
+                                        y_max_factor=1.05,
                                         xticks=data_xticks,
                                         xtick_labels=data_xtick_labels)
 
 
-        xlabels = ax1.get_xticklabels()
-        plt.setp(xlabels, rotation=0, fontsize=8)
+        # xlabels = ax1.get_xticklabels()
+        # plt.setp(xlabels, rotation=0, fontsize=8)
 
         xlabels = ax2.get_xticklabels()
         plt.setp(xlabels, rotation=0, fontsize=8)
@@ -138,21 +142,19 @@ class QosDemo(Experiment):
         plt.setp(xlabels, rotation=0, fontsize=8)
 
         # Shrink current axis's height by 25% on the bottom
-        box = ax1.get_position()
-        ax1.set_position([box.x0, box.y0 + box.height * 0.3,
-                          box.width, box.height * 0.7])
+        # box = ax1.get_position()
+        # ax1.set_position([box.x0, box.y0 + box.height * 0.3,
+        #                   box.width, box.height * 0.7])
 
         box = ax2.get_position()
-        ax2.set_position([box.x0, box.y0 + box.height * 0.3,
-                          box.width, box.height * 0.7])
+        ax2.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.7])
 
         box = ax3.get_position()
-        ax3.set_position([box.x0, box.y0 + box.height * 0.3,
-                          box.width, box.height * 0.7])
+        ax3.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.7])
 
         handles, labels = ax3.get_legend_handles_labels()
 
-        ax1.legend(handles,
+        ax2.legend(handles,
                    labels,
                    shadow=True,
                    fontsize=8,
@@ -161,7 +163,7 @@ class QosDemo(Experiment):
                    markerscale=1.0,
                    frameon=True,
                    fancybox=True,
-                   columnspacing=0.5, bbox_to_anchor=[1.6, -0.27])
+                   columnspacing=0.7, bbox_to_anchor=[1.1, -0.25])
 
         plt.savefig("plots/" + self.experiment_tag + "_" + "qos_demo" + ".png", dpi=100)
         plt.show()
@@ -258,11 +260,11 @@ def prepare_flow_specifications(measurement_rates, tests_duration):
     flow_match = Match(is_wildcard=True)
     flow_match["ethernet_type"] = 0x0800
 
-    h1s2_to_h1s1 = FlowSpecification("h1s2", "h1s1", 50, flow_match, measurement_rates, tests_duration)
-    h2s2_to_h2s1 = FlowSpecification("h2s2", "h2s1", 50, flow_match, measurement_rates, tests_duration)
+    h1s2_to_h1s1 = FlowSpecification("h1s1", "h1s2", 50, flow_match, measurement_rates, tests_duration)
+    h2s2_to_h2s1 = FlowSpecification("h2s1", "h2s2", 50, flow_match, measurement_rates, tests_duration)
 
-    h1s1_to_h1s2 = FlowSpecification("h1s1", "h1s2", 50, flow_match, [], tests_duration)
-    h2s1_to_h2s2 = FlowSpecification("h2s1", "h2s2", 50, flow_match, [], tests_duration)
+    h1s1_to_h1s2 = FlowSpecification("h1s2", "h1s1", 50, flow_match, [], tests_duration)
+    h2s1_to_h2s2 = FlowSpecification("h2s2", "h2s1", 50, flow_match, [], tests_duration)
 
     flow_specs.append(h1s2_to_h1s1)
     flow_specs.append(h2s2_to_h2s1)
@@ -290,7 +292,7 @@ def main():
     # exp.prepare_data()
     # exp.dump_data()
 
-    exp.load_data("data/qos_demo_25_iterations_20161001_202626.json")
+    exp.load_data("data/qos_demo_25_iterations_20161002_151920.json")
 
     exp.plot_qos()
 
