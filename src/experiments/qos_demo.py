@@ -277,7 +277,7 @@ def prepare_flow_specifications(measurement_rates, tests_duration):
 
 def main():
 
-    num_iterations = 25
+    num_iterations = 50
     tests_duration = 10
 
     measurement_rates = [45, 46, 47, 48, 49, 50]
@@ -292,7 +292,7 @@ def main():
     # exp.prepare_data()
     # exp.dump_data()
 
-    exp.load_data("data/qos_demo_25_iterations_20161002_151920.json")
+    exp.load_data("data/qos_demo_50_iterations_20161002_193215.json")
 
     exp.plot_qos()
 
