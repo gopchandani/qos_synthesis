@@ -125,6 +125,91 @@ class Experiment(object):
 
         return data_min, data_max
 
+    def plot_line_error_bars(self, data_key, x_label, y_label, y_scale='log', line_label="Ports Synthesized: ",
+                             xmax_factor=1.05, xmin_factor=1.0, y_max_factor = 1.2, legend_loc='upper left',
+                             xticks=None, xtick_labels=None, line_label_suffixes=None):
+
+        markers = ['o', 'v', '^', '*', 'd', 'h', '+', '.']
+        marker_i = 0
+
+        x_min = None
+        x_max = None
+
+        y_min = None
+        y_max = None
+
+        data_vals = self.data[data_key]
+
+        for number_of_ports_to_synthesize in data_vals:
+
+            per_num_host_data = self.data[data_key][number_of_ports_to_synthesize]
+            per_num_host_data = d = {int(k):v for k,v in per_num_host_data.items()}
+
+            d_min, d_max =  self.get_data_min_max(per_num_host_data)
+            if y_min:
+                if d_min < y_min:
+                    y_min = d_min
+            else:
+                y_min = d_min
+
+            if y_max:
+                if d_max > y_max:
+                    y_max = d_max
+            else:
+                y_max = d_max
+
+            x, mean, sem = self.prepare_matplotlib_data(per_num_host_data)
+
+            d_min, d_max = min(map(int, x)), max(map(int, x))
+
+            if x_min:
+                if d_min < x_min:
+                    x_min = d_min
+            else:
+                x_min = d_min
+
+            if x_max:
+                if d_max > x_max:
+                    x_max = d_max
+            else:
+                x_max = d_max
+
+            if line_label_suffixes:
+                l = plt.errorbar(x, mean, sem, color="black", marker=markers[marker_i], markersize=8.0,
+                                 label=line_label + line_label_suffixes[marker_i])
+            else:
+                l = plt.errorbar(x, mean, sem, color="black", marker=markers[marker_i], markersize=8.0,
+                                 label=line_label + str(number_of_ports_to_synthesize))
+
+            marker_i += 1
+
+        low_xlim, high_xlim = plt.xlim()
+        plt.xlim(xmax=(high_xlim) * xmax_factor)
+        plt.xlim(xmin=(low_xlim) * xmin_factor)
+
+        if y_scale == "linear":
+            low_ylim, high_ylim = plt.ylim()
+            plt.ylim(ymax=(high_ylim) * y_max_factor)
+
+        plt.yscale(y_scale)
+        plt.xlabel(x_label, fontsize=18)
+        plt.ylabel(y_label, fontsize=18)
+
+        ax = plt.axes()
+        xa = ax.get_xaxis()
+        xa.set_major_locator(MaxNLocator(integer=True))
+
+        if xticks:
+            ax.set_xticks(xticks)
+
+        if xtick_labels:
+            ax.set_xticklabels(xtick_labels)
+
+        legend = plt.legend(loc=legend_loc, shadow=True, fontsize=12)
+
+        plt.savefig("plots/" + self.experiment_tag + "_" + data_key + ".png")
+        plt.show()
+
     def plot_lines_with_error_bars(self,
                                    ax,
                                    data_key,
@@ -145,7 +230,7 @@ class Experiment(object):
         ax.set_ylabel(y_label, fontsize=10, labelpad=0)
         ax.set_title(subplot_title, fontsize=10)
 
-        markers = ['.', '*', 'o', 'v', '.', 'd', '+', '^', '+', ',', 's', 'o', 'h', '*']
+        markers = ['.', 'v', 'o', 'd', '+', '^', 'H', ',', 's', 'o', 'h', '*']
         marker_i = 0
 
         for line_data_key in self.data[data_key]:

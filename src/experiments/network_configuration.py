@@ -27,11 +27,18 @@ from experiments.topologies.two_ring_topo import TwoRingTopo
 from experiments.topologies.ring_line_topo import RingLineTopo
 from experiments.topologies.clique_topo import CliqueTopo
 from experiments.topologies.ameren_topo import AmerenTopo
+# mhasan import : ring
+from experiments.topologies.ring_topo_with_param import RingTopoWithParams
 
 from synthesis.dijkstra_synthesis import DijkstraSynthesis
 from synthesis.aborescene_synthesis import AboresceneSynthesis
 from synthesis.synthesize_qos import SynthesizeQoS
 from synthesis.synthesis_lib import SynthesisLib
+
+# mhasan import: networkx
+import networkx as nx
+import sys
+# from mcp_helper import MCP_Helper
 
 
 class NetworkConfiguration(object):
@@ -42,7 +49,9 @@ class NetworkConfiguration(object):
                  conf_root,
                  synthesis_name,
                  synthesis_params,
-                 flow_specs):
+                 flow_specs,
+                 # mhasan: added link param in constructor
+                 topo_link_params):
 
         self.controller = controller
         self.topo_name = topo_name
@@ -52,6 +61,8 @@ class NetworkConfiguration(object):
         self.synthesis_name = synthesis_name
         self.synthesis_params = synthesis_params
         self.flow_specs = flow_specs
+        # mhasan: added link param
+        self.topo_link_params = topo_link_params
 
         self.controller_port = 6633
         self.topo = None
@@ -83,18 +94,30 @@ class NetworkConfiguration(object):
         self.h = httplib2.Http(".cache")
         self.h.add_credentials('admin', 'admin')
 
+        #mhasan : added path
+        self.path = None
+
     def __str__(self):
         return self.controller + "_" + str(self.synthesis) + "_" + str(self.topo)
 
     def init_topo(self):
-        if self.topo_name == "ring":
+        # mhasan : added ring topo with param
+        if self.topo_name == "ring_with_param":
+            # mhasan: create topo with link param
+            self.topo = RingTopoWithParams(self.topo_params, self.topo_link_params)
+            self.nc_topo_str = "Ring topology with " + str(self.topo.total_switches) + " switches"
+        elif self.topo_name == "ring":
+            # self.topo = RingTopo(self.topo_params)
+            # mhasan: create topo with link param
             self.topo = RingTopo(self.topo_params)
             self.nc_topo_str = "Ring topology with " + str(self.topo.total_switches) + " switches"
         elif self.topo_name == "clostopo":
             self.topo = ClosTopo(self.topo_params)
             self.nc_topo_str = "Clos topology with " + str(self.topo.total_switches) + " switches"
         elif self.topo_name == "linear":
-            self.topo = LinearTopo(self.topo_params)
+            # self.topo = LinearTopo(self.topo_params)
+            # mhasan: create topo with link param
+            self.topo = LinearTopo(self.topo_params, self.topo_link_params)
             self.nc_topo_str = "Linear topology with " + str(self.topo_params["num_switches"]) + " switches"
         else:
             raise NotImplementedError("Topology: %s" % self.topo_name)
@@ -446,3 +469,98 @@ class NetworkConfiguration(object):
                 break
 
         return is_bi_connected
+
+    # mhasan: MCP path routing routine
+
+    def random_print(self):
+        print "## printing nw graph"
+
+        print 'mhasan print'
+
+        # print self.ng.get_node_graph()
+        ss = self.ng.get_switches()
+        print self.ng.host_ids
+        print self.ng.switch_ids
+
+        mygp = self.ng.get_node_graph()
+
+        print 'print nodes'
+        print mygp.nodes()
+
+        print 'adjacency matrix'
+        nx.write_adjlist(mygp, sys.stdout)  # write adjacency list to screen
+        print 'end adjacency matrix'
+
+        print "print nodes.."
+
+        print(list(mygp.nodes()))
+
+        print "print edges..."
+        print(list(mygp.edges()))
+
+        print "switch link data..."
+        tt = list(self.ng.get_all_link_data())
+
+        for t in tt:
+            print t.link_ports_dict
+            print t.link_delay
+            print t.link_bw
+
+        print "print links (v2)..."
+
+        tt = self.ng.graph.edges()
+        print tt[0][0]
+        print tt[0][1]
+
+        print "printing flow spec (v1)..."
+        print self.flow_specs[0].src_host_id
+        print self.flow_specs[0].dst_host_id
+
+    # def mcp_init(self):
+
+
+    # def mcp_by_ebf(self):
+
+    def random_print(self):
+        print "## printing nw graph"
+
+        print 'mhasan print'
+
+        # print self.ng.get_node_graph()
+        ss = self.ng.get_switches()
+        print self.ng.host_ids
+        print self.ng.switch_ids
+
+        mygp = self.ng.get_node_graph()
+
+        print 'print nodes'
+        print mygp.nodes()
+
+        print 'adjacency matrix'
+        nx.write_adjlist(mygp, sys.stdout)  # write adjacency list to screen
+        print 'end adjacency matrix'
+
+        print "print nodes.."
+
+        print(list(mygp.nodes()))
+
+        print "print edges..."
+        print(list(mygp.edges()))
+
+        print "switch link data..."
+        tt = list(self.ng.get_all_link_data())
+
+        for t in tt:
+            print t.link_ports_dict
+            print t.link_delay
+            print t.link_bw
+
+        print "print links (v2)..."
+
+        tt = self.ng.graph.edges()
+        print tt[0][0]
+        print tt[0][1]
+
+        print "printing flow spec (v1)..."
+        print self.flow_specs[0].src_host_id
+        print self.flow_specs[0].dst_host_id

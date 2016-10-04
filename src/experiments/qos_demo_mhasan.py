@@ -1,4 +1,4 @@
-__author__ = 'Rakesh Kumar'
+__author__ = 'Monowar Hasan'
 
 import sys
 import time
@@ -59,9 +59,6 @@ class QosDemo(Experiment):
             else:
                 print path
             '''
-
-            # mcp_helper.random_print()
-            # mcp_helper.calculate_path_by_mcp()
 
             # nc.synthesis.synthesize_flow_specifications(nc.flow_specs)
             # self.measure_flow_rates(nc)
@@ -136,7 +133,7 @@ def prepare_network_configurations(num_hosts_per_switch_list,
             # mhasan: change with link params
             nc = NetworkConfiguration("ryu",
                                       "ring_with_param",
-                                      {"num_switches": 2,
+                                      {"num_switches": 4,
                                        "num_hosts_per_switch": hps},
                                       conf_root="configurations/",
                                       synthesis_name="SynthesizeQoS",
@@ -149,6 +146,55 @@ def prepare_network_configurations(num_hosts_per_switch_list,
     return nc_list
 
 
+def prepare_flow_specifications(measurement_rates, tests_duration, delay_budget):
+
+    flow_specs = []
+
+    flow_match = Match(is_wildcard=True)
+    flow_match["ethernet_type"] = 0x0800
+
+    h1s2_to_h1s1 = FlowSpecification(src_host_id="h41",
+                                     dst_host_id="h11",
+                                     configured_rate=50,
+                                     flow_match=flow_match,
+                                     measurement_rates=measurement_rates,
+                                     tests_duration=tests_duration,
+                                     delay_budget=delay_budget)
+
+    h2s2_to_h2s1 = FlowSpecification(src_host_id="h42",
+                                     dst_host_id="h21",
+                                     configured_rate=50,
+                                     flow_match=flow_match,
+                                     measurement_rates=measurement_rates,
+                                     tests_duration=tests_duration,
+                                     delay_budget=delay_budget)
+
+    h1s1_to_h1s2 = FlowSpecification(src_host_id="h31",
+                                     dst_host_id="h12",
+                                     configured_rate=50,
+                                     flow_match=flow_match,
+                                     measurement_rates=[],
+                                     tests_duration=tests_duration,
+                                     delay_budget=delay_budget)
+
+    h2s1_to_h2s2 = FlowSpecification(src_host_id="h42",
+                                     dst_host_id="h22",
+                                     configured_rate=50,
+                                     flow_match=flow_match,
+                                     measurement_rates=[],
+                                     tests_duration=tests_duration,
+                                     delay_budget=delay_budget)
+
+    flow_specs.append(h1s2_to_h1s1)
+    flow_specs.append(h2s2_to_h2s1)
+
+    flow_specs.append(h1s1_to_h1s2)
+    flow_specs.append(h2s1_to_h2s2)
+
+    return flow_specs
+
+# this is by RK
+'''
 def prepare_flow_specifications(measurement_rates, tests_duration, delay_budget):
 
     flow_specs = []
@@ -196,6 +242,7 @@ def prepare_flow_specifications(measurement_rates, tests_duration, delay_budget)
 
     return flow_specs
 
+'''
 
 
 def main():

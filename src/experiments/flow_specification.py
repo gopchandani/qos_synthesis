@@ -2,7 +2,10 @@ from collections import defaultdict
 
 
 class FlowSpecification:
-    def __init__(self, src_host_id, dst_host_id, configured_rate, flow_match, measurement_rates, tests_duration):
+    def __init__(self, src_host_id, dst_host_id, configured_rate,
+                 flow_match, measurement_rates, tests_duration,
+                 # mhasan: added delay field
+                 delay_budget):
         self.src_host_id = src_host_id
         self.dst_host_id = dst_host_id
         self.configured_rate = configured_rate
@@ -25,6 +28,9 @@ class FlowSpecification:
 
         self.send_size = configured_rate * 1000 / (8 * self.num_sends_in_burst)
         self.configured_rate_bps = self.send_size * 8 * self.num_sends_in_burst * 1000
+
+        # mhasan: added delay field
+        self.delay_budget = delay_budget  # end to end delay requirement
 
     def construct_netperf_cmd_str(self, measurement_rate):
 

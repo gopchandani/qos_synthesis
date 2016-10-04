@@ -1,0 +1,26 @@
+this is main
+
+print nodes..
+['s', 'u', 't', 'v']
+
+print edges...
+[('s', 'u'), ('s', 'v'), ('u', 't'), ('u', 'v'), ('v', 't')]
+
+adjacency matrix
+s u v
+u t v
+t
+v t
+end adjacency matrix
+
+== Calculating MCP_EBF===
+== kprime 6, u -> s  ==
+== kprime 10, v -> s  ==
+== kprime 7, u -> s  ==
+== kprime 8, u -> s  ==
+== kprime 9, u -> s  ==
+== kprime 10, u -> s  ==
+== kprime 9, v -> u  ==
+== kprime 10, t -> v  ==
+
+['t', 'v', 'u', 's']

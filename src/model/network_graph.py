@@ -15,11 +15,19 @@ from port import Port
 
 class NetworkGraphLinkData(object):
 
-    def __init__(self, node1_id, node1_port, node2_id, node2_port, link_type):
+    def __init__(self, node1_id, node1_port, node2_id, node2_port, link_type,
+                 #mhasan: added link delay and bw
+                 link_bw,
+                 link_delay):
         self.link_ports_dict = {str(node1_id): node1_port, str(node2_id): node2_port}
         self.link_type = link_type
         self.traffic_paths = []
         self.causes_disconnect = None
+
+        # mhasan: added link delay and bw
+        self.link_delay = link_delay
+        self.link_bw = link_bw
+
 
         self.forward_port_graph_edge = (str(node1_id) + ':' + "egress" + str(node1_port),
                                         str(node2_id) + ':' + "ingress" + str(node2_port))
@@ -142,7 +150,11 @@ class NetworkGraph(object):
         else:
             raise Exception("Unknown Link Type")
 
-        link_data = NetworkGraphLinkData(node1_id, node1_port, node2_id, node2_port, link_type)
+        link_data = NetworkGraphLinkData(node1_id, node1_port, node2_id,
+                                         node2_port, link_type,
+                                         self.network_configuration.topo_link_params['bw']*1000000, # in BPS
+                                         # truncate unit (ms) and convert to float and ms to second
+                                         float(self.network_configuration.topo_link_params['delay'].replace('ms', ''))*0.001)
 
         self.graph.add_edge(node1_id,
                             node2_id,
@@ -237,6 +249,12 @@ class NetworkGraph(object):
     def get_link_data(self, node1_id, node2_id):
         link_data = self.graph[node1_id][node2_id]['link_data']
         return link_data
+
+    # mhasan: get all link data
+    def get_all_link_data(self):
+        for edge in self.graph.edges():
+            link_data = self.graph[edge[0]][edge[1]]['link_data']
+            yield link_data
 
     def get_switch_link_data(self):
         for edge in self.graph.edges():
