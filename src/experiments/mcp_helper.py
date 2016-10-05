@@ -7,7 +7,10 @@ import math
 import pandas as pd
 import random
 
+from model.intent import Intent
+from synthesis.synthesis_lib import SynthesisLib
 
+from copy import deepcopy
 
 class MCP_Helper(object):
 
@@ -148,8 +151,6 @@ class MCP_Helper(object):
         else:
             raise NotImplementedError
 
-
-
         kprime = int(k + w2_prime)  # print "kprime is {}".format(kprime)
         # print "u, v is ({}, {})".format(u, v)
         # print "kprime:{}, w1({},{})={}, w2_prime({},{})={}".format(kprime, u, v, w1, u, v, w2_prime)
@@ -177,7 +178,6 @@ class MCP_Helper(object):
         else:
             raise NotImplementedError
 
-
         self.init_mcp(src, itr)
 
         number_of_nodes = len(list(self.nw_graph.nodes()))
@@ -190,11 +190,7 @@ class MCP_Helper(object):
                     v = edge[1]
                     self.relax_mcp(u, v, k, itr)
 
-
-
-
     def extract_path(self, src, dst, itr):
-
 
         path = []
         traverse_done = False
@@ -261,6 +257,7 @@ class MCP_Helper(object):
 
         return path_src_2_dst
 
+
 def print_graph(nw_graph):
 
     print "print nodes.."
@@ -291,6 +288,7 @@ def get_bw_budget(nw_config, bw_req_flow, hmax):
 
     return max_bw_util
 
+
 def calibrate_graph(nw_config):
 
     nw_graph = nx.DiGraph()
@@ -320,6 +318,56 @@ def calculate_hmax(nw_graph):
     return hmax
 
 
+def compute_path_intents(network_graph, fs):
+
+    intent_list = []
+
+    # Get the port where the host connects at the first switch in the path
+    link_ports_dict = network_graph.get_link_ports_dict(fs.ng_src_host.node_id, fs.ng_src_host.sw.node_id)
+    in_port = link_ports_dict[fs.ng_src_host.sw.node_id]
+
+    # This loop always starts at a switch
+    for i in range(1, len(fs.path) - 1):
+
+        link_ports_dict = network_graph.get_link_ports_dict(fs.path[i], fs.path[i+1])
+
+        fwd_flow_match = deepcopy(fs.flow_match)
+        mac_int = int(fs.ng_dst_host.mac_addr.replace(":", ""), 16)
+        fwd_flow_match["ethernet_destination"] = int(mac_int)
+
+        intent = Intent("primary",
+                        fwd_flow_match,
+                        in_port,
+                        link_ports_dict[fs.path[i]],
+                        True,
+                        min_rate=fs.configured_rate_bps,
+                        max_rate=fs.configured_rate_bps)
+
+        # Store the switch id in the intent
+        intent.switch_id = fs.path[i]
+
+        intent_list.append(intent)
+        in_port = link_ports_dict[fs.path[i+1]]
+
+    return intent_list
+
+
+def synthesize_flow_specifications(nc):
+
+    synthesis_lib = SynthesisLib("localhost", "8181", nc.ng)
+
+    print "Synthesizing rules and queues in the switches..."
+
+    for fs in nc.flow_specs:
+
+        # Compute intents for the path of the fs
+        intent_list = compute_path_intents(nc.ng, fs)
+
+        # Push intents one by one to the switches
+        for intent in intent_list:
+            synthesis_lib.push_destination_host_mac_intent_flow_with_qos(intent.switch_id, intent, 0, 100)
+
+
 def find_path_by_mcp(nw_config, x=10):
     nw_graph = nw_config.ng.get_node_graph()
 
@@ -341,7 +389,6 @@ def find_path_by_mcp(nw_config, x=10):
         # print "=== after calibration === "
         nw_graph = calibrate_graph(nw_config)
         # print_graph(nw_graph)
-
 
         mh = MCP_Helper(nw_graph, hmax, delay_budget, bw_budget, bw_req_flow, x)
         path = mh.get_path_layout(src, dst)

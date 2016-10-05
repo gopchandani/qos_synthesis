@@ -47,29 +47,17 @@ class QosDemo(Experiment):
             nc.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
             nc.init_flow_specs()
 
-            # mhasan: MCP code probably will go there
-            # nc.calculate_path_by_mcp()
-            # mcp_helper = MCP_Helper(nc, 100)
-
-            #path = mcph.find_path_by_mcp(nc)
             mcph.find_path_by_mcp(nc)
-            '''
-            if not path:
-                print "No path found!"
-            else:
-                print path
-            '''
+            mcph.synthesize_flow_specifications(nc)
+            nc.mininet_obj.pingAll('1')
 
-            # nc.synthesis.synthesize_flow_specifications(nc.flow_specs)
             # self.measure_flow_rates(nc)
-
-        print "here"
 
     def parse_iperf_output(self, iperf_output_string):
         data_lines =  iperf_output_string.split('\r\n')
         interesting_line_index = None
         for i in xrange(len(data_lines)):
-             if data_lines[i].endswith('Server Report:'):
+            if data_lines[i].endswith('Server Report:'):
                 interesting_line_index = i + 1
         data_tokens =  data_lines[interesting_line_index].split()
         print "Transferred Rate:", data_tokens[7]
@@ -152,44 +140,57 @@ def prepare_flow_specifications(measurement_rates, tests_duration, delay_budget)
 
     flow_match = Match(is_wildcard=True)
     flow_match["ethernet_type"] = 0x0800
+    #
+    # h1s2_to_h1s1 = FlowSpecification(src_host_id="h41",
+    #                                  dst_host_id="h11",
+    #                                  configured_rate=50,
+    #                                  flow_match=flow_match,
+    #                                  measurement_rates=measurement_rates,
+    #                                  tests_duration=tests_duration,
+    #                                  delay_budget=delay_budget)
+    #
+    # h2s2_to_h2s1 = FlowSpecification(src_host_id="h42",
+    #                                  dst_host_id="h21",
+    #                                  configured_rate=50,
+    #                                  flow_match=flow_match,
+    #                                  measurement_rates=measurement_rates,
+    #                                  tests_duration=tests_duration,
+    #                                  delay_budget=delay_budget)
+    #
+    # h1s1_to_h1s2 = FlowSpecification(src_host_id="h31",
+    #                                  dst_host_id="h12",
+    #                                  configured_rate=50,
+    #                                  flow_match=flow_match,
+    #                                  measurement_rates=[],
+    #                                  tests_duration=tests_duration,
+    #                                  delay_budget=delay_budget)
+    #
+    # h2s1_to_h2s2 = FlowSpecification(src_host_id="h42",
+    #                                  dst_host_id="h22",
+    #                                  configured_rate=50,
+    #                                  flow_match=flow_match,
+    #                                  measurement_rates=[],
+    #                                  tests_duration=tests_duration,
+    #                                  delay_budget=delay_budget)
 
-    h1s2_to_h1s1 = FlowSpecification(src_host_id="h41",
-                                     dst_host_id="h11",
-                                     configured_rate=50,
-                                     flow_match=flow_match,
-                                     measurement_rates=measurement_rates,
-                                     tests_duration=tests_duration,
-                                     delay_budget=delay_budget)
+    h41_to_h12 = FlowSpecification(src_host_id="h41",
+                                   dst_host_id="h21",
+                                   configured_rate=50,
+                                   flow_match=flow_match,
+                                   measurement_rates=measurement_rates,
+                                   tests_duration=tests_duration,
+                                   delay_budget=delay_budget)
 
-    h2s2_to_h2s1 = FlowSpecification(src_host_id="h42",
-                                     dst_host_id="h21",
-                                     configured_rate=50,
-                                     flow_match=flow_match,
-                                     measurement_rates=measurement_rates,
-                                     tests_duration=tests_duration,
-                                     delay_budget=delay_budget)
+    h21_to_h41 = FlowSpecification(src_host_id="h21",
+                                   dst_host_id="h41",
+                                   configured_rate=50,
+                                   flow_match=flow_match,
+                                   measurement_rates=measurement_rates,
+                                   tests_duration=tests_duration,
+                                   delay_budget=delay_budget)
 
-    h1s1_to_h1s2 = FlowSpecification(src_host_id="h31",
-                                     dst_host_id="h12",
-                                     configured_rate=50,
-                                     flow_match=flow_match,
-                                     measurement_rates=[],
-                                     tests_duration=tests_duration,
-                                     delay_budget=delay_budget)
-
-    h2s1_to_h2s2 = FlowSpecification(src_host_id="h42",
-                                     dst_host_id="h22",
-                                     configured_rate=50,
-                                     flow_match=flow_match,
-                                     measurement_rates=[],
-                                     tests_duration=tests_duration,
-                                     delay_budget=delay_budget)
-
-    flow_specs.append(h1s2_to_h1s1)
-    flow_specs.append(h2s2_to_h2s1)
-
-    flow_specs.append(h1s1_to_h1s2)
-    flow_specs.append(h2s1_to_h2s2)
+    flow_specs.append(h41_to_h12)
+    flow_specs.append(h21_to_h41)
 
     return flow_specs
 
@@ -247,7 +248,7 @@ def prepare_flow_specifications(measurement_rates, tests_duration, delay_budget)
 
 def main():
 
-    num_iterations = 10
+    num_iterations = 1
 
     tests_duration = 5
     measurement_rates = [40, 45, 50]
