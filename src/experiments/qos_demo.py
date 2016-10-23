@@ -63,8 +63,8 @@ class QosDemo(Experiment):
             # mcp_helper.random_print()
             # mcp_helper.calculate_path_by_mcp()
 
-            # nc.synthesis.synthesize_flow_specifications(nc.flow_specs)
-            # self.measure_flow_rates(nc)
+            nc.synthesis.synthesize_flow_specifications(nc.flow_specs)
+            self.measure_flow_rates(nc)
 
         print "here"
 
@@ -135,7 +135,7 @@ def prepare_network_configurations(num_hosts_per_switch_list,
 
             # mhasan: change with link params
             nc = NetworkConfiguration("ryu",
-                                      "ring_with_param",
+                                      "linear",
                                       {"num_switches": 2,
                                        "num_hosts_per_switch": hps},
                                       conf_root="configurations/",
@@ -200,10 +200,11 @@ def prepare_flow_specifications(measurement_rates, tests_duration, delay_budget)
 
 def main():
 
-    num_iterations = 10
+    num_iterations = 1
 
     tests_duration = 5
-    measurement_rates = [40, 45, 50]
+    #measurement_rates = [40, 45, 50]
+    measurement_rates = [40]
 
     num_hosts_per_switch_list = [2]
     same_output_queue_list = [False, True]
@@ -222,6 +223,7 @@ def main():
     exp = QosDemo(num_iterations, network_configurations, len(measurement_rates))
 
     exp.trigger()
+    print exp.data
 
 if __name__ == "__main__":
     main()

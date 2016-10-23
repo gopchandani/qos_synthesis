@@ -24,8 +24,6 @@ class Intent:
 
         self.consolidated_in_a_failover_group = False
 
-        self.switch_id = None
-
     def __hash__(self):
         return self.hash_value
 

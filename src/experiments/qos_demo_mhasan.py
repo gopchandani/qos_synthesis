@@ -1,10 +1,12 @@
 __author__ = 'Monowar Hasan'
 
 import sys
+import os
 import time
 from collections import defaultdict
 
 sys.path.append("./")
+
 
 from controller_man import ControllerMan
 from experiment import Experiment
@@ -47,17 +49,20 @@ class QosDemo(Experiment):
             nc.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
             nc.init_flow_specs()
 
-            mcph.find_path_by_mcp(nc)
+            # mhasan: MCP code will go there
+            mcph.find_path_by_mcp(nc)  # update the path in 'path' variable of FlowSpecification
             mcph.synthesize_flow_specifications(nc)
-            nc.mininet_obj.pingAll('1')
+            # nc.mininet_obj.pingAll('1')
+            self.measure_flow_rates(nc)
 
-            # self.measure_flow_rates(nc)
+        print "here"
+
 
     def parse_iperf_output(self, iperf_output_string):
         data_lines =  iperf_output_string.split('\r\n')
         interesting_line_index = None
         for i in xrange(len(data_lines)):
-            if data_lines[i].endswith('Server Report:'):
+             if data_lines[i].endswith('Server Report:'):
                 interesting_line_index = i + 1
         data_tokens =  data_lines[interesting_line_index].split()
         print "Transferred Rate:", data_tokens[7]
@@ -90,21 +95,30 @@ class QosDemo(Experiment):
                     if not fs.measurement_rates:
                         continue
 
-                    server_output = fs.mn_dst_host.cmd("/usr/local/bin/netserver")
+                    os.system('killall netserver') # kill all previous netserver instance
+
+                    server_command = "/usr/local/bin/netserver"
+                    server_output = fs.mn_dst_host.cmd(server_command)
                     client_output = fs.mn_src_host.cmd(fs.construct_netperf_cmd_str(fs.measurement_rates[j]))
 
                     if fs.tests_duration > max_fs_duration:
                         max_fs_duration = fs.tests_duration
 
-                # Sleep for 5 seconds more than flow duration to make sure netperf has finished.
-                time.sleep(max_fs_duration + 5)
+                # Sleep for 10 seconds more than flow duration to make sure netperf has finished.
+                time.sleep(max_fs_duration + 10)
 
                 for fs in nc.flow_specs:
 
                     if not fs.measurement_rates:
                         continue
 
-                    fs.measurements[fs.measurement_rates[j]].append(fs.parse_measurements(fs.mn_src_host.read()))
+                    print "=== netperf output ==="
+                    netperf_output_string = fs.mn_src_host.read()
+                    print netperf_output_string
+                    if netperf_output_string.find("no response received") >= 0:
+                        raise ValueError("No response received from netperf...")
+
+                    fs.measurements[fs.measurement_rates[j]].append(fs.parse_measurements(netperf_output_string))
 
 
 def prepare_network_configurations(num_hosts_per_switch_list,
@@ -121,7 +135,7 @@ def prepare_network_configurations(num_hosts_per_switch_list,
             # mhasan: change with link params
             nc = NetworkConfiguration("ryu",
                                       "ring_with_param",
-                                      {"num_switches": 4,
+                                      {"num_switches": 10,
                                        "num_hosts_per_switch": hps},
                                       conf_root="configurations/",
                                       synthesis_name="SynthesizeQoS",
@@ -140,40 +154,9 @@ def prepare_flow_specifications(measurement_rates, tests_duration, delay_budget)
 
     flow_match = Match(is_wildcard=True)
     flow_match["ethernet_type"] = 0x0800
-    #
-    # h1s2_to_h1s1 = FlowSpecification(src_host_id="h41",
-    #                                  dst_host_id="h11",
-    #                                  configured_rate=50,
-    #                                  flow_match=flow_match,
-    #                                  measurement_rates=measurement_rates,
-    #                                  tests_duration=tests_duration,
-    #                                  delay_budget=delay_budget)
-    #
-    # h2s2_to_h2s1 = FlowSpecification(src_host_id="h42",
-    #                                  dst_host_id="h21",
-    #                                  configured_rate=50,
-    #                                  flow_match=flow_match,
-    #                                  measurement_rates=measurement_rates,
-    #                                  tests_duration=tests_duration,
-    #                                  delay_budget=delay_budget)
-    #
-    # h1s1_to_h1s2 = FlowSpecification(src_host_id="h31",
-    #                                  dst_host_id="h12",
-    #                                  configured_rate=50,
-    #                                  flow_match=flow_match,
-    #                                  measurement_rates=[],
-    #                                  tests_duration=tests_duration,
-    #                                  delay_budget=delay_budget)
-    #
-    # h2s1_to_h2s2 = FlowSpecification(src_host_id="h42",
-    #                                  dst_host_id="h22",
-    #                                  configured_rate=50,
-    #                                  flow_match=flow_match,
-    #                                  measurement_rates=[],
-    #                                  tests_duration=tests_duration,
-    #                                  delay_budget=delay_budget)
 
-    h41_to_h12 = FlowSpecification(src_host_id="h41",
+    #'''
+    h41_to_h12 = FlowSpecification(src_host_id="h81",
                                    dst_host_id="h21",
                                    configured_rate=50,
                                    flow_match=flow_match,
@@ -182,27 +165,18 @@ def prepare_flow_specifications(measurement_rates, tests_duration, delay_budget)
                                    delay_budget=delay_budget)
 
     h21_to_h41 = FlowSpecification(src_host_id="h21",
-                                   dst_host_id="h41",
+                                   dst_host_id="h81",
                                    configured_rate=50,
                                    flow_match=flow_match,
-                                   measurement_rates=measurement_rates,
+                                   measurement_rates=[],
                                    tests_duration=tests_duration,
                                    delay_budget=delay_budget)
 
     flow_specs.append(h41_to_h12)
     flow_specs.append(h21_to_h41)
+    #'''
 
-    return flow_specs
-
-# this is by RK
-'''
-def prepare_flow_specifications(measurement_rates, tests_duration, delay_budget):
-
-    flow_specs = []
-
-    flow_match = Match(is_wildcard=True)
-    flow_match["ethernet_type"] = 0x0800
-
+    '''
     h1s2_to_h1s1 = FlowSpecification(src_host_id="h1s2",
                                      dst_host_id="h1s1",
                                      configured_rate=50,
@@ -240,10 +214,8 @@ def prepare_flow_specifications(measurement_rates, tests_duration, delay_budget)
 
     flow_specs.append(h1s1_to_h1s2)
     flow_specs.append(h2s1_to_h2s2)
-
+    '''
     return flow_specs
-
-'''
 
 
 def main():
@@ -251,14 +223,15 @@ def main():
     num_iterations = 1
 
     tests_duration = 5
-    measurement_rates = [40, 45, 50]
+    #measurement_rates = [40, 45, 50]
+    measurement_rates = [40]
 
     num_hosts_per_switch_list = [2]
     same_output_queue_list = [False, True]
 
     # mhasan: added link param and delay budget
     delay_budget = 0.1  # in second (100ms)
-    topo_link_params = {'bw': 100, 'delay': '3ms'}  # BW in MBPS
+    topo_link_params = {'bw': 1000, 'delay': '3ms'}  # BW in MBPS
 
     network_configurations = prepare_network_configurations(num_hosts_per_switch_list,
                                                             same_output_queue_list,

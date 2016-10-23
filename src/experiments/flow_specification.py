@@ -23,14 +23,18 @@ class FlowSpecification:
         self.mn_src_host = None
         self.mn_dst_host = None
 
-        self.num_sends_in_burst = 10
+        self.num_sends_in_burst = 5
         self.inter_burst_time = 1
 
         self.send_size = configured_rate * 1000 / (8 * self.num_sends_in_burst)
         self.configured_rate_bps = self.send_size * 8 * self.num_sends_in_burst * 1000
 
+        self.measurement_rate_bps = None
+
         # mhasan: added delay field
         self.delay_budget = delay_budget  # end to end delay requirement
+        # mhasan: added Path
+        self.path = None
 
     def construct_netperf_cmd_str(self, measurement_rate):
 
@@ -54,6 +58,17 @@ class FlowSpecification:
                           " -T UDP_RR " + \
                           "-m " + str(self.send_size) + " &"
 
+        # netperf_cmd_str = "/usr/local/bin/netperf " + \
+        #                   " -j " + \
+        #                   " -H " + self.mn_dst_host.IP() + \
+        #                   " -t UDP_RR " + \
+        #                   " -l " + str(self.tests_duration) + \
+        #                   " -t omni -- -d send" + \
+        #                   " -o " + \
+        #                   "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY'" + \
+        #                   " -m " + str(self.send_size) + \
+        #                   " &"
+
         return netperf_cmd_str
 
     def parse_measurements(self, netperf_output_string):
@@ -69,6 +84,19 @@ class FlowSpecification:
         measurements["nn_perc_latency"] = output_line_tokens[3]
         measurements["min_latency"] = output_line_tokens[4]
         measurements["max_latency"] = output_line_tokens[5]
+
+        return measurements
+
+    def get_null_measurement(self):
+
+        measurements = dict()
+
+        measurements["throughput"] = "-1"
+        measurements["mean_latency"] = "-1"
+        measurements["stdev_latency"] = "-1"
+        measurements["nn_perc_latency"] = "-1"
+        measurements["min_latency"] = "-1"
+        measurements["max_latency"] = "-1"
 
         return measurements
 

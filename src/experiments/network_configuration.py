@@ -29,6 +29,7 @@ from experiments.topologies.clique_topo import CliqueTopo
 from experiments.topologies.ameren_topo import AmerenTopo
 # mhasan import : ring
 from experiments.topologies.ring_topo_with_param import RingTopoWithParams
+from experiments.topologies.random_topo_with_param import RandomTopoWithParams
 
 from synthesis.dijkstra_synthesis import DijkstraSynthesis
 from synthesis.aborescene_synthesis import AboresceneSynthesis
@@ -51,7 +52,9 @@ class NetworkConfiguration(object):
                  synthesis_params,
                  flow_specs,
                  # mhasan: added link param in constructor
-                 topo_link_params):
+                 topo_link_params,
+                 number_of_flows,
+                 test_case_id):
 
         self.controller = controller
         self.topo_name = topo_name
@@ -64,6 +67,8 @@ class NetworkConfiguration(object):
         # mhasan: added link param
         self.topo_link_params = topo_link_params
 
+        self.number_of_flows = number_of_flows
+
         self.controller_port = 6633
         self.topo = None
         self.nc_topo_str = None
@@ -72,6 +77,10 @@ class NetworkConfiguration(object):
 
         self.mininet_obj = None
         self.ng = None
+
+        self.test_case_id = test_case_id
+
+        self.isFeasible = True
 
         # Setup the directory for saving configs, check if one does not exist,
         # if not, assume that the controller, mininet and rule synthesis needs to be triggered.
@@ -98,7 +107,8 @@ class NetworkConfiguration(object):
         self.path = None
 
     def __str__(self):
-        return self.controller + "_" + str(self.synthesis) + "_" + str(self.topo)
+        return self.controller + "_" + str(self.synthesis) + "_" + str(self.topo) + "_" + str(
+            self.number_of_flows) + "_" + str(self.test_case_id)
 
     def init_topo(self):
         # mhasan : added ring topo with param
@@ -106,6 +116,10 @@ class NetworkConfiguration(object):
             # mhasan: create topo with link param
             self.topo = RingTopoWithParams(self.topo_params, self.topo_link_params)
             self.nc_topo_str = "Ring topology with " + str(self.topo.total_switches) + " switches"
+        elif self.topo_name == "random_with_param":
+            # mhasan: create topo with link param
+            self.topo = RandomTopoWithParams(self.topo_params, self.topo_link_params)
+            self.nc_topo_str = "Random topology with " + str(self.topo.total_switches) + " switches"
         elif self.topo_name == "ring":
             # self.topo = RingTopo(self.topo_params)
             # mhasan: create topo with link param
@@ -230,6 +244,16 @@ class NetworkConfiguration(object):
 
         return mininet_port_links
 
+    # mhasan : for different params in different links
+    def get_link_params(self):
+
+        mininet_link_params = self.topo.link_params
+
+        with open(self.conf_path + "mininet_link_params.json", "w") as outfile:
+            json.dump(mininet_link_params, outfile)
+
+        return mininet_link_params
+
     def get_switches(self):
         # Now the output of synthesis is carted away
         if self.controller == "ryu":
@@ -255,7 +279,13 @@ class NetworkConfiguration(object):
         # These things are needed by network graph...
         self.get_host_nodes()
         self.get_links()
+
+        # mhasan : for link params
+        self.get_link_params()
+
         self.get_switches()
+
+
 
         self.ng = NetworkGraph(network_configuration=self)
         self.ng.parse_network_graph()
@@ -470,97 +500,19 @@ class NetworkConfiguration(object):
 
         return is_bi_connected
 
-    # mhasan: MCP path routing routine
+    # mhasan: calibrate delay based on network toplogy
+    # mhasan: lower index -> lower delay budget -> higher priority
 
-    def random_print(self):
-        print "## printing nw graph"
+    def calibrate_delay(self, base_delay_budget):
 
-        print 'mhasan print'
+        diameter = nx.diameter(self.ng.get_node_graph())
+        base_delay_budget *= diameter  # vary with topology as Rakesh K. mentioned
+        delta = base_delay_budget/10  # a fraction that increase the delay requirement from flow to flow
 
-        # print self.ng.get_node_graph()
-        ss = self.ng.get_switches()
-        print self.ng.host_ids
-        print self.ng.switch_ids
+        for flow_id, current_flow in enumerate(self.flow_specs):
+            # do for every odd (forward flow), reverse flow will be the same.
+            if flow_id % 2 == 0:
+                current_flow.delay_budget = base_delay_budget
+                self.flow_specs[flow_id+1].delay_budget = base_delay_budget  # for reverse flow
+                base_delay_budget += delta
 
-        mygp = self.ng.get_node_graph()
-
-        print 'print nodes'
-        print mygp.nodes()
-
-        print 'adjacency matrix'
-        nx.write_adjlist(mygp, sys.stdout)  # write adjacency list to screen
-        print 'end adjacency matrix'
-
-        print "print nodes.."
-
-        print(list(mygp.nodes()))
-
-        print "print edges..."
-        print(list(mygp.edges()))
-
-        print "switch link data..."
-        tt = list(self.ng.get_all_link_data())
-
-        for t in tt:
-            print t.link_ports_dict
-            print t.link_delay
-            print t.link_bw
-
-        print "print links (v2)..."
-
-        tt = self.ng.graph.edges()
-        print tt[0][0]
-        print tt[0][1]
-
-        print "printing flow spec (v1)..."
-        print self.flow_specs[0].src_host_id
-        print self.flow_specs[0].dst_host_id
-
-    # def mcp_init(self):
-
-
-    # def mcp_by_ebf(self):
-
-    def random_print(self):
-        print "## printing nw graph"
-
-        print 'mhasan print'
-
-        # print self.ng.get_node_graph()
-        ss = self.ng.get_switches()
-        print self.ng.host_ids
-        print self.ng.switch_ids
-
-        mygp = self.ng.get_node_graph()
-
-        print 'print nodes'
-        print mygp.nodes()
-
-        print 'adjacency matrix'
-        nx.write_adjlist(mygp, sys.stdout)  # write adjacency list to screen
-        print 'end adjacency matrix'
-
-        print "print nodes.."
-
-        print(list(mygp.nodes()))
-
-        print "print edges..."
-        print(list(mygp.edges()))
-
-        print "switch link data..."
-        tt = list(self.ng.get_all_link_data())
-
-        for t in tt:
-            print t.link_ports_dict
-            print t.link_delay
-            print t.link_bw
-
-        print "print links (v2)..."
-
-        tt = self.ng.graph.edges()
-        print tt[0][0]
-        print tt[0][1]
-
-        print "printing flow spec (v1)..."
-        print self.flow_specs[0].src_host_id
-        print self.flow_specs[0].dst_host_id
