@@ -78,7 +78,11 @@ class QosDemo(Experiment):
                 continue
 
             # mcph.print_path(nc)
-            mcph.synthesize_flow_specifications(nc)
+            # mcph.synthesize_flow_specifications(nc)
+
+            # usues default queue (no delay-guarantee)
+            mcph.synthesize_flow_specifications_default_queue(nc)
+
             # nc.mininet_obj.pingAll('1')
             self.measure_flow_rates(nc)
 
@@ -341,27 +345,27 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
 
 def main():
 
-    num_iterations = 5
+    num_iterations = 2
 
     tests_duration = 10
-    measurement_rates = [5]  # generate a random number between [1,k] (MBPS)
+    measurement_rates = [10]  # generate a random number between [1,k] (MBPS)
     cap_rate = 0.1
 
     num_hosts_per_switch_list = [2]
     same_output_queue_list = [False]
 
-    number_of_flow_list = [2, 4, 6, 8]
-    # number_of_flow_list = [8, 6, 4, 2]
+    # number_of_flow_list = [2, 4, 6, 8]
+    number_of_flow_list = [8, 6, 4, 2]
     # number_of_flow_list = [2]
 
     number_of_switches = 5
 
-    number_of_test_cases = 25  # number of experimental samples we want to examine
+    number_of_test_cases = 2  # number of experimental samples we want to examine
 
     base_delay_budget = 0.05  # in second (50ms) (this is end-to-end requirement - netperf gives round trip)
     link_delay_upper_bound = 1  # generate random delay between [0,k] (ms)
 
-    topo_link_params = {'bw': 100, 'delay': str(link_delay_upper_bound) + 'ms'}  # BW in MBPS
+    topo_link_params = {'bw': 5, 'delay': str(link_delay_upper_bound) + 'ms'}  # BW in MBPS
 
     network_configurations = prepare_network_configurations(num_hosts_per_switch_list,
                                                             same_output_queue_list,

@@ -331,6 +331,43 @@ def compute_path_intents(network_graph, fs):
     return intent_list
 
 
+# Intents uses default queue
+def compute_path_intents_defualt_queue(network_graph, fs):
+
+    intent_list = []
+
+    # Get the port where the host connects at the first switch in the path
+    link_ports_dict = network_graph.get_link_ports_dict(fs.ng_src_host.node_id, fs.ng_src_host.sw.node_id)
+    in_port = link_ports_dict[fs.ng_src_host.sw.node_id]
+
+    # This loop always starts at a switch
+    for i in range(1, len(fs.path) - 1):
+
+        link_ports_dict = network_graph.get_link_ports_dict(fs.path[i], fs.path[i+1])
+
+        fwd_flow_match = deepcopy(fs.flow_match)
+        mac_int = int(fs.ng_dst_host.mac_addr.replace(":", ""), 16)
+        fwd_flow_match["ethernet_destination"] = int(mac_int)
+
+        intent = Intent("primary",
+                        fwd_flow_match,
+                        in_port,
+                        link_ports_dict[fs.path[i]],
+                        True,
+                        min_rate=None,
+                        max_rate=None)
+
+        # Store the switch id in the intent
+        intent.switch_id = fs.path[i]
+
+        intent_list.append(intent)
+        in_port = link_ports_dict[fs.path[i+1]]
+
+    return intent_list
+
+
+
+
 def synthesize_flow_specifications(nc):
 
     synthesis_lib = SynthesisLib("localhost", "8181", nc.ng)
@@ -345,4 +382,21 @@ def synthesize_flow_specifications(nc):
         # Push intents one by one to the switches
         for intent in intent_list:
             synthesis_lib.push_destination_host_mac_intent_flow_with_qos(intent.switch_id, intent, 0, 100)
+
+
+# goes to default queue, no rate-limiting and other features. good for best-effort flows
+def synthesize_flow_specifications_default_queue(nc):
+
+    synthesis_lib = SynthesisLib("localhost", "8181", nc.ng)
+
+    print "Synthesizing (best-effort) rules in the switches..."
+
+    for fs in nc.flow_specs:
+
+        # Compute intents for the path of the fs
+        intent_list = compute_path_intents_defualt_queue(nc.ng, fs)
+
+        # Push intents one by one to the switches
+        for intent in intent_list:
+            synthesis_lib.push_destination_host_mac_intent_flow_default_queue(intent.switch_id, intent, 0, 100)
 
