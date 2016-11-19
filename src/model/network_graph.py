@@ -240,7 +240,7 @@ class NetworkGraph(object):
     def parse_switches(self):
         self.total_flow_rules = 0
 
-        if self.network_configuration.controller == "ryu":
+        if self.network_configuration.controller == "ryu" or self.network_configuration.controller == "ryu_old":
             self.parse_ryu_switches()
         else:
             raise NotImplemented

@@ -83,7 +83,7 @@ def main():
 
     flow_specs = prepare_flow_specifications()
 
-    network_configuration =  NetworkConfiguration("ryu",
+    network_configuration =  NetworkConfiguration("ryu_old",
                                       conf_root="configurations/",
                                       synthesis_name="SynthesizeQoS",
                                       synthesis_params={"same_output_queue": True},

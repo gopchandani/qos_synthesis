@@ -29,6 +29,12 @@ class Flow:
             self.priority = int(self.flow_json["priority"])
             self.match = Match(match_json=self.flow_json["match"], controller="ryu", flow=self)
             self.instruction_set = InstructionSet(self.sw, self, self.flow_json["instructions"])
+
+        elif self.sw.network_graph.controller == "ryu_old":
+            self.table_id = self.flow_json["table_id"]
+            self.priority = int(self.flow_json["priority"])
+            self.match = Match(match_json=self.flow_json["match"], controller="ryu", flow=self)
+            self.instruction_set = InstructionSet(self.sw, self, self.flow_json["actions"])
         else:
             raise NotImplemented
 

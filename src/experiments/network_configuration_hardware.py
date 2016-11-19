@@ -179,7 +179,7 @@ class NetworkConfiguration(object):
 
     def get_switches(self):
         # Now the output of synthesis is carted away
-        if self.controller == "ryu":
+        if self.controller == "ryu" or self.controller == "ryu_old":
             self.get_ryu_switches()
         else:
             raise NotImplemented

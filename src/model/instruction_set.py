@@ -18,6 +18,8 @@ class Instruction:
 
         if self.sw.network_graph.controller == "ryu":
             self.parse_ryu_instruction()
+        elif self.sw.network_graph.controller == "ryu_old":
+            self.parse_ryu_instruction_old()
         else:
             raise NotImplementedError
 
@@ -38,6 +40,19 @@ class Instruction:
             self.go_to_table = self.instruction_json["table_id"]
 
         #TODO: Other instructions...
+
+
+    def parse_ryu_instruction_old(self):
+        print self.instruction_json
+
+        self.instruction_type = "apply-actions"
+        self.actions_list.append(Action(self.sw, self.instruction_json))
+
+        if self.instruction_json.startswith("GOTO_TABLE"):
+            self.instruction_type = "go-to-table"
+            self.go_to_table = self.instruction_json["table_id"]
+
+
 
 
 class InstructionSet:
@@ -90,6 +105,8 @@ class InstructionSet:
         if self.sw.network_graph.controller == "ryu":
             self.parse_ryu_instruction_set()
 
+        elif self.sw.network_graph.controller == "ryu_old":
+            self.parse_ryu_instruction_set_old()
         else:
             raise NotImplementedError
 
@@ -101,6 +118,13 @@ class InstructionSet:
         for instruction_json in self.instructions_json:
             instruction = Instruction(self.sw, instruction_json)
             self.instruction_list.append(instruction)
+
+    def parse_ryu_instruction_set_old(self):
+
+        for instruction_json in self.instructions_json:
+            instruction = Instruction(self.sw, instruction_json)
+            self.instruction_list.append(instruction)
+
 
     def populate_action_sets_for_port_graph_edges(self):
 
