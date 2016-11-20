@@ -131,51 +131,59 @@ class NetworkConfiguration(object):
     def get_host_nodes(self):
 
         host_nodes = {}
-	sw = "s1"
+	sw = "s506043233721147"
         host_nodes[sw] = []
         host_dict = {"host_switch_id": "s" + sw[1:],
-                     "host_name": "h1s1",
-                     "host_IP": h.IP(),
-                     "host_MAC": h.MAC()}
+                     "host_name": "h1s506043233721147",
+                     "host_IP": "192.168.0.1",
+                     "host_MAC": "00:21:5a:f5:3c:09"}
 
         host_nodes[sw].append(host_dict)
 
         host_dict = {"host_switch_id": "s" + sw[1:],
-                     "host_name": h.name,
-                     "host_IP": h.IP(),
-                     "host_MAC": h.MAC()}
+                     "host_name": "h2s506043233721147",
+                     "host_IP": "192.168.0.2",
+                     "host_MAC": "00:21:5a:f5:07:25"}
 
         host_nodes[sw].append(host_dict)
 	
-	sw = "s2"
-        host_nodes[sw] = []
-        host_dict = {"host_switch_id": "s" + sw[1:],
-                     "host_name": h.name,
-                     "host_IP": h.IP(),
-                     "host_MAC": h.MAC()}
+	#sw = "s2"
+        #host_nodes[sw] = []
+        #host_dict = {"host_switch_id": "s" + sw[1:],
+        #             "host_name": h.name,
+        #             "host_IP": h.IP(),
+        #             "host_MAC": h.MAC()}
 
-        host_nodes[sw].append(host_dict)
+        #host_nodes[sw].append(host_dict)
 
-        host_dict = {"host_switch_id": "s" + sw[1:],
-                     "host_name": h.name,
-                     "host_IP": h.IP(),
-                     "host_MAC": h.MAC()}
+        #host_dict = {"host_switch_id": "s" + sw[1:],
+        #             "host_name": h.name,
+        #             "host_IP": h.IP(),
+        #             "host_MAC": h.MAC()}
 
-        host_nodes[sw].append(host_dict)
+        #host_nodes[sw].append(host_dict)
 	
-        with open(self.conf_path + "host_nodes.json", "w") as outfile:
+        with open(self.conf_path + "mininet_host_nodes.json", "w") as outfile:
             json.dump(host_nodes, outfile)
 
-        return mininet_host_nodes
+        return host_nodes
 
     def get_links(self):
 
-        mininet_port_links = {}
+        mininet_port_links = {"h1s506043233721147": {"0": ["s506043233721147", 1]}, "h2s506043233721147": {"0": ["s506043233721147", 2]}, "s506043233721147": {"1": ["h1s506043233721147", 0], "2": ["h2s506043233721147", 0]}}
 
         with open(self.conf_path + "mininet_port_links.json", "w") as outfile:
-            json.dump(self.topo.ports, outfile)
+            json.dump(mininet_port_links, outfile)
 
         return mininet_port_links
+
+    def get_link_params(self):
+
+        mininet_link_params = {'bw': 100, 'delay': '3ms'}
+        with open(self.conf_path + "mininet_link_params.json", "w") as outfile:
+            json.dump(mininet_link_params, outfile)
+
+        return mininet_link_params
 
     def get_switches(self):
         # Now the output of synthesis is carted away
@@ -192,8 +200,9 @@ class NetworkConfiguration(object):
     def setup_network_graph(self, mininet_setup_gap=None, synthesis_setup_gap=None):
 
         # These things are needed by network graph...
-        #self.get_host_nodes()
-        #self.get_links()
+        self.get_host_nodes()
+        self.get_links()
+        self.get_link_params()
         self.get_switches()
 
         self.ng = NetworkGraph(network_configuration=self)

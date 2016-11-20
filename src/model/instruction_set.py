@@ -43,7 +43,6 @@ class Instruction:
 
 
     def parse_ryu_instruction_old(self):
-        print self.instruction_json
 
         self.instruction_type = "apply-actions"
         self.actions_list.append(Action(self.sw, self.instruction_json))

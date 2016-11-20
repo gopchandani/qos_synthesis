@@ -126,24 +126,12 @@ class NetworkGraph(object):
         with open(self.network_configuration.conf_path + "mininet_port_links.json", "r") as in_file:
             mininet_port_links = json.loads(in_file.read())
 
-        with open(self.network_configuration.conf_path + "mininet_link_params.json", "r") as in_file:
-            mininet_link_params = json.loads(in_file.read())
-
         for src_node in mininet_port_links:
             for src_node_port in mininet_port_links[src_node]:
                 dst_list = mininet_port_links[src_node][src_node_port]
                 dst_node = dst_list[0]
                 dst_node_port = dst_list[1]
-
-                # mhasan : modified to enable link params
-                lp = (item for item in mininet_link_params if (item['node1'] == src_node and item['node2'] == dst_node)
-                      or (item['node1'] == dst_node and item['node2'] == src_node)).next()
-
-                # print  lp
-                self.add_link(src_node,
-                              int(src_node_port),
-                              dst_node,
-                              int(dst_node_port), lp)
+                self.add_link(src_node, int(src_node_port), dst_node, int(dst_node_port))
 
     def add_link(self, node1_id, node1_port, node2_id, node2_port, lp):
 
