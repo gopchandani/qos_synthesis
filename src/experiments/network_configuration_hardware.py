@@ -179,7 +179,7 @@ class NetworkConfiguration(object):
 
     def get_link_params(self):
 
-        mininet_link_params = {'bw': 100, 'delay': '3ms'}
+        mininet_link_params = [{"node1": "h1s506043233721147", "delay": "3ms", "node2": "s506043233721147", "bw": 5}, {"node1": "h2s506043233721147", "delay": "3ms", "node2": "s506043233721147", "bw": 5}]
         with open(self.conf_path + "mininet_link_params.json", "w") as outfile:
             json.dump(mininet_link_params, outfile)
 
