@@ -126,8 +126,6 @@ class NetworkConfiguration(object):
         with open(self.conf_path + "ryu_switches.json", "w") as outfile:
             json.dump(ryu_switches, outfile)
 
-        print ryu_switches
-
     def get_host_nodes(self):
 
         host_nodes = {}

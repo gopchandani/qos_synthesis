@@ -28,7 +28,7 @@ class QosDemo(Experiment):
 
 	self.network_configuration.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
 	self.network_configuration.init_flow_specs()
-	self.network_configuration.synthesis.synthesize_flow_specifications(nc.flow_specs)
+	self.network_configuration.synthesis.synthesize_flow_specifications(self.network_configuration.flow_specs)
 
 
 
