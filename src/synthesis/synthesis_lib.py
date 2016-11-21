@@ -265,6 +265,11 @@ class SynthesisLib(object):
             action_list = [{"type": "GROUP", "group_id": group_id}]
             self.populate_flow_action_instruction(flow, action_list, apply_immediately)
 
+        elif self.network_graph.controller == "ryu_old":
+            flow["match"] = flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+            action_list = [{"type": "GROUP", "group_id": group_id}]
+            flow["actions"] = action_list
+
         elif self.network_graph.controller == "sel":
             raise NotImplementedError
 
@@ -554,6 +559,18 @@ class SynthesisLib(object):
                 self.populate_flow_action_instruction(flow, action_list, push_vlan_intent.apply_immediately)
 
                 flow["instructions"].append({"type": "GOTO_TABLE", "table_id": str(vlan_tag_push_rules_table_id + 1)})
+
+            if self.network_graph.controller == "ryu_old":
+
+                # Compile match
+                flow["match"] = push_vlan_intent.flow_match.generate_match_json(self.network_graph.controller,
+                                                                                flow["match"])
+
+                action_list = [{"type": "PUSH_VLAN", "ethertype": 0x8100},
+                               {"type": "SET_FIELD", "field": "vlan_vid", "value": push_vlan_intent.required_vlan_id + 0x1000},
+                               {"type": "GOTO_TABLE", "table_id": vlan_tag_push_rules_table_id + 1}]
+
+                flow["actions"] = action_list
 
             elif self.network_graph.controller == "sel":
                 raise NotImplementedError

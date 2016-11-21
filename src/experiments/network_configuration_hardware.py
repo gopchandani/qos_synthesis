@@ -15,12 +15,8 @@ from model.match import Match
 
 from synthesis.dijkstra_synthesis import DijkstraSynthesis
 from synthesis.aborescene_synthesis import AboresceneSynthesis
-from synthesis.synthesize_qos import SynthesizeQoS
+from synthesis.synthesize_qos_hardware import SynthesizeQoS
 from synthesis.synthesis_lib import SynthesisLib
-
-# mhasan import: networkx
-import networkx as nx
-import sys
 
 
 class NetworkConfiguration(object):
