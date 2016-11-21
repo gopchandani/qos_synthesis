@@ -96,7 +96,7 @@ class SynthesisLib(object):
         time.sleep(0.2)
 
         if self.network_graph.controller == "ryu" or self.network_graph.controller == "ryu_old":
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
             resp, content = self.h.request(url, "POST",
                                            headers={'Content-Type': 'application/json; charset=UTF-8'},
                                            body=json.dumps(pushed_content))
@@ -123,7 +123,7 @@ class SynthesisLib(object):
     def push_flow(self, sw, flow):
 
         url = None
-        if self.network_graph.controller == "ryu":
+        if self.network_graph.controller == "ryu" or self.network_graph.controller == "ryu_old":
             url = self.create_ryu_flow_url()
 
         elif self.network_graph.controller == "sel":
@@ -160,6 +160,18 @@ class SynthesisLib(object):
             flow["match"] = {}
             flow["instructions"] = []
 
+        elif self.network_graph.controller == "ryu_old":
+
+            flow["dpid"] = sw[1:]
+            flow["cookie"] = self.flow_id_cntr
+            flow["cookie_mask"] = 1
+            flow["table_id"] = table_id
+            flow["idle_timeout"] = 0
+            flow["hard_timeout"] = 0
+            flow["priority"] = priority + 100
+            flow["flags"] = 1
+            flow["match"] = {}
+            flow["instructions"] = []
 
         elif self.network_graph.controller == "sel":
             raise NotImplementedError
@@ -214,6 +226,9 @@ class SynthesisLib(object):
 
         if self.network_graph.controller == "ryu":
             flow["instructions"] = [{"type": "GOTO_TABLE",  "table_id": str(table_id + 1)}]
+
+        if self.network_graph.controller == "ryu_old":
+            flow["actions"] = [{"type": "GOTO_TABLE",  "table_id": table_id + 1}]
 
         elif self.network_graph.controller == "sel":
             raise NotImplementedError

@@ -116,7 +116,6 @@ def main():
     exp = QosDemo(network_configuration)
 
     exp.trigger()
-    print exp.data
 
 if __name__ == "__main__":
     main()
