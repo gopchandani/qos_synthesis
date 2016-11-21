@@ -39,6 +39,29 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, del
     flow_match = Match(is_wildcard=True)
     flow_match["ethernet_type"] = 0x0800
 
+    h1s1_to_h2s1 = FlowSpecification(src_host_id="h1s506043233721147",
+                                     dst_host_id="h2s506043233721147",
+                                     configured_rate=50,
+                                     flow_match=flow_match,
+                                     measurement_rates=measurement_rates,
+                                     tests_duration=tests_duration,
+                                     delay_budget=delay_budget)
+
+    h2s1_to_h1s1 = FlowSpecification(src_host_id="h2s506043233721147",
+                                     dst_host_id="h1s506043233721147",
+                                     configured_rate=50,
+                                     flow_match=flow_match,
+                                     measurement_rates=measurement_rates,
+                                     tests_duration=tests_duration,
+                                     delay_budget=delay_budget)
+
+    flow_specs.append(h1s1_to_h2s1)
+    flow_specs.append(h2s1_to_h1s1)
+
+    return flow_specs
+
+'''
+
     h1s2_to_h1s1 = FlowSpecification(src_host_id="h1s2",
                                      dst_host_id="h1s1",
                                      configured_rate=50,
@@ -78,6 +101,7 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, del
     flow_specs.append(h2s1_to_h2s2)
 
     return flow_specs
+'''
 
 def main():
 

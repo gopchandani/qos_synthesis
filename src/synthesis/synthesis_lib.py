@@ -95,8 +95,8 @@ class SynthesisLib(object):
 
         time.sleep(0.2)
 
-        if self.network_graph.controller == "ryu":
-
+        if self.network_graph.controller == "ryu" or self.network_graph.controller == "ryu_old":
+            import pdb; pdb.set_trace()
             resp, content = self.h.request(url, "POST",
                                            headers={'Content-Type': 'application/json; charset=UTF-8'},
                                            body=json.dumps(pushed_content))

@@ -170,9 +170,10 @@ class SynthesizeQoS:
         print "Installed ifb interface named:", ifb_intf_name, "for interface:", orig_intf_name, "rate:", rate
 
     def setup_host_mininet_intf_rate(self, h_obj, rate):
-        mininet_h_obj = self.mininet_obj.getNodeByName(h_obj.node_id)
-        host_intf = mininet_h_obj.intfs[0]
-        mininet_h_obj.intfs[0].config(bw=rate/1000000)
+        if self.mininet_obj:
+            mininet_h_obj = self.mininet_obj.getNodeByName(h_obj.node_id)
+            host_intf = mininet_h_obj.intfs[0]
+            mininet_h_obj.intfs[0].config(bw=rate/1000000)
 
     def compute_push_vlan_tag_intents(self, h_obj, flow_match, required_tag):
 
