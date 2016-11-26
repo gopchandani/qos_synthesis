@@ -494,6 +494,12 @@ class SynthesisLib(object):
             pop_vlan_action = {"type": "POP_VLAN"}
             output_action = {"type": "OUTPUT", "port": mac_intent.out_port}
 
+        elif self.network_graph.controller == "ryu_old":
+            flow["match"] = mac_intent.flow_match.generate_match_json(self.network_graph.controller, flow["match"],
+                                                                      has_vlan_tag_check=True)
+            pop_vlan_action = {"type": "POP_VLAN"}
+            output_action = {"type": "OUTPUT", "port": mac_intent.out_port}
+
         elif self.network_graph.controller == "sel":
             raise NotImplementedError
 
@@ -506,7 +512,11 @@ class SynthesisLib(object):
         else:
             action_list = [pop_vlan_action, output_action]
 
-        self.populate_flow_action_instruction(flow, action_list, mac_intent.apply_immediately)
+        if self.network_graph.controller == "ryu_old":
+            flow["actions"] = action_list
+        else:
+            self.populate_flow_action_instruction(flow, action_list, mac_intent.apply_immediately)
+
         self.push_flow(sw, flow)
 
         return flow
