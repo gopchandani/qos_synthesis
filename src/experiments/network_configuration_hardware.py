@@ -145,14 +145,14 @@ class NetworkConfiguration(object):
 	sw = "s2"
         host_nodes[sw] = []
         host_dict = {"host_switch_id": "s" + sw[1:],
-                     "host_name": "h1s2",
+                     "host_name": "h2s2",
                      "host_IP": "192.168.0.1",
                      "host_MAC": "00:21:5a:f5:3c:09"}
 
         host_nodes[sw].append(host_dict)
 
         host_dict = {"host_switch_id": "s" + sw[1:],
-                     "host_name": "h2s2",
+                     "host_name": "h1s2",
                      "host_IP": "192.168.0.2",
                      "host_MAC": "00:21:5a:f5:07:25"}
 
