@@ -42,7 +42,7 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, del
 
     for src_host in switch_hosts:
         for dst_host in switch_hosts:
-            if src_host != dst_host:
+            if src_host == dst_host:
                 continue
 
             h1s1_to_h2s1 = FlowSpecification(src_host_id=src_host,
