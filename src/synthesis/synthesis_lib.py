@@ -255,6 +255,27 @@ class SynthesisLib(object):
 
         return flow
 
+    def push_match_per_in_port_destination_instruct_flow(self, sw, table_id, priority, flow_match, output_port, apply_immediately):
+
+        flow = self.create_base_flow(sw, table_id, priority)
+
+        if self.network_graph.controller == "ryu":
+            flow["match"] = flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+            action_list = [{"type": "GROUP", "group_id": group_id}]
+            self.populate_flow_action_instruction(flow, action_list, apply_immediately)
+
+        elif self.network_graph.controller == "ryu_old":
+            flow["match"] = flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+            action_list = [{"type": "OUTPUT", "port": output_port}]
+            flow["actions"] = action_list
+
+        elif self.network_graph.controller == "sel":
+            raise NotImplementedError
+
+        self.push_flow(sw, flow)
+
+        return flow
+
     def push_match_per_in_port_destination_instruct_group_flow(self, sw, table_id, group_id, priority,
                                                                 flow_match, apply_immediately):
 

@@ -289,5 +289,7 @@ class Match(DictMixin):
 
         if controller == "ryu":
             return self.generate_ryu_match_json(match_json, has_vlan_tag_check)
+        elif controller == "ryu_old":
+            return self.generate_ryu_match_json(match_json, has_vlan_tag_check)
         else:
             raise NotImplementedError
