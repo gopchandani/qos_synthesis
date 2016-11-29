@@ -19,8 +19,8 @@ def prepare_matplotlib_data(data_dict):
     data_sems = []
 
     for p in x:
-        mean = np.mean(data_dict[p])
-        sem = ss.sem(data_dict[p])
+        mean = np.mean(map(float, data_dict[p]))
+        sem = ss.sem(map(float, data_dict[p]))
         data_means.append(mean)
         data_sems.append(sem)
 
@@ -105,20 +105,92 @@ def prepare_reshuffled_data(data, key_of_interest):
 
 def main():
 
-    prefix = "hardware_experiments_data/"
+    data_path_prefix = "hardware_experiments_data/"
+    plots_path_prefix = "hardware_experiments_plots/"
+    experiment_tag = "hardware_experiments"
 
-    with open(prefix + "h1s1_to_h1s2.json", "r") as in_file:
+    with open(data_path_prefix + "h1s1_to_h1s2.json", "r") as in_file:
         h1s1_to_h1s2 = json.loads(in_file.read())
 
-    with open(prefix + "h2s1_to_h2s2.json", "r") as in_file:
+    with open(data_path_prefix + "h2s1_to_h2s2.json", "r") as in_file:
         h2s1_to_h2s2 = json.loads(in_file.read())
 
-    reshuffled_data = dict()
-    reshuffled_data["h1s1_to_h1s2"] = prepare_reshuffled_data(h1s1_to_h1s2, "mean_latency")
-    reshuffled_data["h2s1_to_h2s2"] = prepare_reshuffled_data(h2s1_to_h2s2, "mean_latency")
+    data = {
+        "Mean Latency": defaultdict(defaultdict),
+        "99th Percentile Latency": defaultdict(defaultdict),
+    }
 
-    aa = plot_lines_with_error_bars()
+    data["Mean Latency"]["h1s1 -> h1s2, Different Meter"] = prepare_reshuffled_data(h1s1_to_h1s2, "mean_latency")
 
+    data["Mean Latency"]["h2s1 -> h2s2, Different Meter"] = prepare_reshuffled_data(h2s1_to_h2s2, "mean_latency")
+
+    data["99th Percentile Latency"]["h1s1 -> h1s2, Different Meter"] = prepare_reshuffled_data(h1s1_to_h1s2,
+                                                                                               "nn_perc_latency")
+
+    data["99th Percentile Latency"]["h2s1 -> h2s2, Different Meter"] = prepare_reshuffled_data(h2s1_to_h2s2,
+                                                                                               "nn_perc_latency")
+
+    f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 3.0))
+    f.tight_layout()
+
+    data_xtick_labels = sorted(data["Mean Latency"]["h1s1 -> h1s2, Different Meter"].keys(), key=int)
+    data_xticks = [int(x) for x in data_xtick_labels]
+
+    plot_lines_with_error_bars(data,
+                               ax2,
+                               "Mean Latency",
+                               "Flow Rate (Mbps)",
+                               "Mean Latency (us)",
+                               "",
+                               y_scale='linear',
+                               x_min_factor=0.98,
+                               x_max_factor=1.02,
+                               y_min_factor=0.9,
+                               y_max_factor=1.05,
+                               xticks=data_xticks,
+                               xtick_labels=data_xtick_labels)
+
+    plot_lines_with_error_bars(data,
+                               ax3,
+                               "99th Percentile Latency",
+                               "Flow Rate (Mbps)",
+                               "99th Percentile Latency (us)",
+                               "",
+                               y_scale='linear',
+                               x_min_factor=0.98,
+                               x_max_factor=1.02,
+                               y_min_factor=0.9,
+                               y_max_factor=1.05,
+                               xticks=data_xticks,
+                               xtick_labels=data_xtick_labels)
+
+    xlabels = ax2.get_xticklabels()
+    plt.setp(xlabels, rotation=0, fontsize=10)
+
+    xlabels = ax3.get_xticklabels()
+    plt.setp(xlabels, rotation=0, fontsize=10)
+
+    box = ax2.get_position()
+    ax2.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.7])
+
+    box = ax3.get_position()
+    ax3.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.7])
+
+    handles, labels = ax3.get_legend_handles_labels()
+
+    ax2.legend(handles,
+               labels,
+               shadow=True,
+               fontsize=10,
+               loc='upper center',
+               ncol=2,
+               markerscale=1.0,
+               frameon=True,
+               fancybox=True,
+               columnspacing=0.7, bbox_to_anchor=[1.1, -0.25])
+
+    plt.savefig(plots_path_prefix + experiment_tag + "_" + "qos_demo" + ".png", dpi=200)
+    plt.show()
 
 if __name__ == "__main__":
     main()
