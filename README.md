@@ -1,7 +1,6 @@
 ### How do I get set up? ###
 
 * If you don't have pip installed, then install the python package manager. (Ubuntu package: python-pip)
-* Ensure that the RYU version you install is 4.0
 * Ensure that you have OVS version 2.3.0 installed.
 * sudo pip install ryu==4.0
 * sudo pip install networkx
