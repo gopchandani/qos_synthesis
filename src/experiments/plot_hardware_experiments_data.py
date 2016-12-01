@@ -109,25 +109,41 @@ def main():
     plots_path_prefix = "hardware_experiments_plots/"
     experiment_tag = "hardware_experiments"
 
-    with open(data_path_prefix + "h1s1_to_h1s2.json", "r") as in_file:
-        h1s1_to_h1s2 = json.loads(in_file.read())
+    with open(data_path_prefix + "h1s1_to_h1s2_meters.json", "r") as in_file:
+        h1s1_to_h1s2_meters = json.loads(in_file.read())
 
-    with open(data_path_prefix + "h2s1_to_h2s2.json", "r") as in_file:
-        h2s1_to_h2s2 = json.loads(in_file.read())
+    with open(data_path_prefix + "h2s1_to_h2s2_meters.json", "r") as in_file:
+        h2s1_to_h2s2_meters = json.loads(in_file.read())
+
+    with open(data_path_prefix + "h1s1_to_h1s2_no_meters.json", "r") as in_file:
+        h1s1_to_h1s2_no_meters = json.loads(in_file.read())
+
+    with open(data_path_prefix + "h2s1_to_h2s2_no_meters.json", "r") as in_file:
+        h2s1_to_h2s2_no_meters = json.loads(in_file.read())
 
     data = {
         "Mean Latency": defaultdict(defaultdict),
         "99th Percentile Latency": defaultdict(defaultdict),
     }
 
-    data["Mean Latency"]["h1s1 -> h1s2, Different Meter"] = prepare_reshuffled_data(h1s1_to_h1s2, "mean_latency")
+    data["Mean Latency"]["h1s1 -> h1s2, Different Meter"] = prepare_reshuffled_data(h1s1_to_h1s2_meters, "mean_latency")
 
-    data["Mean Latency"]["h2s1 -> h2s2, Different Meter"] = prepare_reshuffled_data(h2s1_to_h2s2, "mean_latency")
+    data["Mean Latency"]["h2s1 -> h2s2, Different Meter"] = prepare_reshuffled_data(h2s1_to_h2s2_meters, "mean_latency")
 
-    data["99th Percentile Latency"]["h1s1 -> h1s2, Different Meter"] = prepare_reshuffled_data(h1s1_to_h1s2,
+    data["99th Percentile Latency"]["h1s1 -> h1s2, Different Meter"] = prepare_reshuffled_data(h1s1_to_h1s2_meters,
                                                                                                "nn_perc_latency")
 
-    data["99th Percentile Latency"]["h2s1 -> h2s2, Different Meter"] = prepare_reshuffled_data(h2s1_to_h2s2,
+    data["99th Percentile Latency"]["h2s1 -> h2s2, Different Meter"] = prepare_reshuffled_data(h2s1_to_h2s2_meters,
+                                                                                               "nn_perc_latency")
+
+    data["Mean Latency"]["h1s1 -> h1s2, No Meter"] = prepare_reshuffled_data(h1s1_to_h1s2_no_meters, "mean_latency")
+
+    data["Mean Latency"]["h2s1 -> h2s2, No Meter"] = prepare_reshuffled_data(h2s1_to_h2s2_no_meters, "mean_latency")
+
+    data["99th Percentile Latency"]["h1s1 -> h1s2, No Meter"] = prepare_reshuffled_data(h1s1_to_h1s2_no_meters,
+                                                                                               "nn_perc_latency")
+
+    data["99th Percentile Latency"]["h2s1 -> h2s2, No Meter"] = prepare_reshuffled_data(h2s1_to_h2s2_no_meters,
                                                                                                "nn_perc_latency")
 
     f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 3.0))
