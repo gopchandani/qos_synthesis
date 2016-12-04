@@ -161,8 +161,8 @@ class NetworkGraph(object):
         link_data = NetworkGraphLinkData(node1_id, node1_port, node2_id,
                                          node2_port, link_type,
                                          lp['bw'] * 1000000,  # in BPS
-                                         # truncate unit (ms) and convert to float and ms to second
-                                         float(lp['delay'].replace('ms','')) * 0.001)
+                                         # truncate unit (us) and convert to float and microsecond to second
+                                         float(lp['delay'].replace('us', '')) * 0.000001)
 
         '''
         link_data = NetworkGraphLinkData(node1_id, node1_port, node2_id,

@@ -16,8 +16,6 @@ from model.match import Match
 #from mcp_helper import MCP_Helper
 import mcp_helper as mcph
 
-sys.path.append("./")
-sys.path.append("../")
 
 class QosDemo(Experiment):
 

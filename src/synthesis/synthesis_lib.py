@@ -440,6 +440,26 @@ class SynthesisLib(object):
 
         return flow
 
+    # mhasan: added for best-effort traffic
+    def push_destination_host_mac_intent_flow_default_queue(self, switch_id, mac_intent, table_id, priority):
+
+        flow = self.create_base_flow(switch_id, table_id, priority)
+
+        if self.network_graph.controller == "ryu":
+            flow["match"] = mac_intent.flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+            output_action = {"type": "OUTPUT", "port": mac_intent.out_port}
+
+            # q_id = self.push_queue(switch_id, mac_intent.out_port, mac_intent.min_rate, mac_intent.max_rate)
+            # enqueue_action = {"type": "SET_QUEUE", "queue_id": q_id, "port": mac_intent.out_port}
+            # action_list = [enqueue_action, output_action]
+
+            action_list = [output_action]
+
+            self.populate_flow_action_instruction(flow, action_list, mac_intent.apply_immediately)
+            self.push_flow(switch_id, flow)
+
+        return flow
+
     def push_destination_host_mac_vlan_intent_flow(self, sw, mac_intent, table_id, priority):
 
         flow = self.create_base_flow(sw, table_id, priority)

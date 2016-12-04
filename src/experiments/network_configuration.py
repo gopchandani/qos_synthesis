@@ -17,6 +17,8 @@ from mininet.link import TCIntf, TCLink
 
 from mininet.util import custom
 from model.network_graph import NetworkGraph
+from model.network_graph import NetworkGraphLinkData
+
 from model.match import Match
 
 from experiments.topologies.ring_topo import RingTopo
@@ -40,7 +42,7 @@ from synthesis.synthesis_lib import SynthesisLib
 import networkx as nx
 import sys
 # from mcp_helper import MCP_Helper
-
+import random
 
 class NetworkConfiguration(object):
 
@@ -53,8 +55,10 @@ class NetworkConfiguration(object):
                  flow_specs,
                  # mhasan: added link param in constructor
                  topo_link_params,
-                 number_of_flows,
-                 test_case_id):
+                 number_of_RT_flows,
+                 number_of_BE_flows,
+                 test_case_id
+                 ):
 
         self.controller = controller
         self.topo_name = topo_name
@@ -67,7 +71,8 @@ class NetworkConfiguration(object):
         # mhasan: added link param
         self.topo_link_params = topo_link_params
 
-        self.number_of_flows = number_of_flows
+        self.number_of_RT_flows = number_of_RT_flows
+        self.number_of_BE_flows = number_of_BE_flows
 
         self.controller_port = 6633
         self.topo = None
@@ -81,6 +86,9 @@ class NetworkConfiguration(object):
         self.test_case_id = test_case_id
 
         self.isFeasible = True
+
+        self.min_delay_budget_for_all_flows = None  # will update later
+        self.network_diameter = None  # will update later
 
         # Setup the directory for saving configs, check if one does not exist,
         # if not, assume that the controller, mininet and rule synthesis needs to be triggered.
@@ -97,6 +105,7 @@ class NetworkConfiguration(object):
         # self.load_config = False
         # self.save_config = True
 
+
         # Initialize things to talk to controller
         self.baseUrlRyu = "http://localhost:8080/"
 
@@ -108,7 +117,7 @@ class NetworkConfiguration(object):
 
     def __str__(self):
         return self.controller + "_" + str(self.synthesis) + "_" + str(self.topo) + "_" + str(
-            self.number_of_flows) + "_" + str(self.test_case_id)
+            self.number_of_RT_flows) + "_" + str(self.test_case_id)
 
     def init_topo(self):
         # mhasan : added ring topo with param
@@ -285,8 +294,6 @@ class NetworkConfiguration(object):
 
         self.get_switches()
 
-
-
         self.ng = NetworkGraph(network_configuration=self)
         self.ng.parse_network_graph()
 
@@ -304,6 +311,92 @@ class NetworkConfiguration(object):
         self.synthesis.synthesis_lib = SynthesisLib("localhost", "8181", self.ng)
 
         return self.ng
+
+    def get_random_link_data(self, node1, node2):
+
+        delay = int(self.topo_link_params["delay"].replace('us', ''))
+        delay = random.randint(delay / 5, delay)  # get a random delay
+        link_data = NetworkGraphLinkData(node1, None, node2,
+                                         None, None,
+                                         self.topo_link_params['bw'] * 1000000,  # in BPS
+                                         # convert to float and microsecond to second
+                                         float(delay) * 0.000001)
+        return link_data
+
+    def setup_network_graph_without_mininet(self):
+        #TODO
+
+        nw_graph = nx.Graph()
+        switch_names = []
+
+        # setup the switchs
+        for i in xrange(self.topo_params["num_switches"]):
+            nw_graph.add_node("s" + str(i+1))
+            switch_names.append("s" + str(i+1))
+            # add hosts per switch
+            for j in xrange(self.topo_params["num_hosts_per_switch"]):
+                nw_graph.add_node("h" + str(i+1) + str(j+1))
+
+                # add link
+                link_data = self.get_random_link_data("s" + str(i+1), "h" + str(i+1) + str(j+1))
+                nw_graph.add_edge("s" + str(i + 1),
+                                  "h" + str(i + 1) + str(j + 1),
+                                  link_data=link_data)
+
+        #  Add links between switches
+        if self.topo_params["num_switches"] > 1:
+            for i in xrange(self.topo_params["num_switches"] - 1):
+                link_data = self.get_random_link_data(switch_names[i], switch_names[i+1])
+                nw_graph.add_edge(switch_names[i], switch_names[i+1],
+                                  link_data=link_data)
+
+            #  Form a ring only when there are more than two switches
+            if self.topo_params["num_switches"] > 2:
+                link_data = self.get_random_link_data(switch_names[0], switch_names[-1])
+                nw_graph.add_edge(switch_names[0], switch_names[-1],
+                                  link_data=link_data)
+
+                # create some random links
+                nodelist = self.noncontiguoussample(self.topo_params["num_switches"] - 1,
+                                                    int(self.topo_params["num_switches"] / 2.0))
+
+                for i in range(len(nodelist) - 1):
+                    switch_names[nodelist[i]]
+
+                    link_data = self.get_random_link_data(switch_names[nodelist[i]], switch_names[nodelist[i + 1]])
+
+                    nw_graph.add_edge(switch_names[nodelist[i]], switch_names[nodelist[i + 1]],
+                                      link_data=link_data)
+
+
+
+        # print 'adjacency matrix'
+        # nx.write_adjlist(nw_graph, sys.stdout)  # write adjacency list to screen
+        # print 'end adjacency matrix'
+
+        # print nw_graph.edges(data=True)
+
+        self.ng = NetworkGraph(network_configuration=self)
+        self.ng.graph = nw_graph
+
+        return self.ng
+
+    def noncontiguoussample(self, n, k):
+        # How many numbers we're not picking
+        total_skips = n - k
+
+        # Distribute the additional skips across the range
+        skip_cutoffs = random.sample(range(total_skips + 1), k)
+        skip_cutoffs.sort()
+
+        # Construct the final set of numbers based on our skip distribution
+        samples = []
+        for index, skip_spot in enumerate(skip_cutoffs):
+            # This is just some math-fu that translates indices within the
+            # skips to values in the overall result.
+            samples.append(1 + index + skip_spot)
+
+        return samples
 
     def start_mininet(self):
 
@@ -505,9 +598,18 @@ class NetworkConfiguration(object):
 
     def calibrate_delay(self, base_delay_budget):
 
+        #self.min_delay_budget_for_all_flows = base_delay_budget  # save for schedulability calculation
+
         diameter = nx.diameter(self.ng.get_node_graph())
+        self.network_diameter = diameter  # save for schedulability calculation
+
         base_delay_budget *= diameter  # vary with topology as Rakesh K. mentioned
+
+
+
         delta = base_delay_budget/10  # a fraction that increase the delay requirement from flow to flow
+        #delta = base_delay_budget / 5  # a fraction that increase the delay requirement from flow to flow
+        #delta = 5 * base_delay_budget  # a fraction that increase the delay requirement from flow to flow
 
         for flow_id, current_flow in enumerate(self.flow_specs):
             # do for every odd (forward flow), reverse flow will be the same.

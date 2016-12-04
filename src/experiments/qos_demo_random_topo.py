@@ -4,6 +4,7 @@ import sys
 import os
 import time
 from collections import defaultdict
+import socket
 
 sys.path.append("./")
 sys.path.append("../")
@@ -22,6 +23,16 @@ import itertools
 import pickle
 import networkx as nx
 
+import signal
+
+
+class MyTimeOutException(Exception):
+    pass
+
+
+def timeout(signum, frame):
+    raise MyTimeOutException("Timeout!")
+
 
 class QosDemo(Experiment):
 
@@ -31,7 +42,8 @@ class QosDemo(Experiment):
                  num_measurements,
                  measurement_rates,
                  number_of_test_cases,
-                 number_of_flow_list,
+                 number_of_RT_flow_list,
+                 number_of_BE_flow_list,
                  base_delay_budget,
                  link_delay_upper_bound):
 
@@ -42,7 +54,8 @@ class QosDemo(Experiment):
         self.measurement_rates = measurement_rates
 
         self.number_of_test_cases = number_of_test_cases
-        self.number_of_flow_list = number_of_flow_list
+        self.number_of_RT_flow_list = number_of_RT_flow_list
+        self.number_of_BE_flow_list = number_of_BE_flow_list
 
         self.base_delay_budget = base_delay_budget
         self.link_delay_upper_bound = link_delay_upper_bound
@@ -78,10 +91,14 @@ class QosDemo(Experiment):
                 continue
 
             # mcph.print_path(nc)
+            # with only RT_flows
             # mcph.synthesize_flow_specifications(nc)
 
             # usues default queue (no delay-guarantee)
-            mcph.synthesize_flow_specifications_default_queue(nc)
+            #mcph.synthesize_flow_specifications_default_queue(nc)
+
+            # Synthesize flows (may have both RT and BE
+            mcph.synthesize_flow_specifications_with_best_effort(nc)
 
             # nc.mininet_obj.pingAll('1')
             self.measure_flow_rates(nc)
@@ -145,25 +162,41 @@ class QosDemo(Experiment):
 
                     fcnt += 1
 
-                    print "=== netperf output (Flow {} to {}, Rate: {}, Test ID: {}, #of Flow: {}, Flow ID: {}) ===".format(
-                        fs.src_host_id, fs.dst_host_id,
-                        fs.measurement_rates[j], nc.test_case_id, nc.number_of_flows, fcnt)
-
-                    netperf_output_string = fs.mn_src_host.read()
-
-                    print "Max possible delay (round-trip):{} microsecond!".format(
-                        self.link_delay_upper_bound * nx.diameter(nc.ng.get_node_graph()) * 1000 * 2)
-
-                    print netperf_output_string
+                    signal.signal(signal.SIGALRM, timeout)
+                    # see whether there is any output from netperf
+                    signal.alarm(10)
 
                     try:
-                        s1 = fs.parse_measurements(netperf_output_string)
-                    except StandardError:
-                        print "Invalid result from netperf. Unable to parse!"
-                        fs.measurements[fs.measurement_rates[j]].append(fs.get_null_measurement())
+                        netperf_output_string = fs.mn_src_host.read()
+                    except MyTimeOutException:
+                        print "==== Timeout while reading netperf output. Aborting... ===="
+                        continue
                     else:
-                        fs.measurements[fs.measurement_rates[j]].append(fs.parse_measurements(netperf_output_string))
-                        #print "saving netperf results!"
+                        # disable alarm
+                        signal.alarm(0)
+                        signal.signal(signal.SIGALRM, signal.SIG_DFL)
+
+                        print "Delay Budget (e2e):{} microsecond, Max possible delay (round-trip):{} microsecond.".format(
+                            fs.delay_budget*1000*1000,  # in us
+                            # link_delay_upper bound in us
+                            self.link_delay_upper_bound * nx.diameter(nc.ng.get_node_graph()) * 2)
+
+
+                        print "=== netperf output: [Flow {} to {} ({}), Rate: {}, Test ID: {}, #of RT-Flow: {}, #of BE-Flow: {}, Flow ID: {}] ===".format(
+                            fs.src_host_id, fs.dst_host_id, fs.tag,
+                            fs.measurement_rates[j], nc.test_case_id, nc.number_of_RT_flows, nc.number_of_BE_flows,
+                            fcnt)
+
+                        print netperf_output_string
+
+                        try:
+                            s1 = fs.parse_measurements(netperf_output_string)
+                        except StandardError:
+                            print "Invalid result from netperf. Unable to parse Flow ID {}!".format(fcnt)
+                            fs.measurements[fs.measurement_rates[j]].append(fs.get_null_measurement())
+                        else:
+                            fs.measurements[fs.measurement_rates[j]].append(fs.parse_measurements(netperf_output_string))
+                            #print "saving netperf results!"
 
     def parse_flow_measurement_output(self):
 
@@ -182,9 +215,15 @@ class QosDemo(Experiment):
                 max_nn_latency = 0
                 min_throughput = "inf"
                 max_delay_budget = 0
+                min_delay_budget = "inf"
 
                 for fs in nc.flow_specs:
                     if not fs.measurement_rates:
+                        continue
+
+                    # we consider only real-time flows measurements
+                    if fs.tag == "best-effort":
+                        # print "best-effort, ignoring....."
                         continue
 
                     tmp = fs.measurements[fs.measurement_rates[j]]
@@ -214,12 +253,16 @@ class QosDemo(Experiment):
                     if fs.delay_budget > max_delay_budget:
                         max_delay_budget = fs.delay_budget
 
+                    if fs.delay_budget < min_delay_budget:
+                        min_delay_budget = fs.delay_budget
+
                 diameter = nx.diameter(nc.ng.get_node_graph())
                 max_possible_delay = self.link_delay_upper_bound * diameter
                 max_possible_delay *= 1000  # convert to microsecond (since netperf output in microsecond)
                 max_bw_req = max(self.measurement_rates)
 
-                val_dict = {"number_of_flows": nc.number_of_flows,
+                val_dict = {"number_of_RT_flows": nc.number_of_RT_flows,
+                            "number_of_BE_flows": nc.number_of_BE_flows,
                             "max_possible_delay_e2e": max_possible_delay,  # this is end-to-end (NOT round-trip)
                             "measurement_rates": self.measurement_rates[j],
                             "max_mean_latency": float(max_mean_latency),
@@ -227,8 +270,8 @@ class QosDemo(Experiment):
                             "max_nn_latency": float(max_nn_latency),
                             "min_throughput": float(min_throughput),
                             "max_delay_budget_e2e": max_delay_budget * 1000000,  # in microsecond
+                            "min_delay_budget_e2e": min_delay_budget * 1000000,  # in microsecond
                             "max_bw_req": max_bw_req}
-
 
                 output_data_list.append(val_dict)
 
@@ -237,7 +280,8 @@ class QosDemo(Experiment):
         # save data to workspace for plotting
         print "Writing data as pickle object..."
         with open('objs.pickle', 'w') as f:
-            pickle.dump([self.number_of_flow_list,
+            pickle.dump([self.number_of_RT_flow_list,
+                         self.number_of_BE_flow_list,
                          self.number_of_test_cases,
                          self.measurement_rates,
                          self.base_delay_budget,
@@ -248,7 +292,8 @@ def prepare_network_configurations(num_hosts_per_switch_list,
                                    same_output_queue_list, measurement_rates, tests_duration,
                                    topo_link_params, delay_budget,
                                    number_of_switches,
-                                   number_of_flow_list,
+                                   number_of_RT_flow_list,
+                                   number_of_BE_flow_list,
                                    test_case_list,
                                    cap_rate
                                    ):
@@ -260,82 +305,105 @@ def prepare_network_configurations(num_hosts_per_switch_list,
 
             for hps in num_hosts_per_switch_list:
 
-                for number_of_flows in number_of_flow_list:
-                    flow_specs = prepare_flow_specifications(measurement_rates, tests_duration,
-                                                             number_of_switches,
-                                                             hps,
-                                                             number_of_flows,
-                                                             delay_budget,
-                                                             cap_rate)
+                for number_of_RT_flows in number_of_RT_flow_list:
+                    for number_of_BE_flows in number_of_BE_flow_list:
+                        flow_specs = prepare_flow_specifications(measurement_rates, tests_duration,
+                                                                 number_of_switches,
+                                                                 hps,
+                                                                 number_of_RT_flows,
+                                                                 number_of_BE_flows,
+                                                                 delay_budget,
+                                                                 cap_rate)
 
-                    # mhasan: change with link params
-                    nc = NetworkConfiguration("ryu",
-                                              "random_with_param",
-                                              {"num_switches": number_of_switches,
-                                               "num_hosts_per_switch": hps},
-                                              conf_root="configurations/",
-                                              synthesis_name="SynthesizeQoS",
-                                              synthesis_params={"same_output_queue": same_output_queue},
-                                              flow_specs=flow_specs,
-                                              topo_link_params=topo_link_params,
-                                              number_of_flows=number_of_flows,
-                                              test_case_id=test_case+1)
+                        # mhasan: change with link params
+                        nc = NetworkConfiguration("ryu",
+                                                  "random_with_param",
+                                                  {"num_switches": number_of_switches,
+                                                   "num_hosts_per_switch": hps},
+                                                  conf_root="configurations/",
+                                                  synthesis_name="SynthesizeQoS",
+                                                  synthesis_params={"same_output_queue": same_output_queue},
+                                                  flow_specs=flow_specs,
+                                                  topo_link_params=topo_link_params,
+                                                  number_of_RT_flows=number_of_RT_flows,
+                                                  number_of_BE_flows=number_of_BE_flows,
+                                                  test_case_id=test_case+1)
 
-                    nc_list.append(nc)
+                        nc_list.append(nc)
 
     return nc_list
 
 
-def prepare_flow_specifications(measurement_rates, tests_duration, number_of_switches, hps, number_of_flows, delay_budget, cap_rate):
+def get_forward_reverse_flow(measurement_rates, cap_rate, indx, nxtindx, flow_match, delay_budget, tests_duration, tag):
+    # generate random bw_requirements
+    current_flow_measurement_rates = []
+    for j in range(len(measurement_rates)):
+        current_flow_measurement_rates.append(random.randint(1, measurement_rates[j]))
+
+    current_flow_cap_rate = cap_rate + max(current_flow_measurement_rates)
+
+    src = "h" + str(indx[0]) + str(indx[1])
+    dst = "h" + str(nxtindx[0]) + str(nxtindx[1])
+
+    forward_flow = FlowSpecification(src_host_id=src,
+                                     dst_host_id=dst,
+                                     configured_rate=current_flow_cap_rate,
+                                     flow_match=flow_match,
+                                     measurement_rates=current_flow_measurement_rates,
+                                     tests_duration=tests_duration,
+                                     delay_budget=delay_budget,
+                                     tag=tag)
+
+    reverse_flow = FlowSpecification(src_host_id=dst,
+                                     dst_host_id=src,
+                                     configured_rate=current_flow_cap_rate,
+                                     flow_match=flow_match,
+                                     measurement_rates=[],
+                                     tests_duration=tests_duration,
+                                     delay_budget=delay_budget,
+                                     tag=tag)
+
+    return forward_flow, reverse_flow
 
 
+def prepare_flow_specifications(measurement_rates, tests_duration, number_of_switches, hps, number_of_RT_flows,
+                                number_of_BE_flows, delay_budget, cap_rate):
 
     flow_specs = []
 
     flow_match = Match(is_wildcard=True)
     flow_match["ethernet_type"] = 0x0800
 
-    #flowlist = random.sample(range(1, number_of_switches), number_of_flows+1)
-
     flowlist = list(itertools.product(range(1, number_of_switches+1), range(1, hps+1)))
 
-    index_list = random.sample(range(len(flowlist)), number_of_flows+1)
+    # for real-time flows
+    index_list = random.sample(range(len(flowlist)), number_of_RT_flows + 1) # for real-time flows
 
-    for i in range(number_of_flows):
+    for i in range(number_of_RT_flows):
         indx = flowlist[index_list[i]]
-        nxtindx = flowlist[index_list[i+1]]
+        rnd = range(1, indx[0]) + range(indx[0]+1, number_of_switches+1)
+        nxtindx = (random.choice(rnd), random.randint(1, hps))
 
-        # rand_host = random.randint(1, hps)
-        # src = "h" + str(flowlist[i]) + str(rand_host)
-        # dst = "h" + str(flowlist[i+1]) + str(rand_host)
+        #nxtindx = flowlist[index_list[i+1]]
 
-        #db = random.randint(delay_budget[0],delay_budget[1]) # generate a random delay
+        forward_flow, reverse_flow = get_forward_reverse_flow(measurement_rates, cap_rate, indx, nxtindx, flow_match,
+                                                              delay_budget, tests_duration, "real-time")
 
-        # generate random bw_requirements
-        current_flow_measurement_rates = []
-        for j in range(len(measurement_rates)):
-            current_flow_measurement_rates.append(random.randint(1, measurement_rates[j]))
+        flow_specs.append(forward_flow)
+        flow_specs.append(reverse_flow)
 
-        current_flow_cap_rate = cap_rate + max(current_flow_measurement_rates)
+    # for best-effort flows
+    index_list = random.sample(range(len(flowlist)), number_of_BE_flows + 1)  # for best-effort flows
 
-        src = "h" + str(indx[0]) + str(indx[1])
-        dst = "h" + str(nxtindx[0]) + str(nxtindx[1])
+    for i in range(number_of_BE_flows):
+        indx = flowlist[index_list[i]]
+        rnd = range(1, indx[0]) + range(indx[0] + 1, number_of_switches + 1)
+        nxtindx = (random.choice(rnd), random.randint(1, hps))
 
-        forward_flow = FlowSpecification(src_host_id=src,
-                                         dst_host_id=dst,
-                                         configured_rate=current_flow_cap_rate,
-                                         flow_match=flow_match,
-                                         measurement_rates=current_flow_measurement_rates,
-                                         tests_duration=tests_duration,
-                                         delay_budget=delay_budget)
+        #nxtindx = flowlist[index_list[i + 1]]
 
-        reverse_flow = FlowSpecification(src_host_id=dst,
-                                         dst_host_id=src,
-                                         configured_rate=current_flow_cap_rate,
-                                         flow_match=flow_match,
-                                         measurement_rates=[],
-                                         tests_duration=tests_duration,
-                                         delay_budget=delay_budget)
+        forward_flow, reverse_flow = get_forward_reverse_flow(measurement_rates, cap_rate, indx, nxtindx, flow_match,
+                                                              delay_budget, tests_duration, "best-effort")
 
         flow_specs.append(forward_flow)
         flow_specs.append(reverse_flow)
@@ -345,7 +413,7 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
 
 def main():
 
-    num_iterations = 2
+    num_iterations = 5
 
     tests_duration = 10
     measurement_rates = [10]  # generate a random number between [1,k] (MBPS)
@@ -354,18 +422,20 @@ def main():
     num_hosts_per_switch_list = [2]
     same_output_queue_list = [False]
 
-    # number_of_flow_list = [2, 4, 6, 8]
-    number_of_flow_list = [8, 6, 4, 2]
-    # number_of_flow_list = [2]
+    # number_of_RT_flow_list = [2, 4, 6, 8]
+    # number_of_RT_flow_list = [5]
+    number_of_BE_flow_list = [3, 0]
+    number_of_RT_flow_list = [5, 4, 3, 2, 1]
 
     number_of_switches = 5
 
-    number_of_test_cases = 2  # number of experimental samples we want to examine
+    number_of_test_cases = 25  # number of experimental samples we want to examine
 
-    base_delay_budget = 0.05  # in second (50ms) (this is end-to-end requirement - netperf gives round trip)
-    link_delay_upper_bound = 1  # generate random delay between [0,k] (ms)
+    #base_delay_budget = 0.000025  # in second (25us) (this is end-to-end requirement - netperf gives round trip)
+    base_delay_budget = 0.000100  # in second (100us) (this is end-to-end requirement - netperf gives round trip)
+    link_delay_upper_bound = 125  # in us, generate random delay between [k/5,k] (us)
 
-    topo_link_params = {'bw': 5, 'delay': str(link_delay_upper_bound) + 'ms'}  # BW in MBPS
+    topo_link_params = {'bw': 10, 'delay': str(link_delay_upper_bound) + 'us'}  # BW in MBPS
 
     network_configurations = prepare_network_configurations(num_hosts_per_switch_list,
                                                             same_output_queue_list,
@@ -374,13 +444,15 @@ def main():
                                                             topo_link_params,
                                                             base_delay_budget,
                                                             number_of_switches,
-                                                            number_of_flow_list,
+                                                            number_of_RT_flow_list,
+                                                            number_of_BE_flow_list,
                                                             number_of_test_cases,
                                                             cap_rate)
 
     exp = QosDemo(num_iterations, network_configurations, len(measurement_rates), measurement_rates,
                   number_of_test_cases,
-                  number_of_flow_list,
+                  number_of_RT_flow_list,
+                  number_of_BE_flow_list,
                   base_delay_budget,
                   link_delay_upper_bound)
 

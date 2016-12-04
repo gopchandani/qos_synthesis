@@ -56,7 +56,7 @@ class RandomTopoWithParams(Topo):
                                          "delay": link_options["delay"]})
 
                 # create some random links
-                nodelist = self.noncontiguoussample(self.params["num_switches"]-1, int(self.params["num_switches"]/3.0))
+                nodelist = self.noncontiguoussample(self.params["num_switches"]-1, int(self.params["num_switches"]/2.0))
 
                 for i in range(len(nodelist)-1):
                     self.switch_names[nodelist[i]]
@@ -71,9 +71,12 @@ class RandomTopoWithParams(Topo):
                                              "delay": link_options["delay"]})
 
     def get_random_link_options(self, linkopts):
-        delay = int(linkopts["delay"].replace('ms', ''))
+        delay = int(linkopts["delay"].replace('us', ''))
+        #delay = float(linkopts["delay"].replace('ms', ''))
         # delay = str(random.randint(1, delay)) + 'ms'
-        delay = str(random.uniform(0, delay)) + 'ms'
+        #delay = str(random.uniform(0, delay)) + 'ms'
+        #delay = str(random.uniform(delay/100, delay)) + 'us'
+        delay = str(random.randint(delay/5, delay)) + 'us'
         link_options = {'bw': linkopts['bw'], 'delay': delay}
         return link_options
 
