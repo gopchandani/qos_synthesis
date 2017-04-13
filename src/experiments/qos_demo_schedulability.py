@@ -9,6 +9,7 @@ import socket
 sys.path.append("./")
 sys.path.append("../")
 
+
 from controller_man import ControllerMan
 from experiment import Experiment
 from network_configuration import NetworkConfiguration
@@ -22,7 +23,7 @@ import random
 import itertools
 import pickle
 import networkx as nx
-
+import copy
 import signal
 
 
@@ -71,13 +72,17 @@ class QosDemo(Experiment):
             "Maximum Latency": defaultdict(defaultdict)
         }
 
-        self.shed_count = defaultdict(dict)
+        # self.shed_count = defaultdict(dict)
+        self.shed_count_klara = defaultdict(dict)
+        self.shed_count_cmu = defaultdict(dict)
 
     def init_output_result_dictonary(self):
 
         for number_of_RT_flows in self.number_of_RT_flow_list:
                 for delay_budget in self.base_delay_budget_list:
-                    self.shed_count[number_of_RT_flows][delay_budget] = 0
+                    # self.shed_count[number_of_RT_flows][delay_budget] = 0
+                    self.shed_count_cmu[number_of_RT_flows][delay_budget] = 0
+                    self.shed_count_klara[number_of_RT_flows][delay_budget] = 0
 
     def trigger(self):
 
@@ -100,27 +105,46 @@ class QosDemo(Experiment):
             # nc.init_flow_specs()
             nc.calibrate_delay(nc.min_delay_budget_for_all_flows)
 
+            # create two copy
+            nc_cmu = copy.deepcopy(nc)
+            nc_clara = copy.deepcopy(nc)
+
             # mhasan: MCP code will go there
             # mcph.print_delay_budget(nc)
 
-            mcph.find_path_by_mcp(nc)  # update the path in 'path' variable of FlowSpecification
+            # mcph.find_path_by_mcp(nc)  # update the path in 'path' variable of FlowSpecification
+            mcph.find_path_by_mcp(nc_clara)  # update the path in 'path' variable of FlowSpecification
+            if not mcph.test_all_flow_is_schedulable(nc_clara):
+                print "Network configuration is NOT feasible by Klara (no path found for all flows)!"
+            else:
+                print "Network configuration is feasible by Klara (path found for all flows)!"
+                self.shed_count_klara[nc.number_of_RT_flows][nc.min_delay_budget_for_all_flows] += 1
 
-            if not mcph.test_all_flow_is_schedulable(nc):
-                print "Network configuration is NOT feasible (no path found)!"
-                nc.isFeasible = False
+            # reset path variable
+            # mcph.reset_flow_path(nc)
+
+            # TODO tests:
+            # mcph.find_path_by_cmu(nc)
+            mcph.find_path_by_cmu(nc_cmu)
+
+            if not mcph.test_all_flow_is_schedulable(nc_cmu):
+                print "Network configuration is NOT feasible by CMU (no path found for all flows)!"
+                # nc.isFeasible = False
                 #continue
             else:
-                print "Network configuration is feasible (path found for all flows)!"
-                nc.isFeasible = True
+                print "Network configuration is feasible by CMU (path found for all flows)!"
+                # nc.isFeasible = True
 
                 # increase schedulability count
-                self.shed_count[nc.number_of_RT_flows][nc.min_delay_budget_for_all_flows] += 1
+                #self.shed_count[nc.number_of_RT_flows][nc.min_delay_budget_for_all_flows] += 1
+                self.shed_count_cmu[nc.number_of_RT_flows][nc.min_delay_budget_for_all_flows] += 1
                 # nc.cleanup_mininet()
                 # os.system("pkill mn")  # cleanup
                 # os.system("pkill ryu-manager")  # cleanup
 
 
-        self.write_data_to_file('shedulability_traces.pickle')
+        # self.write_data_to_file('shedulability_traces.pickle')
+        self.write_data_to_file('shedulability_traces_cmu_klara.pickle')
         #print self.shed_count
         print "Experiment Done!"
 
@@ -141,7 +165,8 @@ class QosDemo(Experiment):
             pickle.dump([self.number_of_RT_flow_list,
                          self.number_of_test_cases,
                          self.base_delay_budget_list,
-                         self.shed_count,
+                         self.shed_count_cmu,
+                         self.shed_count_klara,
                          self.get_minimum_diameter()], f)
 
 
@@ -236,7 +261,11 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
     flowlist = list(itertools.product(range(1, number_of_switches+1), range(1, hps+1)))
 
     # for real-time flows
-    index_list = random.sample(range(len(flowlist)), number_of_RT_flows + 1) # for real-time flows
+    # if unique number (e.g. unique flow-per host) required
+    # index_list = random.sample(range(len(flowlist)), number_of_RT_flows + 1) # for real-time flows
+
+    # generate random indices (#of_RT_flows)
+    index_list = [random.randint(0, len(flowlist)-1) for i in range(number_of_RT_flows)]
 
     for i in range(number_of_RT_flows):
         indx = flowlist[index_list[i]]
@@ -277,18 +306,21 @@ def main():
     num_iterations = 5
 
     tests_duration = 10
-    measurement_rates = [10]  # generate a random number between [1,k] (MBPS)
-    cap_rate = 0.1
+    # measurement_rates = [10]  # generate a random number between [1,k] (MBPS)
+    measurement_rates = [5]
+    # cap_rate = 0.1
+    cap_rate = 0.0
 
     num_hosts_per_switch_list = [2]
     same_output_queue_list = [False]
 
     # number_of_RT_flow_list = [2, 4, 6, 8]
-    # number_of_RT_flow_list = [2, 3]
+    number_of_RT_flow_list = [2, 4, 6, 8, 10, 15, 20]
+    # number_of_RT_flow_list = [10]
     number_of_BE_flow_list = [0]
-    number_of_RT_flow_list = [8, 7, 6, 5, 4, 3, 2, 1]
+    # number_of_RT_flow_list = [8, 7, 6, 5, 4, 3, 2, 1]
 
-    number_of_switches = 5
+    number_of_switches = 10
 
     number_of_test_cases = 250  # number of experimental samples we want to examine
 
@@ -296,7 +328,10 @@ def main():
     #base_delay_budget = 0.000050  # in second (50us) (this is end-to-end requirement - netperf gives round trip)
 
     # in second (25-125us) (this is end-to-end requirement - netperf gives round trip)
-    base_delay_budget_list = [0.000010, 0.000015, 0.000020, 0.000025, 0.000050, 0.000075, 0.000100, 0.000125]
+    # base_delay_budget_list = [0.000010, 0.000015, 0.000020, 0.000025, 0.000050, 0.000075, 0.000100, 0.000125]
+    base_delay_budget_list = [0.000010, 0.000015, 0.000020, 0.000025, 0.000050, 0.000075, 0.000100, 0.000125, 0.000150, 0.000250, 0.000500]
+    # base_delay_budget_list = [0.000010, 0.000015]
+    # base_delay_budget_list = [0.000125, 0.000100]
 
     link_delay_upper_bound = 125  # in us, generate random delay between [k/5,k] (us)
 

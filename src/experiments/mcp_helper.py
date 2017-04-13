@@ -1,5 +1,10 @@
 __author__ = 'Monowar Hasan'
 # from __future__ import division
+
+import sys
+sys.path.append("./")
+sys.path.append("../")
+
 import networkx as nx
 # import sys
 from collections import defaultdict
@@ -8,6 +13,7 @@ import pandas as pd
 # import random
 from model.intent import Intent
 from synthesis.synthesis_lib import SynthesisLib
+import Dijkstra_shortest_path as dsp
 
 from copy import deepcopy
 
@@ -165,6 +171,14 @@ class MCPHelper(object):
         return path_src_2_dst
 
 
+class MCPHelperCMU(object):
+    def __init__(self, nw_graph, delay_budget, bw_req_flow):
+        self.nw_graph = nw_graph
+        self.bw_req_flow = bw_req_flow
+        self.delay_budget = delay_budget
+
+
+
 def print_graph(nw_graph):
 
     print "print nodes.."
@@ -250,9 +264,12 @@ def print_delay_budget(nw_config):
                                                             current_flow.delay_budget)
 
 
-
 def find_path_by_mcp(nw_config, x=10):
+
+    print "###### CALCULATING PATH USING KLARA ALGORITHM ######"
+
     nw_graph = nw_config.ng.get_node_graph()
+    # nw_graph = calibrate_graph(nw_config)
 
     for flow_id, current_flow in enumerate(nw_config.flow_specs):
 
@@ -300,6 +317,12 @@ def test_all_flow_is_schedulable(nw_config):
             return False
 
     return True
+
+
+def reset_flow_path(nw_config):
+
+    for current_flow in nw_config.flow_specs:
+        current_flow.path = None
 
 
 # Intents uses individual queue
@@ -445,4 +468,297 @@ def synthesize_flow_specifications_with_best_effort(nc):
             synthesize_each_flow_default_queue(nc, fs, synthesis_lib)
         else:
             raise NotImplementedError
+
+
+################################
+## CMU Codes (new for RTSS) ##
+################################
+
+
+
+def my_weighted_dijkstra_cmu(nw_graph, src, dst, delay_budget):
+
+    # rebuild graph with code format
+    g = dsp.Graph()
+
+    for i in nw_graph.nodes():
+        g.add_vertex(i)
+
+    for i in nw_graph.edges():
+        cost = nw_graph.edge[i[0]][i[1]]['cost']
+        # print "cost is: {}".format(cost)
+        g.add_edge(i[0], i[1], cost)
+
+    # print 'Graph data:'
+    # for v in g:
+    #     for w in v.get_connections():
+    #         vid = v.get_id()
+    #         wid = w.get_id()
+    #         print '( %s , %s, %3f)' % (vid, wid, v.get_weight(w))
+
+    dsp.dijkstra(g, g.get_vertex(src))
+
+    target = g.get_vertex(dst)
+    dj_path = [target.get_id()]
+    dsp.shortest(target, dj_path)
+    # print 'The shortest path : %s' % (dj_path[::-1])
+
+    dj_path = dj_path[::-1]  # reverse for backtracking
+
+    if len(dj_path) <= 1:
+        print "Path of length 1 or smaller detected!"
+        return []
+
+    path_delay = 0.0
+    for i in range(1, len(dj_path) - 1):
+        # path_delay += nw_graph[dj_path[i]][dj_path[i + 1]]['cost']
+        path_delay += nw_graph[dj_path[i]][dj_path[i + 1]]['link_delay']
+
+    if path_delay > delay_budget:
+        print "Delay Constraint Violated for flow {}->{}!".format(src, dst)
+        return []
+
+    return dj_path
+
+'''
+def find_path_by_cmu(nw_config):
+
+    print "###### CALCULATING PATH USING CMU ALGORITHM ######"
+
+    # nw_graph = nw_config.ng.get_node_graph()
+    nw_graph = calibrate_graph(nw_config)
+
+    for flow_id, current_flow in enumerate(nw_config.flow_specs):
+
+        # do for every odd (forward flow), reverse flow will be the same.
+        if flow_id % 2 == 0:
+
+
+
+            src = current_flow.src_host_id
+            dst = current_flow.dst_host_id
+
+            if current_flow.tag == "real-time":
+                bw_req_flow = current_flow.configured_rate_bps
+                delay_budget = current_flow.delay_budget
+                # print "delay budget: {}, BW requirement: {}".format(delay_budget, bw_req_flow)
+                lmax = current_flow.send_size
+                # bw_budget = current_flow.configured_rate_bps
+                # nw_graph = calibrate_graph(nw_config)
+
+                # print(nw_graph.edges(data=True))
+
+                add_cost_to_graph_cmu(nw_graph, lmax, bw_req_flow)
+                # path = mh.get_path_layout(src, dst)
+
+                # print "added cost cmu!"
+                # print(nw_graph.edges(data=True))
+
+                # get the path using shortest path algorithm with given cost metric
+
+                try:
+
+                    # test with new DJ
+                    # path = my_weighted_dijkstra_cmu(nw_graph, src, dst)
+
+                    path = nx.shortest_path(nw_graph, src, dst, weight="cost")
+                    # path2 = nx.shortest_path(nw_graph, src, dst)
+
+                    # for debugging (how much delay occur over a path)
+                    tdelay = 0.0
+                    resband = []
+                    for i in range(1, len(path) - 1):
+                        tdelay += nw_graph[path[i]][path[i + 1]]['link_delay']
+                        resband.append(nw_graph[path[i]][path[i + 1]]['link_bw'])
+
+                    print "path NX_cost: {}".format(path)
+                    # print "path (NX): {}".format(path2)
+                    print "delay budget: {}, BW requirement: {}".format(delay_budget, bw_req_flow)
+                    print "path delay: {}".format(tdelay)
+                    print "budget - pathdelay: {}".format(delay_budget-tdelay)
+                    print "available bw: {}".format(resband)
+
+
+                except nx.NetworkXNoPath:
+                    print "Got exception from NetworkX!"
+                    path = []
+
+                # path = nx.shortest_path(nw_graph, src, dst, "cost")
+                # print "cmu path"
+                # print path
+
+
+
+
+            elif current_flow.tag == "best-effort":
+                #print "Finding best-effort path"
+                path = nx.shortest_path(nw_config.ng.get_node_graph(),source=src,target=dst)
+                #print pp
+
+            else:
+                raise NotImplementedError
+
+            if not path:
+                print "No path found for flow {} to {}".format(current_flow.src_host_id, current_flow.dst_host_id)
+            else:
+                print "Path found for {} flow {} to {}".format(current_flow.tag, current_flow.src_host_id, current_flow.dst_host_id)
+                print path
+                # set the path for the flow
+                current_flow.path = path
+                reverse_path = path[::-1]  # path for the reverse flow
+                # print "reverse path: {}".format(reverse_path)
+                nw_config.flow_specs[flow_id+1].path = reverse_path  # set the path for the reverse flow
+
+            # print "##### before update ####"
+            # print(nw_graph.edges(data=True))
+            # decrease the available bw in the path
+            update_cost_cmu(nw_graph, current_flow)
+            # print "##### after update ####"
+            # print(nw_graph.edges(data=True))
+
+'''
+
+
+def find_path_by_cmu(nw_config):
+
+    print "###### CALCULATING PATH USING CMU ALGORITHM ######"
+
+    # nw_graph = nw_config.ng.get_node_graph()
+    nw_graph = calibrate_graph(nw_config)
+
+    for flow_id, current_flow in enumerate(nw_config.flow_specs):
+
+        # print "flowid is: {}".format(flow_id)
+
+        # do for every odd (forward flow), reverse flow will be the same.
+        if flow_id % 2 == 0:
+
+            src = current_flow.src_host_id
+            dst = current_flow.dst_host_id
+
+            if current_flow.tag == "real-time":
+                bw_req_flow = current_flow.configured_rate_bps
+                delay_budget = current_flow.delay_budget
+                # print "delay budget: {}, BW requirement: {}".format(delay_budget, bw_req_flow)
+                lmax = current_flow.send_size
+                # bw_budget = current_flow.configured_rate_bps
+
+                add_cost_to_graph_cmu(nw_graph, lmax, bw_req_flow)
+                # print "added cost cmu!"
+                # print(nw_graph.edges(data=True))
+
+                # get the path using shortest path algorithm with given cost metric
+
+                path = my_weighted_dijkstra_cmu(nw_graph, src, dst, delay_budget)
+
+                # test with networkx shortest path algorithm
+                # try:
+                #     path = nx.shortest_path(nw_graph, src, dst, weight="cost")
+                #
+                #     path_delay = 0.0
+                #     for i in range(1, len(path) - 1):
+                #         path_delay += nw_graph[path[i]][path[i + 1]]['cost']
+                #     if path_delay > delay_budget:
+                #         print "Delay Constraint Violated for flow {}->{}!".format(src, dst)
+                #         path = []
+                #
+                # except nx.NetworkXNoPath:
+                #     print "Got exception from NetworkX!"
+                #     path = []
+
+
+
+                    # print "path NX_cost: {}".format(path)
+                    # # print "path (NX): {}".format(path2)
+                    # print "delay budget: {}, BW requirement: {}".format(delay_budget, bw_req_flow)
+                    # print "path delay: {}".format(tdelay)
+                    # print "budget - pathdelay: {}".format(delay_budget-tdelay)
+                    # print "available bw: {}".format(resband)
+
+
+                # path = nx.shortest_path(nw_graph, src, dst, "cost")
+                # print "cmu path"
+                # print path
+
+            elif current_flow.tag == "best-effort":
+                # print "Finding best-effort path"
+                path = nx.shortest_path(nw_config.ng.get_node_graph(), source=src, target=dst)
+                # print pp
+
+            else:
+                raise NotImplementedError
+
+            if not path:
+                print "No path found for flow {} to {}".format(current_flow.src_host_id, current_flow.dst_host_id)
+            else:
+                print "Path found for {} flow {} to {}".format(current_flow.tag, current_flow.src_host_id, current_flow.dst_host_id)
+                print path
+                # set the path for the flow
+                current_flow.path = path
+                reverse_path = path[::-1]  # path for the reverse flow
+                # print "reverse path: {}".format(reverse_path)
+                nw_config.flow_specs[flow_id+1].path = reverse_path  # set the path for the reverse flow
+
+                # update residual bandwidth based on current allocation
+                update_reamining_bw(nw_graph, current_flow)
+
+                # print "##### before update ####"
+                # print(nw_graph.edges(data=True))
+                # decrease the available bw in the path
+                # update_cost_cmu(nw_graph, current_flow)
+                # print "##### after update ####"
+                # print(nw_graph.edges(data=True))
+
+
+# calculate cost using CMU paper equation
+# Eq. (4) in Routing Traffic with Quality-of-Service Guarantees in Integrated Services Networks
+def get_cost_cmu_eq(lmax, r, capacity, delay):
+
+    cost = float(lmax)/ float(r) + float(lmax)/float(capacity) + delay
+    if cost < 0.0:
+        cost = float("inf")
+    return cost
+
+
+# add the cost field to the network graph so that we can use shortest path algorithm
+def add_cost_to_graph_cmu(nw_graph, lmax, bw_req_flow):
+
+    for i in nw_graph.edges():
+        link_bw = nw_graph.edge[i[0]][i[1]]['link_bw']
+        if link_bw <= 0:
+            cost = float("inf")
+        else:
+            link_delay = nw_graph.edge[i[0]][i[1]]['link_delay']
+            cost = get_cost_cmu_eq(lmax, bw_req_flow, link_bw, link_delay)
+
+        nw_graph.add_edge(i[1], i[0], cost=cost)
+
+
+def update_cost_cmu(nw_graph, current_flow):
+
+    # print "Updating residual BW and Cost..."
+    # reduce the bw that allocated to that flow-path
+    bw_req_flow = current_flow.configured_rate_bps
+    lmax = current_flow.send_size
+
+    for i in range(1, len(current_flow.path) - 1):
+        link_bw = nw_graph[current_flow.path[i]][current_flow.path[i+1]]['link_bw'] - current_flow.configured_rate_bps
+        # if no residual BW, set it to high cost
+        if link_bw < 0:
+            # link_bw = float("inf")
+            newcost = float("inf")
+            # print "cost infinite!"
+        else:
+            link_delay = nw_graph[current_flow.path[i]][current_flow.path[i+1]]['link_delay']
+            newcost = get_cost_cmu_eq(lmax, bw_req_flow, link_bw, link_delay)
+
+        # update residual bandwidth
+        nw_graph[current_flow.path[i]][current_flow.path[i+1]]['link_bw'] -= current_flow.configured_rate_bps
+        nw_graph[current_flow.path[i+1]][current_flow.path[i]]['link_bw'] -= current_flow.configured_rate_bps
+        # print "link{}->{}, current bw:{}".format(current_flow.path[i], current_flow.path[i+1], nw_graph[current_flow.path[i]][current_flow.path[i+1]]['link_bw'])
+
+        # update cost
+        nw_graph[current_flow.path[i]][current_flow.path[i + 1]]['cost'] = newcost
+        nw_graph[current_flow.path[i + 1]][current_flow.path[i]]['cost'] = newcost
+        # print "link: {}->{}, current cost:{}".format(current_flow.path[i], current_flow.path[i+1], nw_graph[current_flow.path[i]][current_flow.path[i+1]]['cost'])
 
