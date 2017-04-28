@@ -299,3 +299,7 @@ class SynthesizeQoS:
             print "-----------------------------------------------------------------------------------------------"
 
         self.push_switch_changes()
+
+    def clear_all_flows(self):
+        os.system("sudo ovs-ofctl --db=tcp:192.168.1.103:6640 del-flows of-switch")
+        os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 del-flows of-switch")

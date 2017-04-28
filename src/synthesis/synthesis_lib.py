@@ -27,8 +27,8 @@ class SynthesisLib(object):
         self.h.add_credentials('admin', 'admin')
 
         # Cleanup all Queue/QoS records from OVSDB
-        os.system("sudo ovs-vsctl -- --all destroy QoS")
-        os.system("sudo ovs-vsctl -- --all destroy Queue")
+        os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 -- --all destroy QoS")
+        os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 -- --all destroy Queue")
 
         self.synthesized_primary_paths = defaultdict(defaultdict)
         self.synthesized_failover_paths = defaultdict(defaultdict)        
@@ -72,13 +72,27 @@ class SynthesisLib(object):
         self.queue_id_cntr = self.queue_id_cntr + 1
         min_rate_str = str(min_rate)
         max_rate_str = str(max_rate)
-        sw_port_str = sw + "-" + "eth" + str(port)
+        # sw_port_str = sw + "-" + "eth" + str(port)
+        sw_port_str = "ge-1/1/" + str(port)
 
-        queue_cmd = "sudo ovs-vsctl -- set Port " + sw_port_str + " qos=@newqos -- " + \
+        ip_map = {
+            "s2347862419956695048": "192.168.1.103",
+            "s2347862419956695105": "192.168.1.101"
+        }
+
+        queue_cmd = "ovs-vsctl --db=tcp:" + ip_map[sw] + ":6640 -- set Port " + sw_port_str + " qos=@newqos -- " + \
               "--id=@newqos create QoS type=linux-htb other-config:max-rate=" + "1000000000" + \
                     " queues=" + str(self.queue_id_cntr) + "=@q" + str(self.queue_id_cntr) + " -- " +\
               "--id=@q" + str(self.queue_id_cntr) + " create Queue other-config:min-rate=" + min_rate_str + \
               " other-config:max-rate=" + max_rate_str
+
+        print queue_cmd
+
+        # queue_cmd = "sudo ovs-vsctl --db=tcp:192.168.1.103:6640 -- set Port " + sw_port_str + " qos=@newqos -- " + \
+        #             "--id=@newqos create QoS type=linux-htb other-config:max-rate=" + "1000000000" + \
+        #             " queues=" + str(self.queue_id_cntr) + "=@q" + str(self.queue_id_cntr) + " -- " + \
+        #             "--id=@q" + str(self.queue_id_cntr) + " create Queue other-config:min-rate=" + min_rate_str + \
+        #             " other-config:max-rate=" + max_rate_str
 
         os.system(queue_cmd)
         time.sleep(1)
@@ -115,10 +129,10 @@ class SynthesisLib(object):
             pprint.pprint(pushed_content)
 
     def create_ryu_flow_url(self):
-        return "http://localhost:8080/stats/flowentry/add"
+        return "http://192.168.1.102:8080/stats/flowentry/add"
 
     def create_ryu_group_url(self):
-        return "http://localhost:8080/stats/groupentry/add"
+        return "http://192.168.1.102:8080/stats/groupentry/add"
 
     def push_flow(self, sw, flow):
 
@@ -476,7 +490,7 @@ class SynthesisLib(object):
 
         flow = self.create_base_flow(switch_id, table_id, priority)
 
-        if self.network_graph.controller == "ryu":
+        if  self.network_graph.controller == "ryu":
             flow["match"] = mac_intent.flow_match.generate_match_json(self.network_graph.controller, flow["match"])
             output_action = {"type": "OUTPUT", "port": mac_intent.out_port}
 
@@ -485,6 +499,18 @@ class SynthesisLib(object):
             action_list = [enqueue_action, output_action]
 
             self.populate_flow_action_instruction(flow, action_list, mac_intent.apply_immediately)
+            self.push_flow(switch_id, flow)
+
+        if self.network_graph.controller == "ryu_old":
+            flow["match"] = mac_intent.flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+            output_action = {"type": "OUTPUT", "port": mac_intent.out_port}
+
+            q_id = self.push_queue(switch_id, mac_intent.out_port, mac_intent.min_rate, mac_intent.max_rate)
+            enqueue_action = {"type": "SET_QUEUE", "queue_id": q_id, "port": mac_intent.out_port}
+            action_list = [enqueue_action, output_action]
+            flow["actions"] = action_list
+
+            # self.populate_flow_action_instruction(flow, action_list, mac_intent.apply_immediately)
             self.push_flow(switch_id, flow)
 
         return flow
@@ -704,3 +730,4 @@ class SynthesisLib(object):
             # Make and push the flow
             self.populate_flow_action_instruction(flow, action_list, True)
             self.push_flow(sw, flow)
+
