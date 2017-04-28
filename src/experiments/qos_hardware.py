@@ -44,22 +44,29 @@ class QosDemo(Experiment):
     def measure_flow_rates(self, nc):
 
         servers = [
-            {"ip": "192.168.0.1",
+            {"mgmt_ip": "10.195.99.76",
+             "ip": "192.168.0.2",
              "usr": "sdn",
              "psswd": "sdn123"},
-            {"ip": "192.168.0.2",
+            {"mgmt_ip": "10.194.228.1",
+             "ip": "192.168.0.4",
              "usr": "sdn",
              "psswd": "sdn123"},
         ]
 
         clients = [
-            {"ip": "192.168.0.3",
+            {"mgmt_ip": "10.194.95.34",
              "usr": "sdn",
              "psswd": "sdn123"},
-            {"ip": "192.168.0.4",
-             "usr": "sdn",
-             "psswd": "sdn123"},
+            {"mgmt_ip": "10.192.176.175",
+             "usr": "user",
+             "psswd": "passwd"},
         ]
+
+        if nc.synthesis_params["same_output_queue"]:
+            postfix = "shared"
+        else:
+            postfix = "separate"
 
         for i in range(self.num_iterations):
             print "iteration:", i + 1
@@ -73,17 +80,20 @@ class QosDemo(Experiment):
                     if not fs.measurement_rates:
                         continue
 
-                    netperf_cmd = fs.consturct_netperf_cmd_str(fs.measurement_rates[j])
                     # launch servers
                     for serv in servers:
-                        subprocess.call("sshpass -p '%s' ssh %s@%s '/usr/local/bin/netserver &'"
-                               % serv["psswd"], serv["usr"], serv["ip"])
+                        subprocess.call("sshpass -p %s ssh %s@%s /usr/local/bin/netserver &" \
+                               % (serv["psswd"], serv["usr"], serv["mgmt_ip"]), shell=True)
 
-                    for client in clients:
+                    for client_server in zip(clients, servers):
+                        client = client_server[0]
+                        serv = client_server[1]
 
-                        subprocess.call("sshpass -p '%s' ssh %s@%s '%s > out_%s.txt &'"
-                               % client["psswd"], client["usr"], client["ip"],
-                               netperf_cmd, str(j))
+                        netperf_cmd = fs.construct_netperf_cmd_str(fs.measurement_rates[j], serv["ip"])
+                        command = "sshpass -p %s ssh %s@%s '%s | cat > /home/%s/out_%s_%s.txt &'" \
+                               % (client["psswd"], client["usr"], client["mgmt_ip"],
+                               netperf_cmd, client["usr"], str(fs.measurement_rates[j]), postfix)
+                        subprocess.call(command, shell=True)
                     # server_output = fs.mn_dst_host.cmd("/usr/local/bin/netserver")
                     # client_output = fs.mn_src_host.cmd(fs.construct_netperf_cmd_str(fs.measurement_rates[j]))
 
@@ -99,17 +109,19 @@ class QosDemo(Experiment):
                         continue
 
                     for client in clients:
-                        output = subprocess.check_output("sshpass -p '%s' ssh %s@s 'cat out_%s.txt'"
-                                                         % client["psswd"],
+                        output = subprocess.check_output("sshpass -p %s ssh %s@%s 'cat /home/%s/out_%s_%s.txt'" \
+                                                         % (client["psswd"],
                                                          client["usr"],
-                                                         client["ip"],
-                                                         str(j))
+                                                         client["mgmt_ip"],
+                                                         client["usr"],
+                                                         str(fs.measurement_rates[j]),
+                                                         postfix), shell=True)
+                        print "Results for flow rate %s, queue: %s" % (fs.measurement_rates[j], postfix), output
                         fs.measurements[fs.measurement_rates[j]].append(fs.parse_measurements(output))
 
 
 
     def plot_qos(self):
-
         f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 3.0))
         f.tight_layout()
 
@@ -194,27 +206,31 @@ class QosDemo(Experiment):
         plt.savefig("plots/" + self.experiment_tag + "_" + "qos_demo" + ".png", dpi=100)
         plt.show()
 
-def prepare_flow_specifications(measurement_rates, tests_duration, same_queue_output):
+
+def prepare_flow_specifications(measurement_rates=None, tests_duration=None, same_queue_output=False):
 
     flow_specs = []
 
     flow_match = Match(is_wildcard=True)
     flow_match["ethernet_type"] = 0x0800
-    # switch_hosts = ["h1s1", "h2s1", "h1s2", "h2s2"]
+    switch_hosts = ["h1s1", "h2s1", "h1s2", "h2s2"]
     #switch_hosts = ["h1s1", "h2s2"]
-    switch_hosts = ["h1s1", "h1s2"]
+    # switch_hosts = ["h1s1", "h1s2"]
 
     if same_queue_output:
         configured_rate = 100
     else:
         configured_rate = 50
 
-    for src_host, dst_host in permutations(switch_hosts, 2):
+    for src_host, dst_host in [("h1s1", "h1s2"),
+                               ("h2s1", "h2s2"),
+                               ("h1s2", "h1s1"),
+                               ("h2s2", "h2s1")]:
 
         if src_host == dst_host:
             continue
 
-        measurement_rates = []
+        # measurement_rates = []
         fs = FlowSpecification(src_host_id=src_host,
                                dst_host_id=dst_host,
                                configured_rate=configured_rate,
@@ -248,8 +264,10 @@ def prepare_network_configurations(same_output_queue_list, measurement_rates,
 def main():
 
     num_iterations = 1
-    same_output_queue_list = [False, True]
-    measurement_rates = [45, 46, 47, 48, 49, 50]
+    # same_output_queue_list = [False, True]
+    same_output_queue_list = [True]
+    # measurement_rates = [45, 46, 47, 48, 49, 50]
+    measurement_rates = [45]
     nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
                                              measurement_rates=measurement_rates,
                                              tests_duration=5)

@@ -23,11 +23,11 @@ class FlowSpecification:
         self.mn_src_host = None
         self.mn_dst_host = None
 
-        self.num_sends_in_burst = 5
+        self.num_sends_in_burst = 10
         self.inter_burst_time = 1
 
-        self.send_size = configured_rate * 1000 / (8 * self.num_sends_in_burst)
-        self.configured_rate_bps = self.send_size * 8 * self.num_sends_in_burst * 1000
+        # self.send_size = configured_rate * 1e6 / (8 * self.num_sends_in_burst)
+        self.configured_rate_bps = configured_rate * 1e6
 
         self.measurement_rate_bps = None
 
@@ -36,7 +36,7 @@ class FlowSpecification:
         # mhasan: added Path
         self.path = None
 
-    def construct_netperf_cmd_str(self, measurement_rate):
+    def construct_netperf_cmd_str(self, measurement_rate, ip=""):
 
         # netperf input parameters
 
@@ -45,18 +45,18 @@ class FlowSpecification:
         # measurement_rate * 10^6 = (num_sends_in_burst * send_size * 8) / (1 * 10^-3)
         # so: send_size = measurement_rate * 10^3 / (8 * num_sends_in_burst)
 
-        self.send_size = measurement_rate * 1000 / (8 * self.num_sends_in_burst)
+        self.send_size = measurement_rate * 1e6 / (8 * self.num_sends_in_burst * 100)
         self.measurement_rate_bps = self.send_size * 8 * self.num_sends_in_burst * 1000
 
-        netperf_cmd_str = "/usr/local/bin/netperf -H " + self.mn_dst_host.IP() + \
+        netperf_cmd_str = "/usr/local/bin/netperf -H " + ip + \
                           " -w " + str(self.inter_burst_time) + \
                           " -b " + str(self.num_sends_in_burst) + \
                           " -l " + str(self.tests_duration) + \
                           " -t omni -- -d send" + \
                           " -o " + \
-                          "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY'" + \
+                          "\"THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY\"" + \
                           " -T UDP_RR " + \
-                          "-m " + str(self.send_size) + " &"
+                          "-m " + str(self.send_size)
 
         # netperf_cmd_str = "/usr/local/bin/netperf " + \
         #                   " -j " + \
@@ -73,7 +73,7 @@ class FlowSpecification:
 
     def parse_measurements(self, netperf_output_string):
 
-        data_lines = netperf_output_string.split('\r\n')
+        data_lines = netperf_output_string.split('\n')
         output_line_tokens = data_lines[2].split(',')
 
         measurements = dict()

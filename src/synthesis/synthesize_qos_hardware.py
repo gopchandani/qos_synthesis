@@ -4,6 +4,7 @@ from collections import defaultdict
 from copy import deepcopy
 import networkx as nx
 from model.intent import Intent
+import os
 
 
 class SynthesizeQoS:
@@ -95,4 +96,8 @@ class SynthesizeQoS:
                     intent.max_rate = self.combined_intent_rate_dict[intent.switch_id][intent.out_port]
 
                 self.synthesis_lib.push_destination_host_mac_intent_flow_with_qos(intent.switch_id, intent, 0, 100)
+
+    def clear_all_flows(self):
+        os.system("sshpass -p 'password' ssh admin@192.168.1.101 '/ovs/bin/ovs-ofctl del-flows of-switch'")
+        os.system("sshpass -p 'pica8' ssh admin@192.168.1.103 '/ovs/bin/ovs-ofctl del-flows of-switch'")
 

@@ -137,7 +137,7 @@ class NetworkConfiguration(object):
         host_dict = {"host_switch_id": "s" + sw[1:],
                      "host_name": "h2s1",
                      "host_IP": "192.168.0.3",
-                     "host_MAC": "FILLOUT"}
+                     "host_MAC": "28:d2:44:0e:27:88"}
 
         host_nodes[sw].append(host_dict)
 
@@ -158,7 +158,7 @@ class NetworkConfiguration(object):
         host_dict = {"host_switch_id": "s" + sw[1:],
                      "host_name": "h2s2",
                      "host_IP": "192.168.0.4",
-                     "host_MAC": "FILLOUT"}
+                     "host_MAC": "f8:ca:b8:32:c4:43"}
 
         host_nodes[sw].append(host_dict)
 	
@@ -174,7 +174,7 @@ class NetworkConfiguration(object):
         mininet_port_links["h1s1"] = {"0": ["s2347862419956695048", 47]}
         mininet_port_links["h2s1"] = {"0": ["s2347862419956695048", 43]}
         mininet_port_links["s2347862419956695048"] = {"47": ["h1s1", 47],
-                                                      "43": ["h2s1"],
+                                                      "43": ["h2s1", 43],
                                                       "45": ["s2347862419956695105", 45]}
         # mininet_port_links["s1"] = {"1": ["h1s1", 0], "2": ["h2s1", 0], "174": ["s2", 174]}
 

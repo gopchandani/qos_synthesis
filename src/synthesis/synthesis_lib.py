@@ -23,12 +23,26 @@ class SynthesisLib(object):
         self.flow_id_cntr = 0
         self.queue_id_cntr = 1
 
+        self.queue_id_cntr_per_sw = {
+            "s2347862419956695048": 0,
+            "s2347862419956695105": 0
+        }
+
         self.h = httplib2.Http(".cache")
         self.h.add_credentials('admin', 'admin')
 
         # Cleanup all Queue/QoS records from OVSDB
+        os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 clear Port ge-1/1/43")
+        os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 clear Port ge-1/1/45")
+        os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 clear Port ge-1/1/47")
         os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 -- --all destroy QoS")
         os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 -- --all destroy Queue")
+
+        os.system("sudo ovs-vsctl --db=tcp:192.168.1.101:6640 clear Port ge-1/1/43")
+        os.system("sudo ovs-vsctl --db=tcp:192.168.1.101:6640 clear Port ge-1/1/45")
+        os.system("sudo ovs-vsctl --db=tcp:192.168.1.101:6640 clear Port ge-1/1/47")
+        os.system("sudo ovs-vsctl --db=tcp:192.168.1.101:6640 -- --all destroy QoS")
+        os.system("sudo ovs-vsctl --db=tcp:192.168.1.101:6640 -- --all destroy Queue")
 
         self.synthesized_primary_paths = defaultdict(defaultdict)
         self.synthesized_failover_paths = defaultdict(defaultdict)        
@@ -68,8 +82,8 @@ class SynthesisLib(object):
             json.dump(self.synthesized_failover_paths, outfile)
 
     def push_queue(self, sw, port, min_rate, max_rate):
-
-        self.queue_id_cntr = self.queue_id_cntr + 1
+        self.queue_id_cntr_per_sw[sw] = self.queue_id_cntr_per_sw[sw] + 1
+        # self.queue_id_cntr = self.queue_id_cntr + 1
         min_rate_str = str(min_rate)
         max_rate_str = str(max_rate)
         # sw_port_str = sw + "-" + "eth" + str(port)
@@ -82,8 +96,8 @@ class SynthesisLib(object):
 
         queue_cmd = "ovs-vsctl --db=tcp:" + ip_map[sw] + ":6640 -- set Port " + sw_port_str + " qos=@newqos -- " + \
               "--id=@newqos create QoS type=linux-htb other-config:max-rate=" + "1000000000" + \
-                    " queues=" + str(self.queue_id_cntr) + "=@q" + str(self.queue_id_cntr) + " -- " +\
-              "--id=@q" + str(self.queue_id_cntr) + " create Queue other-config:min-rate=" + min_rate_str + \
+                    " queues=" + str(self.queue_id_cntr) + "=@q" + str(self.queue_id_cntr_per_sw[sw]) + " -- " +\
+              "--id=@q" + str(self.queue_id_cntr_per_sw[sw]) + " create Queue other-config:min-rate=" + min_rate_str + \
               " other-config:max-rate=" + max_rate_str
 
         print queue_cmd
@@ -97,7 +111,7 @@ class SynthesisLib(object):
         os.system(queue_cmd)
         time.sleep(1)
 
-        return self.queue_id_cntr
+        return self.queue_id_cntr_per_sw[sw]
 
     def sel_get_node_id(self, switch):
        # for node in ConfigTree.nodesHttpAccess(self.sel_session).read_collection():
