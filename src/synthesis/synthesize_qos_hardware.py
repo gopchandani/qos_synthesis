@@ -22,6 +22,9 @@ class SynthesizeQoS:
         self.apply_tag_intents_immediately = True
         self.apply_other_intents_immediately = True
 
+        if self.params["same_output_queue"]:
+            self.combined_intent_rate_dict = defaultdict(defaultdict)
+
     def __str__(self):
         params_str = ''
         for k, v in self.params.items():
@@ -65,6 +68,12 @@ class SynthesizeQoS:
             # Store the switch id in the intent
             intent.switch_id = fs.path[i]
 
+            if self.params["same_output_queue"]:
+                try:
+                    self.combined_intent_rate_dict[intent.switch_id][intent.out_port] += fs.configured_rate_bps
+                except KeyError:
+                    self.combined_intent_rate_dict[intent.switch_id][intent.out_port] = fs.configured_rate_bps
+
             intent_list.append(intent)
             in_port = link_ports_dict[fs.path[i+1]]
 
@@ -81,5 +90,9 @@ class SynthesizeQoS:
 
             # Push intents one by one to the switches
             for intent in intent_list:
+                if self.params["same_output_queue"]:
+                    intent.min_rate = self.combined_intent_rate_dict[intent.switch_id][intent.out_port]
+                    intent.max_rate = self.combined_intent_rate_dict[intent.switch_id][intent.out_port]
+
                 self.synthesis_lib.push_destination_host_mac_intent_flow_with_qos(intent.switch_id, intent, 0, 100)
 
