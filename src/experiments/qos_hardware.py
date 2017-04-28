@@ -1,6 +1,7 @@
 __author__ = 'Rakesh Kumar'
 
 import os
+import matplotlib.pyplot as plt
 import sys
 import time
 from collections import defaultdict
@@ -107,8 +108,93 @@ class QosDemo(Experiment):
 
 
 
+    def plot_qos(self):
 
-def prepare_flow_specifications(measurement_rates=None, tests_duration=None, same_queue_output):
+        f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 3.0))
+        f.tight_layout()
+
+        data_xticks = self.network_configurations[0].flow_specs[0].measurement_rates
+        data_xtick_labels = [str(x) for x in data_xticks]
+
+        # self.plot_lines_with_error_bars(ax1,
+        #                                 "Throughput",
+        #                                 "",
+        #                                 "Throughput(Mbps)",
+        #                                 "(a)",
+        #                                 y_scale='linear',
+        #                                 x_min_factor=0.98,
+        #                                 x_max_factor=1.02,
+        #                                 y_min_factor=0.01,
+        #                                 y_max_factor=1,
+        #                                 xticks=data_xticks,
+        #                                 xtick_labels=data_xtick_labels)
+        #
+        # ax1.set_ylim(40, 47.5)
+
+        self.plot_lines_with_error_bars(ax2,
+                                        "Mean Latency",
+                                        "Flow Rate (Mbps)",
+                                        "Mean Latency (ms)",
+                                        "",
+                                        y_scale='linear',
+                                        x_min_factor=0.98,
+                                        x_max_factor=1.02,
+                                        y_min_factor=0.9,
+                                        y_max_factor=1.05,
+                                        xticks=data_xticks,
+                                        xtick_labels=data_xtick_labels)
+
+        self.plot_lines_with_error_bars(ax3,
+                                        "99th Percentile Latency",
+                                        "Flow Rate (Mbps)",
+                                        "99th Percentile Latency (ms)",
+                                        "",
+                                        y_scale='linear',
+                                        x_min_factor=0.98,
+                                        x_max_factor=1.02,
+                                        y_min_factor=0.9,
+                                        y_max_factor=1.05,
+                                        xticks=data_xticks,
+                                        xtick_labels=data_xtick_labels)
+
+
+        # xlabels = ax1.get_xticklabels()
+        # plt.setp(xlabels, rotation=0, fontsize=8)
+
+        xlabels = ax2.get_xticklabels()
+        plt.setp(xlabels, rotation=0, fontsize=8)
+
+        xlabels = ax3.get_xticklabels()
+        plt.setp(xlabels, rotation=0, fontsize=8)
+
+        # Shrink current axis's height by 25% on the bottom
+        # box = ax1.get_position()
+        # ax1.set_position([box.x0, box.y0 + box.height * 0.3,
+        #                   box.width, box.height * 0.7])
+
+        box = ax2.get_position()
+        ax2.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.7])
+
+        box = ax3.get_position()
+        ax3.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.7])
+
+        handles, labels = ax3.get_legend_handles_labels()
+
+        ax2.legend(handles,
+                   labels,
+                   shadow=True,
+                   fontsize=8,
+                   loc='upper center',
+                   ncol=2,
+                   markerscale=1.0,
+                   frameon=True,
+                   fancybox=True,
+                   columnspacing=0.7, bbox_to_anchor=[1.1, -0.25])
+
+        plt.savefig("plots/" + self.experiment_tag + "_" + "qos_demo" + ".png", dpi=100)
+        plt.show()
+
+def prepare_flow_specifications(measurement_rates, tests_duration, same_queue_output):
 
     flow_specs = []
 
