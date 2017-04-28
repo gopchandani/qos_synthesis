@@ -205,6 +205,7 @@ class NetworkGraph(object):
 
             #  prepare a switch id
             switch_id = "s" + str(dpid)
+            print "SWITCH ID: " + switch_id
 
             # Check to see if a switch with this id already exists in the graph,
             # if so grab it, otherwise create it

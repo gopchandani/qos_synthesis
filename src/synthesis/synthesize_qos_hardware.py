@@ -58,7 +58,9 @@ class SynthesizeQoS:
                             fwd_flow_match,
                             in_port,
                             link_ports_dict[fs.path[i]],
-                            True)
+                            True,
+                            min_rate=fs.configured_rate_bps,
+                            max_rate=fs.configured_rate_bps)
 
             # Store the switch id in the intent
             intent.switch_id = fs.path[i]
@@ -79,5 +81,5 @@ class SynthesizeQoS:
 
             # Push intents one by one to the switches
             for intent in intent_list:
-                self.synthesis_lib.push_destination_host_mac_intent_flow(intent.switch_id, intent, 0, 100)
+                self.synthesis_lib.push_destination_host_mac_intent_flow_with_qos(intent.switch_id, intent, 0, 100)
 
