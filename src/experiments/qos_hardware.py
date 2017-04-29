@@ -265,12 +265,12 @@ def main():
 
     num_iterations = 1
     # same_output_queue_list = [False, True]
-    same_output_queue_list = [True]
+    same_output_queue_list = [False]
     # measurement_rates = [45, 46, 47, 48, 49, 50]
-    measurement_rates = [45]
+    measurement_rates = [42]
     nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
                                              measurement_rates=measurement_rates,
-                                             tests_duration=5)
+                                             tests_duration=10)
     # flow_specs = prepare_flow_specifications()
 
     # network_configuration =  NetworkConfiguration("ryu_old",

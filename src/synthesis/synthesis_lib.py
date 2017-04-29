@@ -95,7 +95,7 @@ class SynthesisLib(object):
         }
 
         queue_cmd = "ovs-vsctl --db=tcp:" + ip_map[sw] + ":6640 -- set Port " + sw_port_str + " qos=@newqos -- " + \
-              "--id=@newqos create QoS type=linux-htb other-config:max-rate=" + "1000000000" + \
+              "--id=@newqos create QoS type=linux-hfsc other-config:max-rate=" + "1000000000" + \
                     " queues=" + str(self.queue_id_cntr) + "=@q" + str(self.queue_id_cntr_per_sw[sw]) + " -- " +\
               "--id=@q" + str(self.queue_id_cntr_per_sw[sw]) + " create Queue other-config:min-rate=" + min_rate_str + \
               " other-config:max-rate=" + max_rate_str
@@ -500,7 +500,7 @@ class SynthesisLib(object):
 
         return flow
 
-    def push_destination_host_mac_intent_flow_with_qos(self, switch_id, mac_intent, table_id, priority):
+    def push_destination_host_mac_intent_flow_with_qos(self, switch_id, mac_intent, table_id, priority, q_id=None):
 
         flow = self.create_base_flow(switch_id, table_id, priority)
 
@@ -519,7 +519,8 @@ class SynthesisLib(object):
             flow["match"] = mac_intent.flow_match.generate_match_json(self.network_graph.controller, flow["match"])
             output_action = {"type": "OUTPUT", "port": mac_intent.out_port}
 
-            q_id = self.push_queue(switch_id, mac_intent.out_port, mac_intent.min_rate, mac_intent.max_rate)
+            if not q_id:
+                q_id = self.push_queue(switch_id, mac_intent.out_port, mac_intent.min_rate, mac_intent.max_rate)
             enqueue_action = {"type": "SET_QUEUE", "queue_id": q_id, "port": mac_intent.out_port}
             action_list = [enqueue_action, output_action]
             flow["actions"] = action_list

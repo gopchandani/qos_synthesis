@@ -25,6 +25,7 @@ class SynthesizeQoS:
 
         if self.params["same_output_queue"]:
             self.combined_intent_rate_dict = defaultdict(defaultdict)
+            self.queue_sw_port_dict = defaultdict(defaultdict)
 
     def __str__(self):
         params_str = ''
@@ -84,18 +85,31 @@ class SynthesizeQoS:
         
         print "Synthesizing rules in the switches..."
 
+        intent_list_dict = defaultdict(defaultdict)
         for fs in flow_specs:
-
             # Compute intents for the path of the fs
             intent_list = self.compute_path_intents(fs)
+            intent_list_dict[fs] = intent_list
 
+        if self.params["same_output_queue"]:
+            for sw in self.combined_intent_rate_dict:
+                for port in self.combined_intent_rate_dict[sw]:
+                    q_id = self.synthesis_lib.push_queue(sw, port,
+                                                         self.combined_intent_rate_dict[sw][port],
+                                                         self.combined_intent_rate_dict[sw][port])
+                    self.queue_sw_port_dict[sw][port] = q_id
+
+        for fs in flow_specs:
             # Push intents one by one to the switches
-            for intent in intent_list:
+            for intent in intent_list_dict[fs]:
                 if self.params["same_output_queue"]:
                     intent.min_rate = self.combined_intent_rate_dict[intent.switch_id][intent.out_port]
                     intent.max_rate = self.combined_intent_rate_dict[intent.switch_id][intent.out_port]
-
-                self.synthesis_lib.push_destination_host_mac_intent_flow_with_qos(intent.switch_id, intent, 0, 100)
+                    self.synthesis_lib.push_destination_host_mac_intent_flow_with_qos(intent.switch_id,
+                                                                                      intent, 0, 100,
+                                                                                      self.queue_sw_port_dict[intent.switch_id][intent.out_port])
+                else:
+                    self.synthesis_lib.push_destination_host_mac_intent_flow_with_qos(intent.switch_id, intent, 0, 100)
 
     def clear_all_flows(self):
         os.system("sshpass -p 'password' ssh admin@192.168.1.101 '/ovs/bin/ovs-ofctl del-flows of-switch'")

@@ -54,7 +54,7 @@ class FlowSpecification:
                           " -l " + str(self.tests_duration) + \
                           " -t omni -- -d send" + \
                           " -o " + \
-                          "\"THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY\"" + \
+                          "\"THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY, LOCAL_BYTES_SENT, REMOTE_BYTES_RECVD\"" + \
                           " -T UDP_RR " + \
                           "-m " + str(self.send_size)
 
