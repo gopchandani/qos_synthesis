@@ -63,8 +63,8 @@ class Action:
         if self.action_json.startswith("OUTPUT"):
             self.action_type = "output"
             self.out_port = self.action_json.split(":")[1]
-        else:
-            raise NotImplemented
+        # else:
+            # raise NotImplemented
 
     def parse_ryu_action_json(self):
 

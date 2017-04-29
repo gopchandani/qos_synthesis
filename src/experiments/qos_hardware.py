@@ -39,28 +39,53 @@ class QosDemo(Experiment):
             nc.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
             nc.init_flow_specs()
             nc.synthesis.synthesize_flow_specifications(nc.flow_specs)
+
+            self.push_arps(nc)
             self.measure_flow_rates(nc)
+
+    def push_arps(self, nc):
+
+        # For each host in the topology,
+        # send commands to add ARP entries for all other hosts
+
+        for cmd_host_dict in nc.h_hosts.values():
+            for other_host_dict in nc.h_hosts.values():
+
+                if cmd_host_dict["host_name"] == other_host_dict["host_name"]:
+                    continue
+
+                arp_cmd = "sudo arp -s " + other_host_dict["host_IP"] + " " + other_host_dict["host_MAC"]
+                print "Installing this at IP: %s" % cmd_host_dict["host_IP"]
+                print arp_cmd
+
+                command = "sshpass -p %s ssh %s@%s '%s'" \
+                               % (cmd_host_dict["psswd"],
+                                  cmd_host_dict["usr"],
+                                  cmd_host_dict["mgmt_ip"], arp_cmd)
+
+                subprocess.call(command, shell=True)
+
+            arp_cmd = "arp -n"
+            command = "sshpass -p %s ssh %s@%s '%s'" \
+                               % (cmd_host_dict["psswd"],
+                                  cmd_host_dict["usr"],
+                                  cmd_host_dict["mgmt_ip"], arp_cmd)
+
+            output = subprocess.check_output(command, shell=True)
+            print "Output after adding ARPs at host %s, IP=%s:" % (cmd_host_dict["host_name"],
+                                                                   cmd_host_dict["host_IP"])
+            print output
 
     def measure_flow_rates(self, nc):
 
         servers = [
-            {"mgmt_ip": "10.195.99.76",
-             "ip": "192.168.0.2",
-             "usr": "sdn",
-             "psswd": "sdn123"},
-            {"mgmt_ip": "10.194.228.1",
-             "ip": "192.168.0.4",
-             "usr": "sdn",
-             "psswd": "sdn123"},
+            nc.h_hosts["h43"],
+            nc.h_hosts["h26"]
         ]
 
         clients = [
-            {"mgmt_ip": "10.194.95.34",
-             "usr": "sdn",
-             "psswd": "sdn123"},
-            {"mgmt_ip": "10.192.176.175",
-             "usr": "user",
-             "psswd": "passwd"},
+            nc.h_hosts["h78"],
+            nc.h_hosts["h88"]
         ]
 
         if nc.synthesis_params["same_output_queue"]:
@@ -89,7 +114,7 @@ class QosDemo(Experiment):
                         client = client_server[0]
                         serv = client_server[1]
 
-                        netperf_cmd = fs.construct_netperf_cmd_str(fs.measurement_rates[j], serv["ip"])
+                        netperf_cmd = fs.construct_netperf_cmd_str(fs.measurement_rates[j], serv["host_IP"])
                         command = "sshpass -p %s ssh %s@%s '%s | cat > /home/%s/out_%s_%s.txt &'" \
                                % (client["psswd"], client["usr"], client["mgmt_ip"],
                                netperf_cmd, client["usr"], str(fs.measurement_rates[j]), postfix)
@@ -206,26 +231,30 @@ class QosDemo(Experiment):
         plt.savefig("plots/" + self.experiment_tag + "_" + "qos_demo" + ".png", dpi=100)
         plt.show()
 
-
 def prepare_flow_specifications(measurement_rates=None, tests_duration=None, same_queue_output=False):
 
     flow_specs = []
 
     flow_match = Match(is_wildcard=True)
     flow_match["ethernet_type"] = 0x0800
-    switch_hosts = ["h1s1", "h2s1", "h1s2", "h2s2"]
-    #switch_hosts = ["h1s1", "h2s2"]
-    # switch_hosts = ["h1s1", "h1s2"]
+    switch_hosts = ["h88", "h78", "h43", "h26"]
+    #switch_hosts = ["h88", "h26"]
+    # switch_hosts = ["h88", "h43"]
 
     if same_queue_output:
         configured_rate = 100
     else:
         configured_rate = 50
 
-    for src_host, dst_host in [("h1s1", "h1s2"),
-                               ("h2s1", "h2s2"),
-                               ("h1s2", "h1s1"),
-                               ("h2s2", "h2s1")]:
+    # for src_host, dst_host in permutations(switch_hosts, 2):
+    for src_host, dst_host in [("h88", "h26"),
+                               ("h26", "h88"),
+                               ("h43", "h78"),
+                               ("h78", "h43")]:
+    # for src_host, dst_host in [("h88", "h43"),
+    #                            ("h78", "h26"),
+    #                            ("h43", "h88"),
+    #                            ("h26", "h78")]:
 
         if src_host == dst_host:
             continue
@@ -267,7 +296,7 @@ def main():
     # same_output_queue_list = [False, True]
     same_output_queue_list = [False]
     # measurement_rates = [45, 46, 47, 48, 49, 50]
-    measurement_rates = [42]
+    measurement_rates = [15]
     nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
                                              measurement_rates=measurement_rates,
                                              tests_duration=10)

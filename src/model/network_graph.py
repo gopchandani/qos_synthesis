@@ -107,7 +107,8 @@ class NetworkGraph(object):
 
                 h_obj = Host(mininet_host_dict["host_name"],
                              self,
-                             mininet_host_dict["host_IP"],
+                             None,
+                             # mininet_host_dict["host_IP"],
                              mininet_host_dict["host_MAC"],
                              host_switch_obj,
                              sw_obj.ports[mininet_port_links[mininet_host_dict["host_name"]]['0'][1]])
