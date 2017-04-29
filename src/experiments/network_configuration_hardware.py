@@ -130,24 +130,24 @@ class NetworkConfiguration(object):
         sw = "s2347862419956695048"
         host_nodes[sw] = []
         host_dict = {"host_switch_id": "s" + sw[1:],
-                     "host_name": "h26",
-                     "host_IP": "192.168.0.4",
-                     "mgmt_ip": "10.195.99.76",
-                     "usr": "sdn",
-                     "psswd": "sdn123",
-                     "host_MAC": "00:21:cc:64:2c:26"}
+                     "host_name": "6d",
+                     "host_IP": "192.168.0.1",
+                     "mgmt_ip": "10.195.229.241",
+                     "usr": "pi",
+                     "psswd": "raspberry",
+                     "host_MAC": "b8:27:eb:3e:a2:6d"}
 
         self.h_hosts[host_dict["host_name"]] = host_dict
 
         host_nodes[sw].append(host_dict)
 
         host_dict = {"host_switch_id": "s" + sw[1:],
-                     "host_name": "h78",
-                     "host_IP": "192.168.0.3",
-                     "mgmt_ip": "10.194.95.34",
-                     "usr": "sdn",
-                     "psswd": "sdn123",
-                     "host_MAC": "28:d2:44:89:8b:78"}
+                     "host_name": "e5",
+                     "host_IP": "192.168.0.2",
+                     "mgmt_ip": "10.194.45.219",
+                     "usr": "pi",
+                     "psswd": "raspberry",
+                     "host_MAC": "b8:27:eb:7a:19:e5"}
 
         self.h_hosts[host_dict["host_name"]] = host_dict
 
@@ -157,24 +157,24 @@ class NetworkConfiguration(object):
         host_nodes[sw] = []
 
         host_dict = {"host_switch_id": "s" + sw[1:],
-                     "host_name": "h43",
-                     "host_IP": "192.168.0.2",
-                     "mgmt_ip": "10.194.228.1",
-                     "usr": "sdn",
-                     "psswd": "sdn123",
-                     "host_MAC": "f8:ca:b8:32:c4:43"}
+                     "host_name": "33",
+                     "host_IP": "192.168.0.3",
+                     "mgmt_ip": "10.195.36.116",
+                     "usr": "pi",
+                     "psswd": "raspberry",
+                     "host_MAC": "b8:27:eb:1e:92:33"}
 
         self.h_hosts[host_dict["host_name"]] = host_dict
 
         host_nodes[sw].append(host_dict)
 
         host_dict = {"host_switch_id": "s" + sw[1:],
-                     "host_name": "h88",
-                     "host_IP": "192.168.0.1",
-                     "mgmt_ip": "10.192.176.175",
-                     "usr": "user",
-                     "psswd": "passwd",
-                     "host_MAC": "28:d2:44:0e:27:88"}
+                     "host_name": "2b",
+                     "host_IP": "192.168.0.4",
+                     "mgmt_ip": "10.195.161.97",
+                     "usr": "pi",
+                     "psswd": "raspberry",
+                     "host_MAC": "b8:27:eb:de:57:2b"}
 
         self.h_hosts[host_dict["host_name"]] = host_dict
 
@@ -189,21 +189,21 @@ class NetworkConfiguration(object):
 
         mininet_port_links = {}
 
-        mininet_port_links["h26"] = {"0": ["s2347862419956695048", 47]}
-        mininet_port_links["h78"] = {"0": ["s2347862419956695048", 43]}
-        mininet_port_links["s2347862419956695048"] = {"47": ["h26", 47],
-                                                      "43": ["h78", 43],
+        mininet_port_links["6d"] = {"0": ["s2347862419956695048", 47]}
+        mininet_port_links["e5"] = {"0": ["s2347862419956695048", 43]}
+        mininet_port_links["s2347862419956695048"] = {"47": ["6d", 47],
+                                                      "43": ["e5", 43],
                                                       "45": ["s2347862419956695105", 45]}
-        # mininet_port_links["s1"] = {"1": ["h88", 0], "2": ["h78", 0], "174": ["s2", 174]}
+        # mininet_port_links["s1"] = {"1": ["2b", 0], "2": ["e5", 0], "174": ["s2", 174]}
 
-        mininet_port_links["h43"] = {"0": ["s2347862419956695105", 47]}
-        mininet_port_links["h88"] = {"0": ["s2347862419956695105", 43]}
-        mininet_port_links["s2347862419956695105"] = {"47": ["h43", 47],
-                                                      "43": ["h88", 43],
+        mininet_port_links["33"] = {"0": ["s2347862419956695105", 47]}
+        mininet_port_links["2b"] = {"0": ["s2347862419956695105", 43]}
+        mininet_port_links["s2347862419956695105"] = {"47": ["33", 47],
+                                                      "43": ["2b", 43],
                                                       "45": ["s2347862419956695048", 45]}
-        # mininet_port_links["h43"] = {"0": ["s2", 1]}
-        # mininet_port_links["h26"] = {"0": ["s2", 2]}
-        # mininet_port_links["s2"] = {"1": ["h43", 0], "2": ["h26", 0], "174": ["s1", 174]}
+        # mininet_port_links["33"] = {"0": ["s2", 1]}
+        # mininet_port_links["6d"] = {"0": ["s2", 2]}
+        # mininet_port_links["s2"] = {"1": ["33", 0], "2": ["6d", 0], "174": ["s1", 174]}
 
         with open(self.conf_path + "mininet_port_links.json", "w") as outfile:
             json.dump(mininet_port_links, outfile)
@@ -214,13 +214,13 @@ class NetworkConfiguration(object):
 
         mininet_link_params = []
 
-        mininet_link_params.append({"node1": "h26", "delay": "3ms", "node2": "s2347862419956695048", "bw": 5})
-        mininet_link_params.append({"node1": "h78", "delay": "3ms", "node2": "s2347862419956695048", "bw": 5})
+        mininet_link_params.append({"node1": "6d", "delay": "3ms", "node2": "s2347862419956695048", "bw": 5})
+        mininet_link_params.append({"node1": "e5", "delay": "3ms", "node2": "s2347862419956695048", "bw": 5})
         mininet_link_params.append({"node1": "s2347862419956695048", "delay": "3ms", "node2": "s2347862419956695105", "bw": 5})
-        mininet_link_params.append({"node1": "h43", "delay": "3ms", "node2": "s2347862419956695105", "bw": 5})
-        mininet_link_params.append({"node1": "h88", "delay": "3ms", "node2": "s2347862419956695105", "bw": 5})
-        # mininet_link_params.append({"node1": "h43", "delay": "3ms", "node2": "s2", "bw": 5})
-        # mininet_link_params.append({"node1": "h26", "delay": "3ms", "node2": "s2", "bw": 5})
+        mininet_link_params.append({"node1": "33", "delay": "3ms", "node2": "s2347862419956695105", "bw": 5})
+        mininet_link_params.append({"node1": "2b", "delay": "3ms", "node2": "s2347862419956695105", "bw": 5})
+        # mininet_link_params.append({"node1": "33", "delay": "3ms", "node2": "s2", "bw": 5})
+        # mininet_link_params.append({"node1": "6d", "delay": "3ms", "node2": "s2", "bw": 5})
 
         with open(self.conf_path + "mininet_link_params.json", "w") as outfile:
             json.dump(mininet_link_params, outfile)

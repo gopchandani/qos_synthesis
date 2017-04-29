@@ -79,13 +79,13 @@ class QosDemo(Experiment):
     def measure_flow_rates(self, nc):
 
         servers = [
-            nc.h_hosts["h43"],
-            nc.h_hosts["h26"]
+            nc.h_hosts["33"],
+            nc.h_hosts["6d"]
         ]
 
         clients = [
-            nc.h_hosts["h78"],
-            nc.h_hosts["h88"]
+            nc.h_hosts["e5"],
+            nc.h_hosts["2b"]
         ]
 
         if nc.synthesis_params["same_output_queue"]:
@@ -237,9 +237,9 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, sam
 
     flow_match = Match(is_wildcard=True)
     flow_match["ethernet_type"] = 0x0800
-    switch_hosts = ["h88", "h78", "h43", "h26"]
-    #switch_hosts = ["h88", "h26"]
-    # switch_hosts = ["h88", "h43"]
+    switch_hosts = ["2b", "e5", "33", "6d"]
+    #switch_hosts = ["2b", "6d"]
+    # switch_hosts = ["2b", "33"]
 
     if same_queue_output:
         configured_rate = 100
@@ -247,14 +247,14 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, sam
         configured_rate = 50
 
     # for src_host, dst_host in permutations(switch_hosts, 2):
-    for src_host, dst_host in [("h88", "h26"),
-                               ("h26", "h88"),
-                               ("h43", "h78"),
-                               ("h78", "h43")]:
-    # for src_host, dst_host in [("h88", "h43"),
-    #                            ("h78", "h26"),
-    #                            ("h43", "h88"),
-    #                            ("h26", "h78")]:
+    for src_host, dst_host in [("2b", "6d"),
+                               ("6d", "2b"),
+                               ("33", "e5"),
+                               ("e5", "33")]:
+    # for src_host, dst_host in [("2b", "33"),
+    #                            ("e5", "6d"),
+    #                            ("33", "2b"),
+    #                            ("6d", "e5")]:
 
         if src_host == dst_host:
             continue
