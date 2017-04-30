@@ -28,7 +28,7 @@ class QosDemo(Experiment):
 
         super(QosDemo, self).__init__("number_of_hosts", 2)
         self.network_configurations = network_configurations
-        self.controller_port = 6633
+        self.controller_port = 6666
         self.num_iterations = num_iterations
         self.num_measurements = num_measurements
 
@@ -55,21 +55,26 @@ class QosDemo(Experiment):
                     continue
 
                 arp_cmd = "sudo arp -s " + other_host_dict["host_IP"] + " " + other_host_dict["host_MAC"]
+
                 print "Installing this at IP: %s" % cmd_host_dict["host_IP"]
-                print arp_cmd
 
                 command = "sshpass -p %s ssh %s@%s '%s'" \
                                % (cmd_host_dict["psswd"],
                                   cmd_host_dict["usr"],
                                   cmd_host_dict["mgmt_ip"], arp_cmd)
 
-                subprocess.call(command, shell=True)
+                print command
 
-            arp_cmd = "arp -n"
+                subprocess.call(command, shell=True)
+                time.sleep(1)
+
+            arp_cmd = "/usr/sbin/arp -n"
             command = "sshpass -p %s ssh %s@%s '%s'" \
                                % (cmd_host_dict["psswd"],
                                   cmd_host_dict["usr"],
                                   cmd_host_dict["mgmt_ip"], arp_cmd)
+
+            print command
 
             output = subprocess.check_output(command, shell=True)
             print "Output after adding ARPs at host %s, IP=%s:" % (cmd_host_dict["host_name"],
@@ -79,13 +84,13 @@ class QosDemo(Experiment):
     def measure_flow_rates(self, nc):
 
         servers = [
-            nc.h_hosts["33"],
-            nc.h_hosts["6d"]
+            nc.h_hosts["66"],
+            nc.h_hosts["38"]
         ]
 
         clients = [
             nc.h_hosts["e5"],
-            nc.h_hosts["2b"]
+            nc.h_hosts["7e"]
         ]
 
         if nc.synthesis_params["same_output_queue"]:
@@ -118,6 +123,9 @@ class QosDemo(Experiment):
                         command = "sshpass -p %s ssh %s@%s '%s | cat > /home/%s/out_%s_%s.txt &'" \
                                % (client["psswd"], client["usr"], client["mgmt_ip"],
                                netperf_cmd, client["usr"], str(fs.measurement_rates[j]), postfix)
+
+                        print command
+
                         subprocess.call(command, shell=True)
                     # server_output = fs.mn_dst_host.cmd("/usr/local/bin/netserver")
                     # client_output = fs.mn_src_host.cmd(fs.construct_netperf_cmd_str(fs.measurement_rates[j]))
@@ -143,8 +151,6 @@ class QosDemo(Experiment):
                                                          postfix), shell=True)
                         print "Results for flow rate %s, queue: %s" % (fs.measurement_rates[j], postfix), output
                         fs.measurements[fs.measurement_rates[j]].append(fs.parse_measurements(output))
-
-
 
     def plot_qos(self):
         f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 3.0))
@@ -237,9 +243,9 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, sam
 
     flow_match = Match(is_wildcard=True)
     flow_match["ethernet_type"] = 0x0800
-    switch_hosts = ["2b", "e5", "33", "6d"]
-    #switch_hosts = ["2b", "6d"]
-    # switch_hosts = ["2b", "33"]
+    switch_hosts = ["7e", "e5", "66", "38"]
+    #switch_hosts = ["7e", "38"]
+    # switch_hosts = ["7e", "66"]
 
     if same_queue_output:
         configured_rate = 100
@@ -247,14 +253,14 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, sam
         configured_rate = 50
 
     # for src_host, dst_host in permutations(switch_hosts, 2):
-    for src_host, dst_host in [("2b", "6d"),
-                               ("6d", "2b"),
-                               ("33", "e5"),
-                               ("e5", "33")]:
-    # for src_host, dst_host in [("2b", "33"),
-    #                            ("e5", "6d"),
-    #                            ("33", "2b"),
-    #                            ("6d", "e5")]:
+    for src_host, dst_host in [("7e", "38"),
+                               ("38", "7e"),
+                               ("66", "e5"),
+                               ("e5", "66")]:
+    # for src_host, dst_host in [("7e", "66"),
+    #                            ("e5", "38"),
+    #                            ("66", "7e"),
+    #                            ("38", "e5")]:
 
         if src_host == dst_host:
             continue
