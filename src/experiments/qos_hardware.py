@@ -1,6 +1,10 @@
 __author__ = 'Rakesh Kumar'
 
 import os
+import threading
+import paramiko
+paramiko.util.log_to_file("filename.log")
+
 import matplotlib.pyplot as plt
 import sys
 import time
@@ -24,14 +28,15 @@ class QosDemo(Experiment):
     def __init__(self,
                  network_configurations,
                  num_iterations,
-                 num_measurements):
+                 num_measurements,
+                 measurement_rates):
 
         super(QosDemo, self).__init__("number_of_hosts", 2)
         self.network_configurations = network_configurations
         self.controller_port = 6666
         self.num_iterations = num_iterations
         self.num_measurements = num_measurements
-
+        self.measurement_rates = measurement_rates
 
     def trigger(self):
         for nc in self.network_configurations:
@@ -42,6 +47,21 @@ class QosDemo(Experiment):
 
             self.push_arps(nc)
             self.measure_flow_rates(nc)
+
+    def run_cmd_via_paramiko(self, IP, port, username, password, command):
+
+        s = paramiko.SSHClient()
+        s.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        s.load_system_host_keys()
+        s.connect(IP, port, username, password)
+        (stdin, stdout, stderr) = s.exec_command(command)
+
+        for line in stdout.readlines():
+            print line
+
+        s.close()
+
+        return list(stdout.readlines())
 
     def push_arps(self, nc):
 
@@ -58,28 +78,17 @@ class QosDemo(Experiment):
 
                 print "Installing this at IP: %s" % cmd_host_dict["host_IP"]
 
-                command = "sshpass -p %s ssh %s@%s '%s'" \
-                               % (cmd_host_dict["psswd"],
-                                  cmd_host_dict["usr"],
-                                  cmd_host_dict["mgmt_ip"], arp_cmd)
-
-                print command
-
-                subprocess.call(command, shell=True)
-                time.sleep(1)
+                self.run_cmd_via_paramiko(cmd_host_dict["mgmt_ip"], 22,
+                                          cmd_host_dict["usr"],
+                                          cmd_host_dict["psswd"],
+                                          arp_cmd)
 
             arp_cmd = "/usr/sbin/arp -n"
-            command = "sshpass -p %s ssh %s@%s '%s'" \
-                               % (cmd_host_dict["psswd"],
-                                  cmd_host_dict["usr"],
-                                  cmd_host_dict["mgmt_ip"], arp_cmd)
 
-            print command
-
-            output = subprocess.check_output(command, shell=True)
-            print "Output after adding ARPs at host %s, IP=%s:" % (cmd_host_dict["host_name"],
-                                                                   cmd_host_dict["host_IP"])
-            print output
+            self.run_cmd_via_paramiko(cmd_host_dict["mgmt_ip"], 22,
+                                      cmd_host_dict["usr"],
+                                      cmd_host_dict["psswd"],
+                                      arp_cmd)
 
     def measure_flow_rates(self, nc):
 
@@ -87,6 +96,10 @@ class QosDemo(Experiment):
             nc.h_hosts["66"],
             nc.h_hosts["38"]
         ]
+        # launch servers
+        for serv in servers:
+            command = "/usr/local/bin/netserver"
+            self.run_cmd_via_paramiko(serv["mgmt_ip"], 22, serv["usr"], serv["psswd"], command)
 
         clients = [
             nc.h_hosts["e5"],
@@ -101,56 +114,38 @@ class QosDemo(Experiment):
         for i in range(self.num_iterations):
             print "iteration:", i + 1
 
-            for j in range(self.num_measurements):
+            for rate in self.measurement_rates:
 
-                max_fs_duration = 0
+                client_threads = []
 
-                for fs in nc.flow_specs:
+                for client_server in zip(clients, servers):
+                    client = client_server[0]
+                    serv = client_server[1]
 
-                    if not fs.measurement_rates:
-                        continue
+                    netperf_cmd = nc.flow_specs[0].construct_netperf_cmd_str(rate, serv["host_IP"])
+                    command = "%s | cat > /home/%s/out_%s_%s.txt" \
+                           % (netperf_cmd, client["usr"], str(rate), postfix)
 
-                    # launch servers
-                    for serv in servers:
-                        subprocess.call("sshpass -p %s ssh %s@%s /usr/local/bin/netserver &" \
-                               % (serv["psswd"], serv["usr"], serv["mgmt_ip"]), shell=True)
+                    client_thread = threading.Thread(target=self.run_cmd_via_paramiko,
+                                                     args=(client["mgmt_ip"], 22, client["usr"], client["psswd"], command))
+                    client_thread.start()
+                    client_threads.append(client_thread)
 
-                    for client_server in zip(clients, servers):
-                        client = client_server[0]
-                        serv = client_server[1]
+                for client_thread in client_threads:
+                    client_thread.join()
 
-                        netperf_cmd = fs.construct_netperf_cmd_str(fs.measurement_rates[j], serv["host_IP"])
-                        command = "sshpass -p %s ssh %s@%s '%s | cat > /home/%s/out_%s_%s.txt &'" \
-                               % (client["psswd"], client["usr"], client["mgmt_ip"],
-                               netperf_cmd, client["usr"], str(fs.measurement_rates[j]), postfix)
+            for rate in self.measurement_rates:
 
-                        print command
+                for client in clients:
+                    command = "cat /home/%s/out_%s_%s.txt" \
+                                                     % (client["usr"],
+                                                     str(rate),
+                                                     postfix)
 
-                        subprocess.call(command, shell=True)
-                    # server_output = fs.mn_dst_host.cmd("/usr/local/bin/netserver")
-                    # client_output = fs.mn_src_host.cmd(fs.construct_netperf_cmd_str(fs.measurement_rates[j]))
+                    print "Results for flow rate %s, queue: %s" % (rate, postfix)
+                    self.run_cmd_via_paramiko(client["mgmt_ip"], 22, client["usr"], client["psswd"], command)
 
-                    if fs.tests_duration > max_fs_duration:
-                        max_fs_duration = fs.tests_duration
-
-                # Sleep for 5 seconds more than flow duration to make sure netperf has finished.
-                time.sleep(max_fs_duration + 5)
-
-                for fs in nc.flow_specs:
-
-                    if not fs.measurement_rates:
-                        continue
-
-                    for client in clients:
-                        output = subprocess.check_output("sshpass -p %s ssh %s@%s 'cat /home/%s/out_%s_%s.txt'" \
-                                                         % (client["psswd"],
-                                                         client["usr"],
-                                                         client["mgmt_ip"],
-                                                         client["usr"],
-                                                         str(fs.measurement_rates[j]),
-                                                         postfix), shell=True)
-                        print "Results for flow rate %s, queue: %s" % (fs.measurement_rates[j], postfix), output
-                        fs.measurements[fs.measurement_rates[j]].append(fs.parse_measurements(output))
+                    #fs.measurements[fs.measurement_rates[j]].append(fs.parse_measurements(output))
 
     def plot_qos(self):
         f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 3.0))
@@ -298,11 +293,11 @@ def prepare_network_configurations(same_output_queue_list, measurement_rates,
 
 def main():
 
-    num_iterations = 1
+    num_iterations = 5
     # same_output_queue_list = [False, True]
     same_output_queue_list = [False]
     # measurement_rates = [45, 46, 47, 48, 49, 50]
-    measurement_rates = [15]
+    measurement_rates = [42]
     nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
                                              measurement_rates=measurement_rates,
                                              tests_duration=10)
@@ -314,7 +309,7 @@ def main():
     #                                   synthesis_params={"same_output_queue": True},
     #                                   flow_specs=flow_specs)
 
-    exp = QosDemo(nc_list, num_iterations, len(measurement_rates))
+    exp = QosDemo(nc_list, num_iterations, len(measurement_rates), measurement_rates)
 
     exp.trigger()
 
