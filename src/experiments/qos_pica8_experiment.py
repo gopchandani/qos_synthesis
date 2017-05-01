@@ -19,7 +19,7 @@ sys.path.append("./")
 sys.path.append("../")
 
 
-class QosDemo(Experiment):
+class QoSPica8Experiment(Experiment):
 
     def __init__(self,
                  network_configurations,
@@ -27,12 +27,13 @@ class QosDemo(Experiment):
                  num_measurements,
                  measurement_rates):
 
-        super(QosDemo, self).__init__("number_of_hosts", 2)
+        super(QoSPica8Experiment, self).__init__("number_of_hosts", 2)
         self.network_configurations = network_configurations
         self.controller_port = 6666
         self.num_iterations = num_iterations
         self.num_measurements = num_measurements
         self.measurement_rates = measurement_rates
+        self.experiment_tag = "qos_pica8_experiment"
 
     def trigger(self):
         for nc in self.network_configurations:
@@ -52,12 +53,9 @@ class QosDemo(Experiment):
         s.connect(IP, port, username, password)
         (stdin, stdout, stderr) = s.exec_command(command)
 
-        for line in stdout.readlines():
-            print line
-
+        output = list(stdout.readlines())
         s.close()
-
-        return list(stdout.readlines())
+        return output
 
     def clear_all_flows_queues(self):
 
@@ -129,6 +127,23 @@ class QosDemo(Experiment):
                                       cmd_host_dict["psswd"],
                                       arp_cmd)
 
+    def parse_measurements(self, data_lines):
+
+        output_line_tokens = data_lines[2].split(',')
+
+        measurements = dict()
+
+        measurements["throughput"] = output_line_tokens[0]
+        measurements["mean_latency"] = output_line_tokens[1]
+        measurements["stdev_latency"] = output_line_tokens[2]
+        measurements["nn_perc_latency"] = output_line_tokens[3]
+        measurements["min_latency"] = output_line_tokens[4]
+        measurements["max_latency"] = output_line_tokens[5]
+        measurements["src_sent_packets"] = output_line_tokens[6]
+        measurements["dst_recv_packets"] = output_line_tokens[7]
+
+        return measurements
+
     def measure_flow_rates(self, nc):
 
         servers = [
@@ -182,15 +197,17 @@ class QosDemo(Experiment):
                                                      postfix)
 
                     print "Results for flow rate %s, queue: %s" % (rate, postfix)
-                    self.run_cmd_via_paramiko(client["mgmt_ip"], 22, client["usr"], client["psswd"], command)
+                    output_lines = self.run_cmd_via_paramiko(client["mgmt_ip"], 22, client["usr"], client["psswd"],
+                                                             command)
 
-                    #fs.measurements[fs.measurement_rates[j]].append(fs.parse_measurements(output))
+                    measurements = self.parse_measurements(output_lines)
+                    print measurements
 
     def plot_qos(self):
         f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 3.0))
         f.tight_layout()
 
-        data_xticks = self.network_configurations[0].flow_specs[0].measurement_rates
+        data_xticks = self.measurement_rates
         data_xtick_labels = [str(x) for x in data_xticks]
 
         # self.plot_lines_with_error_bars(ax1,
@@ -330,7 +347,7 @@ def main():
     # same_output_queue_list = [False, True]
     same_output_queue_list = [True]
     # measurement_rates = [45, 46, 47, 48, 49, 50]
-    measurement_rates = [42]
+    measurement_rates = [50]
     nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
                                              measurement_rates=measurement_rates,
                                              tests_duration=60)
@@ -342,7 +359,7 @@ def main():
     #                                   synthesis_params={"same_output_queue": True},
     #                                   flow_specs=flow_specs)
 
-    exp = QosDemo(nc_list, num_iterations, len(measurement_rates), measurement_rates)
+    exp = QoSPica8Experiment(nc_list, num_iterations, len(measurement_rates), measurement_rates)
 
     exp.trigger()
 
