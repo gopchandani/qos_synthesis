@@ -7,6 +7,7 @@ paramiko.util.log_to_file("filename.log")
 
 import matplotlib.pyplot as plt
 import sys
+import json
 
 from experiment import Experiment
 from network_configuration_hardware import NetworkConfiguration
@@ -25,7 +26,7 @@ class QoSPica8Experiment(Experiment):
                  num_measurements,
                  measurement_rates):
 
-        super(QoSPica8Experiment, self).__init__("qos_pica8_experiment", 2)
+        super(QoSPica8Experiment, self).__init__("qos_pica8_experiment", num_iterations)
         self.network_configurations = network_configurations
         self.controller_port = 6666
         self.num_iterations = num_iterations
@@ -201,6 +202,8 @@ class QoSPica8Experiment(Experiment):
             self.data["99th Percentile Latency"][first_key][second_key].append(float(measurements["nn_perc_latency"]))
             self.data["Maximum Latency"][first_key][second_key].append(float(measurements["max_latency"]))
 
+        self.dump_data()
+
     def measure_flow_rates(self, nc):
 
         print "Using same output queues:", nc.synthesis_params["same_output_queue"]
@@ -231,7 +234,7 @@ class QoSPica8Experiment(Experiment):
 
     def plot_qos(self):
 
-        f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 3.0))
+        f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 4.0))
         f.tight_layout()
 
         data_xticks = self.network_configurations[0].flow_specs[0].measurement_rates
@@ -255,7 +258,7 @@ class QoSPica8Experiment(Experiment):
         self.plot_lines_with_error_bars(ax2,
                                         "Mean Latency",
                                         "Flow Rate (Mbps)",
-                                        "Mean Latency (ms)",
+                                        "Mean Delay (us)",
                                         "",
                                         y_scale='linear',
                                         x_min_factor=0.98,
@@ -268,7 +271,7 @@ class QoSPica8Experiment(Experiment):
         self.plot_lines_with_error_bars(ax3,
                                         "99th Percentile Latency",
                                         "Flow Rate (Mbps)",
-                                        "99th Percentile Latency (ms)",
+                                        "99th Percentile Delay (us)",
                                         "",
                                         y_scale='linear',
                                         x_min_factor=0.98,
@@ -286,11 +289,6 @@ class QoSPica8Experiment(Experiment):
 
         xlabels = ax3.get_xticklabels()
         plt.setp(xlabels, rotation=0, fontsize=8)
-
-        # Shrink current axis's height by 25% on the bottom
-        # box = ax1.get_position()
-        # ax1.set_position([box.x0, box.y0 + box.height * 0.3,
-        #                   box.width, box.height * 0.7])
 
         box = ax2.get_position()
         ax2.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.7])
@@ -367,21 +365,79 @@ def prepare_network_configurations(same_output_queue_list,
     return nc_list
 
 
+def merge_data_across_rates(filename_list, merged_out_file):
+    merged_data = None
+
+    for filename in filename_list:
+        print "Reading file:", filename
+        with open(filename, "r") as infile:
+            this_data = json.load(infile)
+
+        if merged_data:
+            for ds in merged_data:
+                for rate in merged_data[ds]:
+                    merged_data[ds][rate].update(this_data[ds][rate])
+        else:
+            merged_data = this_data
+
+    with open(merged_out_file, "w") as outfile:
+        json.dump(merged_data, outfile)
+
+    return merged_data
+
+
+def load_data_collapse_flows(in_filename):
+
+    def merge_flow_data(flow_1, flow_2):
+        flow = {}
+        for rate in flow_1:
+            flow[rate] = flow_1[rate][:]
+            flow[rate].extend(flow_2[rate])
+
+        return flow
+
+    with open(in_filename, "r") as infile:
+        this_data = json.load(infile)
+
+    collapsed_data = defaultdict(defaultdict)
+
+    for ds in this_data:
+        for flow in this_data[ds]:
+
+            if flow == "192.168.0.2->192.168.0.3 Different output queue" or \
+                            flow == "192.168.0.1->192.168.0.4 Different output queue":
+
+                collapsed_data[ds]["Different output queue"] =\
+                    merge_flow_data(this_data[ds]["192.168.0.2->192.168.0.3 Different output queue"],
+                                    this_data[ds]["192.168.0.1->192.168.0.4 Different output queue"])
+
+            if flow == "192.168.0.2->192.168.0.3 Same output queue" or \
+                            flow == "192.168.0.1->192.168.0.4 Same output queue":
+
+                collapsed_data[ds]["Same output queue"] =\
+                    merge_flow_data(this_data[ds]["192.168.0.2->192.168.0.3 Same output queue"],
+                                    this_data[ds]["192.168.0.1->192.168.0.4 Same output queue"])
+
+    return collapsed_data
+
+
 def main():
 
     num_iterations = 30
     same_output_queue_list = [False, True]
-    measurement_rates = [42, 45, 50]
+    measurement_rates = [50]
     nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
                                              measurement_rates=measurement_rates,
                                              tests_duration=15)
 
     exp = QoSPica8Experiment(nc_list, num_iterations, len(measurement_rates), measurement_rates)
+
     exp.trigger()
     exp.dump_data()
     exp.plot_qos()
 
-    print exp.data
+    # exp.data = load_data_collapse_flows("data/qos_pica8_experiment_2_iterations_20170501_134917.json")
+    # exp.plot_qos()
 
 if __name__ == "__main__":
     main()
