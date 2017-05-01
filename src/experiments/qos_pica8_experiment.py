@@ -147,7 +147,63 @@ class QoSPica8Experiment(Experiment):
 
         return measurements
 
+    def init_data(self, nc, clients, servers, measurement_rates):
+
+        for client, server in zip(clients, servers):
+            for rate in measurement_rates:
+                if nc.synthesis_params["same_output_queue"]:
+                    first_key = client["host_IP"] + "->" + server["host_IP"] + " Same output queue"
+                else:
+                    first_key = client["host_IP"] + "->" + server["host_IP"] + " Different output queue"
+
+                second_key = rate
+
+                self.data["Throughput"][first_key][second_key] = []
+                self.data["Mean Latency"][first_key][second_key] = []
+                self.data["99th Percentile Latency"][first_key][second_key] = []
+                self.data["Maximum Latency"][first_key][second_key] = []
+
+    def start_all_flows_simulatenously(self, nc, clients, servers, rate):
+        client_threads = []
+
+        for client, server in zip(clients, servers):
+            netperf_cmd = nc.flow_specs[0].construct_netperf_cmd_str(rate, server["host_IP"])
+            command = "%s | cat > /home/%s/out_%s.txt" \
+                      % (netperf_cmd, client["usr"], str(rate))
+
+            client_thread = threading.Thread(target=self.run_cmd_via_paramiko,
+                                             args=(client["mgmt_ip"], 22, client["usr"], client["psswd"], command))
+            client_thread.start()
+            client_threads.append(client_thread)
+
+        for client_thread in client_threads:
+            client_thread.join()
+
+    def collect_measurements(self, nc, clients, servers, rate):
+
+        for client, server in zip(clients, servers):
+
+            if nc.synthesis_params["same_output_queue"]:
+                first_key = client["host_IP"] + "->" + server["host_IP"] + " Same output queue"
+            else:
+                first_key = client["host_IP"] + "->" + server["host_IP"] + " Different output queue"
+
+            second_key = rate
+
+            command = "cat /home/%s/out_%s.txt"  % (client["usr"], str(rate))
+            output_lines = self.run_cmd_via_paramiko(client["mgmt_ip"], 22, client["usr"], client["psswd"],
+                                                     command)
+
+            measurements = self.parse_measurements(output_lines)
+
+            self.data["Throughput"][first_key][second_key].append(float(measurements["throughput"]))
+            self.data["Mean Latency"][first_key][second_key].append(float(measurements["mean_latency"]))
+            self.data["99th Percentile Latency"][first_key][second_key].append(float(measurements["nn_perc_latency"]))
+            self.data["Maximum Latency"][first_key][second_key].append(float(measurements["max_latency"]))
+
     def measure_flow_rates(self, nc):
+
+        print "Using same output queues:", nc.synthesis_params["same_output_queue"]
 
         servers = [
             nc.h_hosts["66"],
@@ -163,64 +219,15 @@ class QoSPica8Experiment(Experiment):
             nc.h_hosts["38"]
         ]
 
-        if nc.synthesis_params["same_output_queue"]:
-            postfix = "shared"
-        else:
-            postfix = "separate"
+        self.init_data(nc, clients, servers, self.measurement_rates)
 
-        for rate in self.measurement_rates:
+        for i in range(self.num_iterations):
+            print "iteration:", i + 1
 
-            client_threads = []
-
-            for client_server in zip(clients, servers):
-                client = client_server[0]
-                serv = client_server[1]
-
-                netperf_cmd = nc.flow_specs[0].construct_netperf_cmd_str(rate, serv["host_IP"])
-                command = "%s | cat > /home/%s/out_%s_%s.txt" \
-                          % (netperf_cmd, client["usr"], str(rate), postfix)
-
-                client_thread = threading.Thread(target=self.run_cmd_via_paramiko,
-                                                 args=(client["mgmt_ip"], 22, client["usr"], client["psswd"], command))
-                client_thread.start()
-                client_threads.append(client_thread)
-
-            for client_thread in client_threads:
-                client_thread.join()
-
-        for rate in self.measurement_rates:
-
-            if nc.synthesis_params["same_output_queue"]:
-                first_key = client["host_IP"] + "->" + serv["host_IP"] + " Same output queue"
-            else:
-                first_key = client["host_IP"] + "->" + serv["host_IP"] + " Different output queue"
-
-            second_key = rate
-
-            self.data["Throughput"][first_key][second_key] = []
-            self.data["Mean Latency"][first_key][second_key] = []
-            self.data["99th Percentile Latency"][first_key][second_key] = []
-            self.data["Maximum Latency"][first_key][second_key] = []
-
-            for i in range(self.num_iterations):
-                print "iteration:", i + 1
-
-                for client in clients:
-                    command = "cat /home/%s/out_%s_%s.txt" \
-                              % (client["usr"],
-                                 str(rate),
-                                 postfix)
-
-                    print "Results for flow rate %s, queue: %s" % (rate, postfix)
-                    output_lines = self.run_cmd_via_paramiko(client["mgmt_ip"], 22, client["usr"], client["psswd"],
-                                                             command)
-
-                    measurements = self.parse_measurements(output_lines)
-
-                    self.data["Throughput"][first_key][second_key].append(float(measurements["throughput"]))
-                    self.data["Mean Latency"][first_key][second_key].append(float(measurements["mean_latency"]))
-                    self.data["99th Percentile Latency"][first_key][second_key].append(float(measurements["nn_perc_latency"]))
-                    self.data["Maximum Latency"][first_key][second_key].append(float(measurements["max_latency"]))
+            for rate in self.measurement_rates:
+                print "Send Rate:", rate
+                self.start_all_flows_simulatenously(nc, clients, servers, rate)
+                self.collect_measurements(nc, clients, servers, rate)
 
     def plot_qos(self):
 
@@ -362,12 +369,12 @@ def prepare_network_configurations(same_output_queue_list,
 
 def main():
 
-    num_iterations = 2
+    num_iterations = 30
     same_output_queue_list = [False, True]
-    measurement_rates = [42, 50]
+    measurement_rates = [42, 45, 50]
     nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
                                              measurement_rates=measurement_rates,
-                                             tests_duration=10)
+                                             tests_duration=15)
 
     exp = QoSPica8Experiment(nc_list, num_iterations, len(measurement_rates), measurement_rates)
     exp.trigger()

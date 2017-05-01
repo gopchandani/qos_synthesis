@@ -179,7 +179,7 @@ class NetworkConfiguration(object):
         self.h_hosts[host_dict["host_name"]] = host_dict
 
         host_nodes[sw].append(host_dict)
-	
+
         with open(self.conf_path + "mininet_host_nodes.json", "w") as outfile:
             json.dump(host_nodes, outfile)
 
@@ -194,16 +194,12 @@ class NetworkConfiguration(object):
         mininet_port_links["s2347862419956695048"] = {"47": ["38", 47],
                                                       "43": ["e5", 43],
                                                       "45": ["s2347862419956695105", 45]}
-        # mininet_port_links["s1"] = {"1": ["7e", 0], "2": ["e5", 0], "174": ["s2", 174]}
 
         mininet_port_links["66"] = {"0": ["s2347862419956695105", 47]}
         mininet_port_links["7e"] = {"0": ["s2347862419956695105", 43]}
         mininet_port_links["s2347862419956695105"] = {"47": ["66", 47],
                                                       "43": ["7e", 43],
                                                       "45": ["s2347862419956695048", 45]}
-        # mininet_port_links["66"] = {"0": ["s2", 1]}
-        # mininet_port_links["38"] = {"0": ["s2", 2]}
-        # mininet_port_links["s2"] = {"1": ["66", 0], "2": ["38", 0], "174": ["s1", 174]}
 
         with open(self.conf_path + "mininet_port_links.json", "w") as outfile:
             json.dump(mininet_port_links, outfile)
@@ -219,8 +215,6 @@ class NetworkConfiguration(object):
         mininet_link_params.append({"node1": "s2347862419956695048", "delay": "3ms", "node2": "s2347862419956695105", "bw": 5})
         mininet_link_params.append({"node1": "66", "delay": "3ms", "node2": "s2347862419956695105", "bw": 5})
         mininet_link_params.append({"node1": "7e", "delay": "3ms", "node2": "s2347862419956695105", "bw": 5})
-        # mininet_link_params.append({"node1": "66", "delay": "3ms", "node2": "s2", "bw": 5})
-        # mininet_link_params.append({"node1": "38", "delay": "3ms", "node2": "s2", "bw": 5})
 
         with open(self.conf_path + "mininet_link_params.json", "w") as outfile:
             json.dump(mininet_link_params, outfile)
