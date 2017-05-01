@@ -31,19 +31,6 @@ class SynthesisLib(object):
         self.h = httplib2.Http(".cache")
         self.h.add_credentials('admin', 'admin')
 
-        # Cleanup all Queue/QoS records from OVSDB
-        os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 clear Port ge-1/1/43")
-        os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 clear Port ge-1/1/45")
-        os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 clear Port ge-1/1/47")
-        os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 -- --all destroy QoS")
-        os.system("sudo ovs-vsctl --db=tcp:192.168.1.103:6640 -- --all destroy Queue")
-
-        os.system("sudo ovs-vsctl --db=tcp:192.168.1.101:6640 clear Port ge-1/1/43")
-        os.system("sudo ovs-vsctl --db=tcp:192.168.1.101:6640 clear Port ge-1/1/45")
-        os.system("sudo ovs-vsctl --db=tcp:192.168.1.101:6640 clear Port ge-1/1/47")
-        os.system("sudo ovs-vsctl --db=tcp:192.168.1.101:6640 -- --all destroy QoS")
-        os.system("sudo ovs-vsctl --db=tcp:192.168.1.101:6640 -- --all destroy Queue")
-
         self.synthesized_primary_paths = defaultdict(defaultdict)
         self.synthesized_failover_paths = defaultdict(defaultdict)        
 
@@ -94,19 +81,16 @@ class SynthesisLib(object):
             "s2347862419956695105": "192.168.1.101"
         }
 
-        queue_cmd = "ovs-vsctl --db=tcp:" + ip_map[sw] + ":6640 -- set Port " + sw_port_str + " qos=@newqos -- " + \
-              "--id=@newqos create QoS type=linux-hfsc other-config:max-rate=" + "1000000000" + \
-                    " queues=" + str(self.queue_id_cntr) + "=@q" + str(self.queue_id_cntr_per_sw[sw]) + " -- " +\
-              "--id=@q" + str(self.queue_id_cntr_per_sw[sw]) + " create Queue other-config:min-rate=" + min_rate_str + \
-              " other-config:max-rate=" + max_rate_str
-
-        print queue_cmd
-
-        # queue_cmd = "sudo ovs-vsctl --db=tcp:192.168.1.103:6640 -- set Port " + sw_port_str + " qos=@newqos -- " + \
-        #             "--id=@newqos create QoS type=linux-htb other-config:max-rate=" + "1000000000" + \
-        #             " queues=" + str(self.queue_id_cntr) + "=@q" + str(self.queue_id_cntr) + " -- " + \
-        #             "--id=@q" + str(self.queue_id_cntr) + " create Queue other-config:min-rate=" + min_rate_str + \
-        #             " other-config:max-rate=" + max_rate_str
+        queue_cmd = "ovs-vsctl " + \
+                    "--db=tcp:" + ip_map[sw] + ":6640 -- " + \
+                    "set Port " + sw_port_str + " qos=@newqos -- " + \
+                    "--id=@newqos create qos type=linux-htb other-config:max-rate=" + max_rate_str + \
+                    " queues=" + str(self.queue_id_cntr_per_sw[sw]) + \
+                    "=@q" + str(self.queue_id_cntr_per_sw[sw]) + \
+                    " -- " +\
+                    "--id=@q" + str(self.queue_id_cntr_per_sw[sw]) + \
+                    " create Queue other-config:min-rate=" + min_rate_str + \
+                    " other-config:max-rate=" + max_rate_str
 
         os.system(queue_cmd)
         time.sleep(1)

@@ -55,19 +55,19 @@ class FlowSpecification:
                           " -t omni -- -d send" + \
                           " -o " + \
                           "\"THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY, LOCAL_BYTES_SENT, REMOTE_BYTES_RECVD\"" + \
-                          " -T UDP_RR " + \
+                          " -T UDP " + \
                           "-m " + str(self.send_size)
 
-        # netperf_cmd_str = "/usr/local/bin/netperf " + \
-        #                   " -j " + \
-        #                   " -H " + self.mn_dst_host.IP() + \
-        #                   " -t UDP_RR " + \
+        # netperf_cmd_str = "/usr/local/bin/netperf -H " + ip + \
+        #                   " -w " + str(self.inter_burst_time) + \
+        #                   " -b " + str(self.num_sends_in_burst) + \
         #                   " -l " + str(self.tests_duration) + \
+        #                   " -I 95,5" + \
         #                   " -t omni -- -d send" + \
         #                   " -o " + \
-        #                   "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY'" + \
-        #                   " -m " + str(self.send_size) + \
-        #                   " &"
+        #                   "\"THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY, LOCAL_BYTES_SENT, REMOTE_BYTES_RECVD\"" + \
+        #                   " -T UDP " + \
+        #                   "-m " + str(self.send_size)
 
         return netperf_cmd_str
 

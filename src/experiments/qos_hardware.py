@@ -7,11 +7,6 @@ paramiko.util.log_to_file("filename.log")
 
 import matplotlib.pyplot as plt
 import sys
-import time
-from collections import defaultdict
-from itertools import permutations
-import subprocess
-
 sys.path.append("./")
 
 from controller_man import ControllerMan
@@ -22,6 +17,7 @@ from model.match import Match
 
 sys.path.append("./")
 sys.path.append("../")
+
 
 class QosDemo(Experiment):
 
@@ -40,12 +36,12 @@ class QosDemo(Experiment):
 
     def trigger(self):
         for nc in self.network_configurations:
-            nc.synthesis.clear_all_flows()
+            self.clear_all_flows_queues()
             nc.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
             nc.init_flow_specs()
             nc.synthesis.synthesize_flow_specifications(nc.flow_specs)
 
-            self.push_arps(nc)
+            #self.push_arps(nc)
             self.measure_flow_rates(nc)
 
     def run_cmd_via_paramiko(self, IP, port, username, password, command):
@@ -62,6 +58,49 @@ class QosDemo(Experiment):
         s.close()
 
         return list(stdout.readlines())
+
+    def clear_all_flows_queues(self):
+
+        switches = [{"IP": "192.168.1.101",
+                     "username": "admin",
+                     "password": "password"},
+                    {"IP": "192.168.1.103",
+                     "username": "admin",
+                     "password": "pica8"}
+                    ]
+
+        for sw in switches:
+            self.run_cmd_via_paramiko(sw["IP"],
+                                      22,
+                                      sw["username"],
+                                      sw["password"],
+                                      "/ovs/bin/ovs-ofctl del-flows of-switch")
+
+            self.run_cmd_via_paramiko(sw["IP"],
+                                      22,
+                                      sw["username"],
+                                      sw["password"],
+                                      "/ovs/bin/ovs-vsctl clear Port ge-1/1/43 qos")
+            self.run_cmd_via_paramiko(sw["IP"],
+                                      22,
+                                      sw["username"],
+                                      sw["password"],
+                                      "/ovs/bin/ovs-vsctl clear Port ge-1/1/45 qos")
+            self.run_cmd_via_paramiko(sw["IP"],
+                                      22,
+                                      sw["username"],
+                                      sw["password"],
+                                      "/ovs/bin/ovs-vsctl clear Port ge-1/1/47 qos")
+            self.run_cmd_via_paramiko(sw["IP"],
+                                      22,
+                                      sw["username"],
+                                      sw["password"],
+                                      "/ovs/bin/ovs-vsctl --all destroy QoS")
+            self.run_cmd_via_paramiko(sw["IP"],
+                                      22,
+                                      sw["username"],
+                                      sw["password"],
+                                      "/ovs/bin/ovs-vsctl --all destroy Queue")
 
     def push_arps(self, nc):
 
@@ -94,7 +133,7 @@ class QosDemo(Experiment):
 
         servers = [
             nc.h_hosts["66"],
-            nc.h_hosts["38"]
+            nc.h_hosts["7e"]
         ]
         # launch servers
         for serv in servers:
@@ -103,7 +142,7 @@ class QosDemo(Experiment):
 
         clients = [
             nc.h_hosts["e5"],
-            nc.h_hosts["7e"]
+            nc.h_hosts["38"]
         ]
 
         if nc.synthesis_params["same_output_queue"]:
@@ -232,6 +271,7 @@ class QosDemo(Experiment):
         plt.savefig("plots/" + self.experiment_tag + "_" + "qos_demo" + ".png", dpi=100)
         plt.show()
 
+
 def prepare_flow_specifications(measurement_rates=None, tests_duration=None, same_queue_output=False):
 
     flow_specs = []
@@ -239,8 +279,6 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, sam
     flow_match = Match(is_wildcard=True)
     flow_match["ethernet_type"] = 0x0800
     switch_hosts = ["7e", "e5", "66", "38"]
-    #switch_hosts = ["7e", "38"]
-    # switch_hosts = ["7e", "66"]
 
     if same_queue_output:
         configured_rate = 100
@@ -252,11 +290,6 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, sam
                                ("38", "7e"),
                                ("66", "e5"),
                                ("e5", "66")]:
-    # for src_host, dst_host in [("7e", "66"),
-    #                            ("e5", "38"),
-    #                            ("66", "7e"),
-    #                            ("38", "e5")]:
-
         if src_host == dst_host:
             continue
 
@@ -295,12 +328,12 @@ def main():
 
     num_iterations = 5
     # same_output_queue_list = [False, True]
-    same_output_queue_list = [False]
+    same_output_queue_list = [True]
     # measurement_rates = [45, 46, 47, 48, 49, 50]
     measurement_rates = [42]
     nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
                                              measurement_rates=measurement_rates,
-                                             tests_duration=10)
+                                             tests_duration=60)
     # flow_specs = prepare_flow_specifications()
 
     # network_configuration =  NetworkConfiguration("ryu_old",
