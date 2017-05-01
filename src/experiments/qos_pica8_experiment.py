@@ -1,15 +1,13 @@
 __author__ = 'Rakesh Kumar'
 
-import os
+from collections import defaultdict
 import threading
 import paramiko
 paramiko.util.log_to_file("filename.log")
 
 import matplotlib.pyplot as plt
 import sys
-sys.path.append("./")
 
-from controller_man import ControllerMan
 from experiment import Experiment
 from network_configuration_hardware import NetworkConfiguration
 from flow_specification import FlowSpecification
@@ -27,13 +25,18 @@ class QoSPica8Experiment(Experiment):
                  num_measurements,
                  measurement_rates):
 
-        super(QoSPica8Experiment, self).__init__("number_of_hosts", 2)
+        super(QoSPica8Experiment, self).__init__("qos_pica8_experiment", 2)
         self.network_configurations = network_configurations
         self.controller_port = 6666
         self.num_iterations = num_iterations
         self.num_measurements = num_measurements
         self.measurement_rates = measurement_rates
-        self.experiment_tag = "qos_pica8_experiment"
+        self.data = {
+            "Throughput": defaultdict(defaultdict),
+            "Mean Latency": defaultdict(defaultdict),
+            "99th Percentile Latency": defaultdict(defaultdict),
+            "Maximum Latency": defaultdict(defaultdict)
+        }
 
     def trigger(self):
         for nc in self.network_configurations:
@@ -165,49 +168,66 @@ class QoSPica8Experiment(Experiment):
         else:
             postfix = "separate"
 
-        for i in range(self.num_iterations):
-            print "iteration:", i + 1
+        for rate in self.measurement_rates:
 
-            for rate in self.measurement_rates:
+            client_threads = []
 
-                client_threads = []
+            for client_server in zip(clients, servers):
+                client = client_server[0]
+                serv = client_server[1]
 
-                for client_server in zip(clients, servers):
-                    client = client_server[0]
-                    serv = client_server[1]
+                netperf_cmd = nc.flow_specs[0].construct_netperf_cmd_str(rate, serv["host_IP"])
+                command = "%s | cat > /home/%s/out_%s_%s.txt" \
+                          % (netperf_cmd, client["usr"], str(rate), postfix)
 
-                    netperf_cmd = nc.flow_specs[0].construct_netperf_cmd_str(rate, serv["host_IP"])
-                    command = "%s | cat > /home/%s/out_%s_%s.txt" \
-                           % (netperf_cmd, client["usr"], str(rate), postfix)
+                client_thread = threading.Thread(target=self.run_cmd_via_paramiko,
+                                                 args=(client["mgmt_ip"], 22, client["usr"], client["psswd"], command))
+                client_thread.start()
+                client_threads.append(client_thread)
 
-                    client_thread = threading.Thread(target=self.run_cmd_via_paramiko,
-                                                     args=(client["mgmt_ip"], 22, client["usr"], client["psswd"], command))
-                    client_thread.start()
-                    client_threads.append(client_thread)
+            for client_thread in client_threads:
+                client_thread.join()
 
-                for client_thread in client_threads:
-                    client_thread.join()
+        for rate in self.measurement_rates:
 
-            for rate in self.measurement_rates:
+            if nc.synthesis_params["same_output_queue"]:
+                first_key = client["host_IP"] + "->" + serv["host_IP"] + " Same output queue"
+            else:
+                first_key = client["host_IP"] + "->" + serv["host_IP"] + " Different output queue"
+
+            second_key = rate
+
+            self.data["Throughput"][first_key][second_key] = []
+            self.data["Mean Latency"][first_key][second_key] = []
+            self.data["99th Percentile Latency"][first_key][second_key] = []
+            self.data["Maximum Latency"][first_key][second_key] = []
+
+            for i in range(self.num_iterations):
+                print "iteration:", i + 1
 
                 for client in clients:
                     command = "cat /home/%s/out_%s_%s.txt" \
-                                                     % (client["usr"],
-                                                     str(rate),
-                                                     postfix)
+                              % (client["usr"],
+                                 str(rate),
+                                 postfix)
 
                     print "Results for flow rate %s, queue: %s" % (rate, postfix)
                     output_lines = self.run_cmd_via_paramiko(client["mgmt_ip"], 22, client["usr"], client["psswd"],
                                                              command)
 
                     measurements = self.parse_measurements(output_lines)
-                    print measurements
+
+                    self.data["Throughput"][first_key][second_key].append(float(measurements["throughput"]))
+                    self.data["Mean Latency"][first_key][second_key].append(float(measurements["mean_latency"]))
+                    self.data["99th Percentile Latency"][first_key][second_key].append(float(measurements["nn_perc_latency"]))
+                    self.data["Maximum Latency"][first_key][second_key].append(float(measurements["max_latency"]))
 
     def plot_qos(self):
+
         f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 3.0))
         f.tight_layout()
 
-        data_xticks = self.measurement_rates
+        data_xticks = self.network_configurations[0].flow_specs[0].measurement_rates
         data_xtick_labels = [str(x) for x in data_xticks]
 
         # self.plot_lines_with_error_bars(ax1,
@@ -250,7 +270,6 @@ class QoSPica8Experiment(Experiment):
                                         y_max_factor=1.05,
                                         xticks=data_xticks,
                                         xtick_labels=data_xtick_labels)
-
 
         # xlabels = ax1.get_xticklabels()
         # plt.setp(xlabels, rotation=0, fontsize=8)
@@ -297,10 +316,7 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, sam
     flow_match["ethernet_type"] = 0x0800
     switch_hosts = ["7e", "e5", "66", "38"]
 
-    if same_queue_output:
-        configured_rate = 100
-    else:
-        configured_rate = 50
+    configured_rate = 50
 
     # for src_host, dst_host in permutations(switch_hosts, 2):
     for src_host, dst_host in [("7e", "38"),
@@ -323,7 +339,9 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, sam
 
     return flow_specs
 
-def prepare_network_configurations(same_output_queue_list, measurement_rates,
+
+def prepare_network_configurations(same_output_queue_list,
+                                   measurement_rates,
                                    tests_duration):
 
     nc_list = []
@@ -331,7 +349,7 @@ def prepare_network_configurations(same_output_queue_list, measurement_rates,
     for same_output_queue in same_output_queue_list:
         flow_specs = prepare_flow_specifications(measurement_rates, tests_duration, same_output_queue)
 
-        nc =  NetworkConfiguration("ryu_old",
+        nc = NetworkConfiguration("ryu_old",
                                   conf_root="configurations/",
                                   synthesis_name="SynthesizeQoS",
                                   synthesis_params={"same_output_queue": same_output_queue},
@@ -341,27 +359,22 @@ def prepare_network_configurations(same_output_queue_list, measurement_rates,
 
     return nc_list
 
+
 def main():
 
-    num_iterations = 5
-    # same_output_queue_list = [False, True]
-    same_output_queue_list = [True]
-    # measurement_rates = [45, 46, 47, 48, 49, 50]
-    measurement_rates = [50]
+    num_iterations = 2
+    same_output_queue_list = [False, True]
+    measurement_rates = [42, 50]
     nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
                                              measurement_rates=measurement_rates,
-                                             tests_duration=60)
-    # flow_specs = prepare_flow_specifications()
-
-    # network_configuration =  NetworkConfiguration("ryu_old",
-    #                                   conf_root="configurations/",
-    #                                   synthesis_name="SynthesizeQoS",
-    #                                   synthesis_params={"same_output_queue": True},
-    #                                   flow_specs=flow_specs)
+                                             tests_duration=10)
 
     exp = QoSPica8Experiment(nc_list, num_iterations, len(measurement_rates), measurement_rates)
-
     exp.trigger()
+    exp.dump_data()
+    exp.plot_qos()
+
+    print exp.data
 
 if __name__ == "__main__":
     main()
