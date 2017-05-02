@@ -233,9 +233,9 @@ class QoSPica8Experiment(Experiment):
                 self.collect_measurements(nc, clients, servers, rate)
 
     def plot_qos(self):
-
-        f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 4.0))
-        f.tight_layout()
+        f, (ax2) = plt.subplots(1, 1, sharex=False, sharey=False, figsize=(6.0, 4.0))
+        #f, (ax2, ax3) = plt.subplots(1, 2, sharex=False, sharey=False, figsize=(6.0, 4.0))
+        #f.tight_layout()
 
         data_xticks = self.network_configurations[0].flow_specs[0].measurement_rates
         data_xtick_labels = [str(x) for x in data_xticks]
@@ -262,54 +262,54 @@ class QoSPica8Experiment(Experiment):
                                         "",
                                         y_scale='linear',
                                         x_min_factor=0.98,
-                                        x_max_factor=1.02,
+                                        x_max_factor=1.0,
                                         y_min_factor=0.9,
                                         y_max_factor=1.05,
                                         xticks=data_xticks,
                                         xtick_labels=data_xtick_labels)
 
-        self.plot_lines_with_error_bars(ax3,
-                                        "99th Percentile Latency",
-                                        "Flow Rate (Mbps)",
-                                        "99th Percentile Delay (us)",
-                                        "",
-                                        y_scale='linear',
-                                        x_min_factor=0.98,
-                                        x_max_factor=1.02,
-                                        y_min_factor=0.9,
-                                        y_max_factor=1.05,
-                                        xticks=data_xticks,
-                                        xtick_labels=data_xtick_labels)
+        # self.plot_lines_with_error_bars(ax3,
+        #                                 "99th Percentile Latency",
+        #                                 "Flow Rate (Mbps)",
+        #                                 "99th Percentile Delay (us)",
+        #                                 "",
+        #                                 y_scale='linear',
+        #                                 x_min_factor=0.98,
+        #                                 x_max_factor=1.02,
+        #                                 y_min_factor=0.9,
+        #                                 y_max_factor=1.05,
+        #                                 xticks=data_xticks,
+        #                                 xtick_labels=data_xtick_labels)
 
         # xlabels = ax1.get_xticklabels()
         # plt.setp(xlabels, rotation=0, fontsize=8)
 
         xlabels = ax2.get_xticklabels()
-        plt.setp(xlabels, rotation=0, fontsize=8)
+        plt.setp(xlabels, rotation=0, fontsize=12)
 
-        xlabels = ax3.get_xticklabels()
-        plt.setp(xlabels, rotation=0, fontsize=8)
+        # xlabels = ax3.get_xticklabels()
+        # plt.setp(xlabels, rotation=0, fontsize=12)
 
         box = ax2.get_position()
         ax2.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.7])
 
-        box = ax3.get_position()
-        ax3.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.7])
+        # box = ax3.get_position()
+        # ax3.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.7])
 
-        handles, labels = ax3.get_legend_handles_labels()
+        handles, labels = ax2.get_legend_handles_labels()
 
         ax2.legend(handles,
                    labels,
                    shadow=True,
-                   fontsize=8,
+                   fontsize=12,
                    loc='upper center',
                    ncol=2,
                    markerscale=1.0,
                    frameon=True,
                    fancybox=True,
-                   columnspacing=0.7, bbox_to_anchor=[1.1, -0.25])
+                   columnspacing=0.7, bbox_to_anchor=[0.5, -0.25])
 
-        plt.savefig("plots/" + self.experiment_tag + "_" + "qos_demo" + ".png", dpi=100)
+        plt.savefig("plots/" + self.experiment_tag + "_" + "qos_demo" + ".png", dpi=1000)
         plt.show()
 
 
@@ -365,6 +365,25 @@ def prepare_network_configurations(same_output_queue_list,
     return nc_list
 
 
+def merge_data_across_network_config(filename_list, merged_out_file):
+    merged_data = None
+
+    for filename in filename_list:
+        with open(filename, "r") as infile:
+            this_data = json.load(infile)
+
+        if merged_data:
+            for ds in merged_data:
+                merged_data[ds].update(this_data[ds])
+        else:
+            merged_data = this_data
+
+    with open(merged_out_file, "w") as outfile:
+        json.dump(merged_data, outfile)
+
+    return merged_data
+
+
 def merge_data_across_rates(filename_list, merged_out_file):
     merged_data = None
 
@@ -377,6 +396,35 @@ def merge_data_across_rates(filename_list, merged_out_file):
             for ds in merged_data:
                 for rate in merged_data[ds]:
                     merged_data[ds][rate].update(this_data[ds][rate])
+        else:
+            merged_data = this_data
+
+    with open(merged_out_file, "w") as outfile:
+        json.dump(merged_data, outfile)
+
+    return merged_data
+
+
+def load_data_merge_iterations(filename_list, merged_out_file):
+
+    merged_data = None
+
+    for filename in filename_list:
+
+        print "Reading file:", filename
+
+        with open(filename, "r") as infile:
+            this_data = json.load(infile)
+
+        if merged_data:
+            for ds in merged_data:
+                for case in merged_data[ds]:
+                    for num_conns in merged_data[ds][case]:
+                        try:
+                            merged_data[ds][case][num_conns].extend(this_data[ds][case][num_conns])
+                        except KeyError:
+                            pass
+                            #print filename, ds, case, num_conns, "not found."
         else:
             merged_data = this_data
 
@@ -407,14 +455,14 @@ def load_data_collapse_flows(in_filename):
             if flow == "192.168.0.2->192.168.0.3 Different output queue" or \
                             flow == "192.168.0.1->192.168.0.4 Different output queue":
 
-                collapsed_data[ds]["Different output queue"] =\
+                collapsed_data[ds]["Different output queue"] = \
                     merge_flow_data(this_data[ds]["192.168.0.2->192.168.0.3 Different output queue"],
                                     this_data[ds]["192.168.0.1->192.168.0.4 Different output queue"])
 
             if flow == "192.168.0.2->192.168.0.3 Same output queue" or \
                             flow == "192.168.0.1->192.168.0.4 Same output queue":
 
-                collapsed_data[ds]["Same output queue"] =\
+                collapsed_data[ds]["Same output queue"] = \
                     merge_flow_data(this_data[ds]["192.168.0.2->192.168.0.3 Same output queue"],
                                     this_data[ds]["192.168.0.1->192.168.0.4 Same output queue"])
 
@@ -424,20 +472,49 @@ def load_data_collapse_flows(in_filename):
 def main():
 
     num_iterations = 30
-    same_output_queue_list = [False, True]
-    measurement_rates = [50]
+    same_output_queue_list = [True]
+    measurement_rates = [10, 15, 20, 25, 30, 35, 40, 45, 50]
+    #measurement_rates = [40, 42, 44, 46, 48, 50]
+
     nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
                                              measurement_rates=measurement_rates,
                                              tests_duration=15)
 
     exp = QoSPica8Experiment(nc_list, num_iterations, len(measurement_rates), measurement_rates)
 
-    exp.trigger()
-    exp.dump_data()
-    exp.plot_qos()
-
-    # exp.data = load_data_collapse_flows("data/qos_pica8_experiment_2_iterations_20170501_134917.json")
+    # exp.trigger()
+    # exp.dump_data()
     # exp.plot_qos()
+
+    exp.data = merge_data_across_network_config(["data/qos_pica8_experiment_30_iterations_20170501_215748.json", #same queue
+                                                 "data/qos_pica8_experiment_30_iterations_20170502_023356.json"],#different queue
+                                                "data/qos_pica8_experiment_merged_10_15_20_25_30_35_40_45.json")
+
+    exp.data = merge_data_across_rates(["data/qos_pica8_experiment_merged_10_15_20_25_30_35_40_45.json",
+                                        "data/qos_pica8_experiment_30_iterations_20170501_210447.json",#10
+                                        "data/qos_pica8_experiment_30_iterations_20170501_154456.json",#42
+                                        "data/qos_pica8_experiment_2_iterations_20170501_134917.json"],#50
+                                       "data/qos_pica8_experiment_merged_across_rates_file.json")
+
+    exp.data = load_data_collapse_flows("data/qos_pica8_experiment_merged_across_rates_file.json")
+
+    exp.data = load_data_merge_iterations(["data/qos_pica8_experiment_merged_across_rates_file.json",
+
+                                           "data/qos_pica8_experiment_10_iterations_20170501_195513.json"],# 40
+                                          "data/qos_pica8_experiment_merged_across_rates_file_more_iters.json")
+
+    exp.data = load_data_collapse_flows("data/qos_pica8_experiment_merged_across_rates_file_more_iters.json")
+
+    # exp.data = merge_data_across_rates(["data/qos_pica8_experiment_10_iterations_20170501_195513.json",#40
+    #                                     #"data/qos_pica8_experiment_30_iterations_20170501_201439.json", #47
+    #                                     "data/qos_pica8_experiment_30_iterations_20170501_154456.json",#42
+    #                                     "data/qos_pica8_experiment_2_iterations_20170501_134917.json",#50
+    #                                     "data/qos_pica8_experiment_30_iterations_20170501_163938.json",#44, 46, 48
+    #                                     "data/qos_pica8_experiment_30_iterations_20170501_190318.json"],#46 again (replaces previous)
+    #                                    "data/qos_pica8_experiment_merged_across_rates_file.json")
+    # exp.data = load_data_collapse_flows("data/qos_pica8_experiment_merged_across_rates_file.json")
+
+    exp.plot_qos()
 
 if __name__ == "__main__":
     main()

@@ -226,11 +226,11 @@ class Experiment(object):
                                    yticks=None,
                                    ytick_labels=None):
 
-        ax.set_xlabel(x_label, fontsize=10, labelpad=-0)
-        ax.set_ylabel(y_label, fontsize=10, labelpad=0)
-        ax.set_title(subplot_title, fontsize=10)
+        ax.set_xlabel(x_label, fontsize=12, labelpad=-0)
+        ax.set_ylabel(y_label, fontsize=12, labelpad=0)
+        ax.set_title(subplot_title, fontsize=12)
 
-        markers = ['.', 'v', 'o', 'd', '+', '^', 'H', ',', 's', 'o', 'h', '*']
+        markers = ['*', '.', 'o', 'd', 'v', '^', 'H', ',', 's', 'o', 'h', '.']
         marker_i = 0
 
         for line_data_key in self.data[data_key]:
@@ -243,8 +243,8 @@ class Experiment(object):
 
             marker_i += 1
 
-        ax.tick_params(axis='x', labelsize=8)
-        ax.tick_params(axis='y', labelsize=8)
+        ax.tick_params(axis='x', labelsize=12)
+        ax.tick_params(axis='y', labelsize=12)
 
         low_xlim, high_xlim = ax.get_xlim()
         ax.set_xlim(xmax=(high_xlim) * x_max_factor)
