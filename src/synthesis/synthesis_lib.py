@@ -28,6 +28,11 @@ class SynthesisLib(object):
             "s2347862419956695105": 0
         }
 
+        self.meter_id_cntr_per_sw = {
+            "s2347862419956695048": 0,
+            "s2347862419956695105": 0
+        }
+
         self.h = httplib2.Http(".cache")
         self.h.add_credentials('admin', 'admin')
 
@@ -67,6 +72,17 @@ class SynthesisLib(object):
 
         with open(conf_path + "synthesized_failover_paths.json", "w") as outfile:
             json.dump(self.synthesized_failover_paths, outfile)
+
+    def push_meter(self, sw, rate):
+        rate_kbps = rate / 1000
+        meter = self.create_base_meter(sw)
+        meter["bands"]["rate"] = rate_kbps
+
+        url = self.create_ryu_meter_url()
+        self.push_change(url, meter)
+
+        return meter["meter_id"]
+
 
     def push_queue(self, sw, port, min_rate, max_rate):
         self.queue_id_cntr_per_sw[sw] = self.queue_id_cntr_per_sw[sw] + 1
@@ -132,6 +148,9 @@ class SynthesisLib(object):
     def create_ryu_group_url(self):
         return "http://192.168.1.102:8080/stats/groupentry/add"
 
+    def create_ryu_meter_url(self):
+        return "http://192.168.1.102:8080/stats/meterentry/add"
+
     def push_flow(self, sw, flow):
 
         url = None
@@ -153,6 +172,19 @@ class SynthesisLib(object):
             raise NotImplementedError
 
         self.push_change(url, group)
+
+    def create_base_meter(self, sw):
+        self.meter_id_cntr_per_sw[sw] += 1
+        meter = dict()
+
+        if self.network_graph.controller == "ryu_old":
+            meter["dpid"] = sw[1:]
+            meter["flags"] = ["KBPS"]
+            meter["meter_id"] = self.meter_id_cntr_per_sw[sw]
+            meter["bands"] = dict()
+            meter["bands"]["type"] = "DROP"
+
+        return meter
 
     def create_base_flow(self, sw, table_id, priority):
 
@@ -484,7 +516,8 @@ class SynthesisLib(object):
 
         return flow
 
-    def push_destination_host_mac_intent_flow_with_qos(self, switch_id, mac_intent, table_id, priority, q_id=None):
+    def push_destination_host_mac_intent_flow_with_qos(self, switch_id, mac_intent, table_id, priority, q_id=None,
+                                                       use_meter=False):
 
         flow = self.create_base_flow(switch_id, table_id, priority)
 
@@ -506,7 +539,13 @@ class SynthesisLib(object):
             if not q_id:
                 q_id = self.push_queue(switch_id, mac_intent.out_port, mac_intent.min_rate, mac_intent.max_rate)
             enqueue_action = {"type": "SET_QUEUE", "queue_id": q_id, "port": mac_intent.out_port}
+
             action_list = [enqueue_action, output_action]
+
+            if use_meter:
+                meter_id = self.push_meter(switch_id, mac_intent.max_rate)
+                meter_action = {"type": "METER", "meter_id": meter_id}
+                action_list.append(meter_action)
             flow["actions"] = action_list
 
             # self.populate_flow_action_instruction(flow, action_list, mac_intent.apply_immediately)

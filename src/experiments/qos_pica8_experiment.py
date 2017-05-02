@@ -347,7 +347,8 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, sam
 
 def prepare_network_configurations(same_output_queue_list,
                                    measurement_rates,
-                                   tests_duration):
+                                   tests_duration,
+                                   use_meter):
 
     nc_list = []
 
@@ -357,7 +358,8 @@ def prepare_network_configurations(same_output_queue_list,
         nc = NetworkConfiguration("ryu_old",
                                   conf_root="configurations/",
                                   synthesis_name="SynthesizeQoS",
-                                  synthesis_params={"same_output_queue": same_output_queue},
+                                  synthesis_params={"same_output_queue": same_output_queue,
+                                                    "use_meter": use_meter},
                                   flow_specs=flow_specs)
 
         nc_list.append(nc)
@@ -426,9 +428,11 @@ def main():
     num_iterations = 30
     same_output_queue_list = [False, True]
     measurement_rates = [50]
+    use_meter = False
     nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
                                              measurement_rates=measurement_rates,
-                                             tests_duration=15)
+                                             tests_duration=15,
+                                             use_meter=use_meter)
 
     exp = QoSPica8Experiment(nc_list, num_iterations, len(measurement_rates), measurement_rates)
 

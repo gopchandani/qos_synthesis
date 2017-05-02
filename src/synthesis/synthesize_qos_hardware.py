@@ -101,12 +101,17 @@ class SynthesizeQoS:
 
         for fs in flow_specs:
             # Push intents one by one to the switches
+            use_meter = self.params["use_meter"]
             for intent in intent_list_dict[fs]:
                 if self.params["same_output_queue"]:
                     intent.min_rate = self.combined_intent_rate_dict[intent.switch_id][intent.out_port]
                     intent.max_rate = self.combined_intent_rate_dict[intent.switch_id][intent.out_port]
                     self.synthesis_lib.push_destination_host_mac_intent_flow_with_qos(intent.switch_id,
                                                                                       intent, 0, 100,
-                                                                                      self.queue_sw_port_dict[intent.switch_id][intent.out_port])
+                                                                                      self.queue_sw_port_dict[intent.switch_id][intent.out_port],
+                                                                                      use_meter)
+
+
                 else:
-                    self.synthesis_lib.push_destination_host_mac_intent_flow_with_qos(intent.switch_id, intent, 0, 100)
+                    self.synthesis_lib.push_destination_host_mac_intent_flow_with_qos(intent.switch_id, intent, 0, 100, use_meter)
+                use_meter = False
