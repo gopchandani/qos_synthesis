@@ -233,6 +233,7 @@ class NetworkConfiguration(object):
             fs.ng_src_host = self.ng.get_node_object(fs.src_host_id)
             fs.ng_dst_host = self.ng.get_node_object(fs.dst_host_id)
 
+
     def setup_network_graph(self, mininet_setup_gap=None, synthesis_setup_gap=None):
 
         # These things are needed by network graph...

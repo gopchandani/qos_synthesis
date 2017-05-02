@@ -36,6 +36,7 @@ class QoSPica8Experiment(Experiment):
             "Throughput": defaultdict(defaultdict),
             "Mean Latency": defaultdict(defaultdict),
             "99th Percentile Latency": defaultdict(defaultdict),
+            "SD Latency": defaultdict(defaultdict),
             "Maximum Latency": defaultdict(defaultdict)
         }
 
@@ -46,7 +47,7 @@ class QoSPica8Experiment(Experiment):
             nc.init_flow_specs()
             nc.synthesis.synthesize_flow_specifications(nc.flow_specs)
 
-            #self.push_arps(nc)
+            self.push_arps(nc)
             self.measure_flow_rates(nc)
 
     def run_cmd_via_paramiko(self, IP, port, username, password, command):
@@ -76,7 +77,7 @@ class QoSPica8Experiment(Experiment):
                                       22,
                                       sw["username"],
                                       sw["password"],
-                                      "/ovs/bin/ovs-ofctl del-flows of-switch")
+                                          "/ovs/bin/ovs-ofctl del-flows of-switch")
 
             self.run_cmd_via_paramiko(sw["IP"],
                                       22,
@@ -161,6 +162,7 @@ class QoSPica8Experiment(Experiment):
 
                 self.data["Throughput"][first_key][second_key] = []
                 self.data["Mean Latency"][first_key][second_key] = []
+                self.data["SD Latency"][first_key][second_key] = []
                 self.data["99th Percentile Latency"][first_key][second_key] = []
                 self.data["Maximum Latency"][first_key][second_key] = []
 
@@ -199,6 +201,7 @@ class QoSPica8Experiment(Experiment):
 
             self.data["Throughput"][first_key][second_key].append(float(measurements["throughput"]))
             self.data["Mean Latency"][first_key][second_key].append(float(measurements["mean_latency"]))
+            self.data["SD Latency"][first_key][second_key].append(float(measurements["stdev_latency"]))
             self.data["99th Percentile Latency"][first_key][second_key].append(float(measurements["nn_perc_latency"]))
             self.data["Maximum Latency"][first_key][second_key].append(float(measurements["max_latency"]))
 
@@ -214,7 +217,7 @@ class QoSPica8Experiment(Experiment):
         ]
         # launch servers
         for serv in servers:
-            command = "/usr/local/bin/netserver"
+            command = "/usr/local/bin/netserver&"
             self.run_cmd_via_paramiko(serv["mgmt_ip"], 22, serv["usr"], serv["psswd"], command)
 
         clients = [
@@ -468,23 +471,7 @@ def load_data_collapse_flows(in_filename):
 
     return collapsed_data
 
-
-def main():
-
-    num_iterations = 30
-    same_output_queue_list = [True]
-    measurement_rates = [10, 15, 20, 25, 30, 35, 40, 45, 50]
-    #measurement_rates = [40, 42, 44, 46, 48, 50]
-
-    nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
-                                             measurement_rates=measurement_rates,
-                                             tests_duration=15)
-
-    exp = QoSPica8Experiment(nc_list, num_iterations, len(measurement_rates), measurement_rates)
-
-    # exp.trigger()
-    # exp.dump_data()
-    # exp.plot_qos()
+def data_prep(exp):
 
     exp.data = merge_data_across_network_config(["data/qos_pica8_experiment_30_iterations_20170501_215748.json", #same queue
                                                  "data/qos_pica8_experiment_30_iterations_20170502_023356.json"],#different queue
@@ -515,6 +502,24 @@ def main():
     # exp.data = load_data_collapse_flows("data/qos_pica8_experiment_merged_across_rates_file.json")
 
     exp.plot_qos()
+
+def main():
+
+    num_iterations = 100
+    same_output_queue_list = [True, False]
+    measurement_rates = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+
+    nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
+                                             measurement_rates=measurement_rates,
+                                             tests_duration=15)
+
+    exp = QoSPica8Experiment(nc_list, num_iterations, len(measurement_rates), measurement_rates)
+
+    exp.trigger()
+
+    # exp.dump_data()
+    # exp.plot_qos()
+
 
 if __name__ == "__main__":
     main()
