@@ -45,6 +45,8 @@ class Action:
 
         if self.sw.network_graph.controller == "ryu":
             self.parse_ryu_action_json()
+        elif self.sw.network_graph.controller == "ryu_old":
+            self.parse_ryu_action_json_old()
         else:
             raise NotImplemented
 
@@ -55,6 +57,14 @@ class Action:
             prior_active_watch_ports = self.bucket.prior_active_watch_ports()
 
         return len(prior_active_watch_ports)
+
+    def parse_ryu_action_json_old(self):
+
+        if self.action_json.startswith("OUTPUT"):
+            self.action_type = "output"
+            self.out_port = self.action_json.split(":")[1]
+        # else:
+            # raise NotImplemented
 
     def parse_ryu_action_json(self):
 

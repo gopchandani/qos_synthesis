@@ -27,11 +27,19 @@ from experiments.topologies.two_ring_topo import TwoRingTopo
 from experiments.topologies.ring_line_topo import RingLineTopo
 from experiments.topologies.clique_topo import CliqueTopo
 from experiments.topologies.ameren_topo import AmerenTopo
+# mhasan import : ring
+from experiments.topologies.ring_topo_with_param import RingTopoWithParams
+from experiments.topologies.random_topo_with_param import RandomTopoWithParams
 
 from synthesis.dijkstra_synthesis import DijkstraSynthesis
 from synthesis.aborescene_synthesis import AboresceneSynthesis
 from synthesis.synthesize_qos import SynthesizeQoS
 from synthesis.synthesis_lib import SynthesisLib
+
+# mhasan import: networkx
+import networkx as nx
+import sys
+# from mcp_helper import MCP_Helper
 
 
 class NetworkConfiguration(object):
@@ -42,7 +50,11 @@ class NetworkConfiguration(object):
                  conf_root,
                  synthesis_name,
                  synthesis_params,
-                 flow_specs):
+                 flow_specs,
+                 # mhasan: added link param in constructor
+                 topo_link_params,
+                 number_of_flows,
+                 test_case_id):
 
         self.controller = controller
         self.topo_name = topo_name
@@ -52,6 +64,10 @@ class NetworkConfiguration(object):
         self.synthesis_name = synthesis_name
         self.synthesis_params = synthesis_params
         self.flow_specs = flow_specs
+        # mhasan: added link param
+        self.topo_link_params = topo_link_params
+
+        self.number_of_flows = number_of_flows
 
         self.controller_port = 6633
         self.topo = None
@@ -61,6 +77,10 @@ class NetworkConfiguration(object):
 
         self.mininet_obj = None
         self.ng = None
+
+        self.test_case_id = test_case_id
+
+        self.isFeasible = True
 
         # Setup the directory for saving configs, check if one does not exist,
         # if not, assume that the controller, mininet and rule synthesis needs to be triggered.
@@ -83,18 +103,35 @@ class NetworkConfiguration(object):
         self.h = httplib2.Http(".cache")
         self.h.add_credentials('admin', 'admin')
 
+        #mhasan : added path
+        self.path = None
+
     def __str__(self):
-        return self.controller + "_" + str(self.synthesis) + "_" + str(self.topo)
+        return self.controller + "_" + str(self.synthesis) + "_" + str(self.topo) + "_" + str(
+            self.number_of_flows) + "_" + str(self.test_case_id)
 
     def init_topo(self):
-        if self.topo_name == "ring":
+        # mhasan : added ring topo with param
+        if self.topo_name == "ring_with_param":
+            # mhasan: create topo with link param
+            self.topo = RingTopoWithParams(self.topo_params, self.topo_link_params)
+            self.nc_topo_str = "Ring topology with " + str(self.topo.total_switches) + " switches"
+        elif self.topo_name == "random_with_param":
+            # mhasan: create topo with link param
+            self.topo = RandomTopoWithParams(self.topo_params, self.topo_link_params)
+            self.nc_topo_str = "Random topology with " + str(self.topo.total_switches) + " switches"
+        elif self.topo_name == "ring":
+            # self.topo = RingTopo(self.topo_params)
+            # mhasan: create topo with link param
             self.topo = RingTopo(self.topo_params)
             self.nc_topo_str = "Ring topology with " + str(self.topo.total_switches) + " switches"
         elif self.topo_name == "clostopo":
             self.topo = ClosTopo(self.topo_params)
             self.nc_topo_str = "Clos topology with " + str(self.topo.total_switches) + " switches"
         elif self.topo_name == "linear":
-            self.topo = LinearTopo(self.topo_params)
+            # self.topo = LinearTopo(self.topo_params)
+            # mhasan: create topo with link param
+            self.topo = LinearTopo(self.topo_params, self.topo_link_params)
             self.nc_topo_str = "Linear topology with " + str(self.topo_params["num_switches"]) + " switches"
         else:
             raise NotImplementedError("Topology: %s" % self.topo_name)
@@ -207,6 +244,16 @@ class NetworkConfiguration(object):
 
         return mininet_port_links
 
+    # mhasan : for different params in different links
+    def get_link_params(self):
+
+        mininet_link_params = self.topo.link_params
+
+        with open(self.conf_path + "mininet_link_params.json", "w") as outfile:
+            json.dump(mininet_link_params, outfile)
+
+        return mininet_link_params
+
     def get_switches(self):
         # Now the output of synthesis is carted away
         if self.controller == "ryu":
@@ -232,7 +279,13 @@ class NetworkConfiguration(object):
         # These things are needed by network graph...
         self.get_host_nodes()
         self.get_links()
+
+        # mhasan : for link params
+        self.get_link_params()
+
         self.get_switches()
+
+
 
         self.ng = NetworkGraph(network_configuration=self)
         self.ng.parse_network_graph()
@@ -446,3 +499,20 @@ class NetworkConfiguration(object):
                 break
 
         return is_bi_connected
+
+    # mhasan: calibrate delay based on network toplogy
+    # mhasan: lower index -> lower delay budget -> higher priority
+
+    def calibrate_delay(self, base_delay_budget):
+
+        diameter = nx.diameter(self.ng.get_node_graph())
+        base_delay_budget *= diameter  # vary with topology as Rakesh K. mentioned
+        delta = base_delay_budget/10  # a fraction that increase the delay requirement from flow to flow
+
+        for flow_id, current_flow in enumerate(self.flow_specs):
+            # do for every odd (forward flow), reverse flow will be the same.
+            if flow_id % 2 == 0:
+                current_flow.delay_budget = base_delay_budget
+                self.flow_specs[flow_id+1].delay_budget = base_delay_budget  # for reverse flow
+                base_delay_budget += delta
+

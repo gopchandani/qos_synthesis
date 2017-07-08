@@ -23,12 +23,13 @@ class SynthesisLib(object):
         self.flow_id_cntr = 0
         self.queue_id_cntr = 1
 
+        self.queue_id_cntr_per_sw = {
+            "s2347862419956695048": 0,
+            "s2347862419956695105": 0
+        }
+
         self.h = httplib2.Http(".cache")
         self.h.add_credentials('admin', 'admin')
-
-        # Cleanup all Queue/QoS records from OVSDB
-        os.system("sudo ovs-vsctl -- --all destroy QoS")
-        os.system("sudo ovs-vsctl -- --all destroy Queue")
 
         self.synthesized_primary_paths = defaultdict(defaultdict)
         self.synthesized_failover_paths = defaultdict(defaultdict)        
@@ -68,22 +69,33 @@ class SynthesisLib(object):
             json.dump(self.synthesized_failover_paths, outfile)
 
     def push_queue(self, sw, port, min_rate, max_rate):
-
-        self.queue_id_cntr = self.queue_id_cntr + 1
+        self.queue_id_cntr_per_sw[sw] = self.queue_id_cntr_per_sw[sw] + 1
+        # self.queue_id_cntr = self.queue_id_cntr + 1
         min_rate_str = str(min_rate)
         max_rate_str = str(max_rate)
-        sw_port_str = sw + "-" + "eth" + str(port)
+        # sw_port_str = sw + "-" + "eth" + str(port)
+        sw_port_str = "ge-1/1/" + str(port)
 
-        queue_cmd = "sudo ovs-vsctl -- set Port " + sw_port_str + " qos=@newqos -- " + \
-              "--id=@newqos create QoS type=linux-htb other-config:max-rate=" + "1000000000" + \
-                    " queues=" + str(self.queue_id_cntr) + "=@q" + str(self.queue_id_cntr) + " -- " +\
-              "--id=@q" + str(self.queue_id_cntr) + " create Queue other-config:min-rate=" + min_rate_str + \
-              " other-config:max-rate=" + max_rate_str
+        ip_map = {
+            "s2347862419956695048": "192.168.1.103",
+            "s2347862419956695105": "192.168.1.101"
+        }
+
+        queue_cmd = "ovs-vsctl " + \
+                    "--db=tcp:" + ip_map[sw] + ":6640 -- " + \
+                    "set Port " + sw_port_str + " qos=@newqos -- " + \
+                    "--id=@newqos create qos type=linux-htb other-config:max-rate=" + max_rate_str + \
+                    " queues=" + str(self.queue_id_cntr_per_sw[sw]) + \
+                    "=@q" + str(self.queue_id_cntr_per_sw[sw]) + \
+                    " -- " +\
+                    "--id=@q" + str(self.queue_id_cntr_per_sw[sw]) + \
+                    " create Queue other-config:min-rate=" + min_rate_str + \
+                    " other-config:max-rate=" + max_rate_str
 
         os.system(queue_cmd)
         time.sleep(1)
 
-        return self.queue_id_cntr
+        return self.queue_id_cntr_per_sw[sw]
 
     def sel_get_node_id(self, switch):
        # for node in ConfigTree.nodesHttpAccess(self.sel_session).read_collection():
@@ -95,8 +107,8 @@ class SynthesisLib(object):
 
         time.sleep(0.2)
 
-        if self.network_graph.controller == "ryu":
-
+        if self.network_graph.controller == "ryu" or self.network_graph.controller == "ryu_old":
+            #import pdb; pdb.set_trace()
             resp, content = self.h.request(url, "POST",
                                            headers={'Content-Type': 'application/json; charset=UTF-8'},
                                            body=json.dumps(pushed_content))
@@ -115,15 +127,15 @@ class SynthesisLib(object):
             pprint.pprint(pushed_content)
 
     def create_ryu_flow_url(self):
-        return "http://localhost:8080/stats/flowentry/add"
+        return "http://192.168.1.102:8080/stats/flowentry/add"
 
     def create_ryu_group_url(self):
-        return "http://localhost:8080/stats/groupentry/add"
+        return "http://192.168.1.102:8080/stats/groupentry/add"
 
     def push_flow(self, sw, flow):
 
         url = None
-        if self.network_graph.controller == "ryu":
+        if self.network_graph.controller == "ryu" or self.network_graph.controller == "ryu_old":
             url = self.create_ryu_flow_url()
 
         elif self.network_graph.controller == "sel":
@@ -160,6 +172,18 @@ class SynthesisLib(object):
             flow["match"] = {}
             flow["instructions"] = []
 
+        elif self.network_graph.controller == "ryu_old":
+
+            flow["dpid"] = sw[1:]
+            flow["cookie"] = self.flow_id_cntr
+            flow["cookie_mask"] = 1
+            flow["table_id"] = table_id
+            flow["idle_timeout"] = 0
+            flow["hard_timeout"] = 0
+            flow["priority"] = priority + 100
+            flow["flags"] = 1
+            flow["match"] = {}
+            flow["instructions"] = []
 
         elif self.network_graph.controller == "sel":
             raise NotImplementedError
@@ -215,6 +239,9 @@ class SynthesisLib(object):
         if self.network_graph.controller == "ryu":
             flow["instructions"] = [{"type": "GOTO_TABLE",  "table_id": str(table_id + 1)}]
 
+        if self.network_graph.controller == "ryu_old":
+            flow["actions"] = [{"type": "GOTO_TABLE",  "table_id": table_id + 1}]
+
         elif self.network_graph.controller == "sel":
             raise NotImplementedError
 
@@ -240,6 +267,27 @@ class SynthesisLib(object):
 
         return flow
 
+    def push_match_per_in_port_destination_instruct_flow(self, sw, table_id, priority, flow_match, output_port, apply_immediately):
+
+        flow = self.create_base_flow(sw, table_id, priority)
+
+        if self.network_graph.controller == "ryu":
+            flow["match"] = flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+            action_list = [{"type": "GROUP", "group_id": group_id}]
+            self.populate_flow_action_instruction(flow, action_list, apply_immediately)
+
+        elif self.network_graph.controller == "ryu_old":
+            flow["match"] = flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+            action_list = [{"type": "OUTPUT", "port": output_port}]
+            flow["actions"] = action_list
+
+        elif self.network_graph.controller == "sel":
+            raise NotImplementedError
+
+        self.push_flow(sw, flow)
+
+        return flow
+
     def push_match_per_in_port_destination_instruct_group_flow(self, sw, table_id, group_id, priority,
                                                                 flow_match, apply_immediately):
 
@@ -249,6 +297,11 @@ class SynthesisLib(object):
             flow["match"] = flow_match.generate_match_json(self.network_graph.controller, flow["match"])
             action_list = [{"type": "GROUP", "group_id": group_id}]
             self.populate_flow_action_instruction(flow, action_list, apply_immediately)
+
+        elif self.network_graph.controller == "ryu_old":
+            flow["match"] = flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+            action_list = [{"type": "GROUP", "group_id": group_id}]
+            flow["actions"] = action_list
 
         elif self.network_graph.controller == "sel":
             raise NotImplementedError
@@ -405,7 +458,6 @@ class SynthesisLib(object):
 
     def push_destination_host_mac_intent_flow(self, sw, mac_intent, table_id, priority):
 
-        mac_intent.flow_match["vlan_id"] = sys.maxsize
         flow = self.create_base_flow(sw, table_id, priority)
 
         output_action = None
@@ -418,9 +470,47 @@ class SynthesisLib(object):
 
             self.populate_flow_action_instruction(flow, action_list, mac_intent.apply_immediately)
             self.push_flow(sw, flow)
-		
+
+        elif self.network_graph.controller == "ryu_old":
+            flow["match"] = mac_intent.flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+            output_action = {"type": "OUTPUT", "port": mac_intent.out_port}
+
+            flow["actions"] = [output_action]
+
+            self.push_flow(sw, flow)
+
         elif self.network_graph.controller == "sel":
             raise NotImplementedError
+
+        return flow
+
+    def push_destination_host_mac_intent_flow_with_qos(self, switch_id, mac_intent, table_id, priority, q_id=None):
+
+        flow = self.create_base_flow(switch_id, table_id, priority)
+
+        if  self.network_graph.controller == "ryu":
+            flow["match"] = mac_intent.flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+            output_action = {"type": "OUTPUT", "port": mac_intent.out_port}
+
+            q_id = self.push_queue(switch_id, mac_intent.out_port, mac_intent.min_rate, mac_intent.max_rate)
+            enqueue_action = {"type": "SET_QUEUE", "queue_id": q_id, "port": mac_intent.out_port}
+            action_list = [enqueue_action, output_action]
+
+            self.populate_flow_action_instruction(flow, action_list, mac_intent.apply_immediately)
+            self.push_flow(switch_id, flow)
+
+        if self.network_graph.controller == "ryu_old":
+            flow["match"] = mac_intent.flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+            output_action = {"type": "OUTPUT", "port": mac_intent.out_port}
+
+            if not q_id:
+                q_id = self.push_queue(switch_id, mac_intent.out_port, mac_intent.min_rate, mac_intent.max_rate)
+            enqueue_action = {"type": "SET_QUEUE", "queue_id": q_id, "port": mac_intent.out_port}
+            action_list = [enqueue_action, output_action]
+            flow["actions"] = action_list
+
+            # self.populate_flow_action_instruction(flow, action_list, mac_intent.apply_immediately)
+            self.push_flow(switch_id, flow)
 
         return flow
 
@@ -432,6 +522,12 @@ class SynthesisLib(object):
         output_action = None
 
         if self.network_graph.controller == "ryu":
+            flow["match"] = mac_intent.flow_match.generate_match_json(self.network_graph.controller, flow["match"],
+                                                                      has_vlan_tag_check=True)
+            pop_vlan_action = {"type": "POP_VLAN"}
+            output_action = {"type": "OUTPUT", "port": mac_intent.out_port}
+
+        elif self.network_graph.controller == "ryu_old":
             flow["match"] = mac_intent.flow_match.generate_match_json(self.network_graph.controller, flow["match"],
                                                                       has_vlan_tag_check=True)
             pop_vlan_action = {"type": "POP_VLAN"}
@@ -449,7 +545,11 @@ class SynthesisLib(object):
         else:
             action_list = [pop_vlan_action, output_action]
 
-        self.populate_flow_action_instruction(flow, action_list, mac_intent.apply_immediately)
+        if self.network_graph.controller == "ryu_old":
+            flow["actions"] = action_list
+        else:
+            self.populate_flow_action_instruction(flow, action_list, mac_intent.apply_immediately)
+
         self.push_flow(sw, flow)
 
         return flow
@@ -523,6 +623,18 @@ class SynthesisLib(object):
                 self.populate_flow_action_instruction(flow, action_list, push_vlan_intent.apply_immediately)
 
                 flow["instructions"].append({"type": "GOTO_TABLE", "table_id": str(vlan_tag_push_rules_table_id + 1)})
+
+            if self.network_graph.controller == "ryu_old":
+
+                # Compile match
+                flow["match"] = push_vlan_intent.flow_match.generate_match_json(self.network_graph.controller,
+                                                                                flow["match"])
+
+                action_list = [{"type": "PUSH_VLAN", "ethertype": 0x8100},
+                               {"type": "SET_FIELD", "field": "vlan_vid", "value": push_vlan_intent.required_vlan_id + 0x1000},
+                               {"type": "GOTO_TABLE", "table_id": vlan_tag_push_rules_table_id + 1}]
+
+                flow["actions"] = action_list
 
             elif self.network_graph.controller == "sel":
                 raise NotImplementedError
@@ -617,3 +729,4 @@ class SynthesisLib(object):
             # Make and push the flow
             self.populate_flow_action_instruction(flow, action_list, True)
             self.push_flow(sw, flow)
+

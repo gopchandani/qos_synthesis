@@ -15,11 +15,19 @@ from port import Port
 
 class NetworkGraphLinkData(object):
 
-    def __init__(self, node1_id, node1_port, node2_id, node2_port, link_type):
+    def __init__(self, node1_id, node1_port, node2_id, node2_port, link_type,
+                 #mhasan: added link delay and bw
+                 link_bw,
+                 link_delay):
         self.link_ports_dict = {str(node1_id): node1_port, str(node2_id): node2_port}
         self.link_type = link_type
         self.traffic_paths = []
         self.causes_disconnect = None
+
+        # mhasan: added link delay and bw
+        self.link_delay = link_delay
+        self.link_bw = link_bw
+
 
         self.forward_port_graph_edge = (str(node1_id) + ':' + "egress" + str(node1_port),
                                         str(node2_id) + ':' + "ingress" + str(node2_port))
@@ -99,7 +107,8 @@ class NetworkGraph(object):
 
                 h_obj = Host(mininet_host_dict["host_name"],
                              self,
-                             mininet_host_dict["host_IP"],
+                             None,
+                             # mininet_host_dict["host_IP"],
                              mininet_host_dict["host_MAC"],
                              host_switch_obj,
                              sw_obj.ports[mininet_port_links[mininet_host_dict["host_name"]]['0'][1]])
@@ -118,18 +127,26 @@ class NetworkGraph(object):
         with open(self.network_configuration.conf_path + "mininet_port_links.json", "r") as in_file:
             mininet_port_links = json.loads(in_file.read())
 
+        with open(self.network_configuration.conf_path + "mininet_link_params.json", "r") as in_file:
+            mininet_link_params = json.loads(in_file.read())
+
         for src_node in mininet_port_links:
             for src_node_port in mininet_port_links[src_node]:
                 dst_list = mininet_port_links[src_node][src_node_port]
                 dst_node = dst_list[0]
                 dst_node_port = dst_list[1]
 
+                # mhasan : modified to enable link params
+                lp = (item for item in mininet_link_params if (item['node1'] == src_node and item['node2'] == dst_node)
+                      or (item['node1'] == dst_node and item['node2'] == src_node)).next()
+
+                # print  lp
                 self.add_link(src_node,
                               int(src_node_port),
                               dst_node,
-                              int(dst_node_port))
+                              int(dst_node_port), lp)
 
-    def add_link(self, node1_id, node1_port, node2_id, node2_port):
+    def add_link(self, node1_id, node1_port, node2_id, node2_port, lp):
 
         link_type = None
 
@@ -142,7 +159,19 @@ class NetworkGraph(object):
         else:
             raise Exception("Unknown Link Type")
 
-        link_data = NetworkGraphLinkData(node1_id, node1_port, node2_id, node2_port, link_type)
+        link_data = NetworkGraphLinkData(node1_id, node1_port, node2_id,
+                                         node2_port, link_type,
+                                         lp['bw'] * 1000000,  # in BPS
+                                         # truncate unit (ms) and convert to float and ms to second
+                                         float(lp['delay'].replace('ms','')) * 0.001)
+
+        '''
+        link_data = NetworkGraphLinkData(node1_id, node1_port, node2_id,
+                                         node2_port, link_type,
+                                         self.network_configuration.topo_link_params['bw']*1000000, # in BPS
+                                         # truncate unit (ms) and convert to float and ms to second
+                                         float(self.network_configuration.topo_link_params['delay'].replace('ms', ''))*0.001)
+        '''
 
         self.graph.add_edge(node1_id,
                             node2_id,
@@ -177,6 +206,7 @@ class NetworkGraph(object):
 
             #  prepare a switch id
             switch_id = "s" + str(dpid)
+            print "SWITCH ID: " + switch_id
 
             # Check to see if a switch with this id already exists in the graph,
             # if so grab it, otherwise create it
@@ -214,6 +244,8 @@ class NetworkGraph(object):
 
         if self.network_configuration.controller == "ryu":
             self.parse_ryu_switches()
+        elif self.network_configuration.controller == "ryu_old":
+            self.parse_ryu_switches()
         else:
             raise NotImplemented
 
@@ -237,6 +269,12 @@ class NetworkGraph(object):
     def get_link_data(self, node1_id, node2_id):
         link_data = self.graph[node1_id][node2_id]['link_data']
         return link_data
+
+    # mhasan: get all link data
+    def get_all_link_data(self):
+        for edge in self.graph.edges():
+            link_data = self.graph[edge[0]][edge[1]]['link_data']
+            yield link_data
 
     def get_switch_link_data(self):
         for edge in self.graph.edges():

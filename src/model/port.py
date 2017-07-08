@@ -17,7 +17,8 @@ class Port(object):
 
         if self.sw.network_graph.controller == "ryu":
             self.parse_ryu_port_json(port_json)
-
+        elif self.sw.network_graph.controller == "ryu_old":
+            self.parse_ryu_port_json(port_json)
         else:
             raise NotImplemented
 

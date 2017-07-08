@@ -277,6 +277,8 @@ class Match(DictMixin):
                     #print "mac_hex_str:", mac_hex_str
                     if len(mac_hex_str) == 11:
                         mac_hex_str = "0" + mac_hex_str
+                    if len(mac_hex_str) == 10:
+                        mac_hex_str = "00" + mac_hex_str
 
                     mac_hex_str = unicode(':'.join(s.encode('hex') for s in mac_hex_str.decode('hex')))
                     match_json[ryu_field_names_mapping_reverse[field_name]] = mac_hex_str
@@ -288,6 +290,8 @@ class Match(DictMixin):
     def generate_match_json(self, controller, match_json, has_vlan_tag_check=False):
 
         if controller == "ryu":
+            return self.generate_ryu_match_json(match_json, has_vlan_tag_check)
+        elif controller == "ryu_old":
             return self.generate_ryu_match_json(match_json, has_vlan_tag_check)
         else:
             raise NotImplementedError
