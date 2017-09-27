@@ -324,6 +324,7 @@ class NetworkConfiguration(object):
         return link_data
 
     def setup_network_graph_without_mininet(self):
+        #TODO
 
         nw_graph = nx.Graph()
         switch_names = []

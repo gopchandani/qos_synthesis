@@ -22,6 +22,7 @@ import random
 import itertools
 import pickle
 import networkx as nx
+import numpy as np
 
 import signal
 
@@ -166,6 +167,7 @@ class QosDemo(Experiment):
                     # see whether there is any output from netperf
                     signal.alarm(10)
 
+                    print "Running for flow-id: {}".format(fcnt)
                     try:
                         netperf_output_string = fs.mn_src_host.read()
                     except MyTimeOutException:
@@ -233,10 +235,21 @@ class QosDemo(Experiment):
                     nn_latency_list = [d['nn_perc_latency'] for d in tmp if 'nn_perc_latency' in d]
                     min_throughput_list = [d['throughput'] for d in tmp if 'throughput' in d]
 
-                    max_mean_latency_iter = max(mean_latency_list)
-                    max_max_latency_iter = max(max_latency_list)  # saves the max of maximum latency
-                    max_nn_latency_iter = max(nn_latency_list)  # 99P latency
-                    min_throughput_iter = min(min_throughput_list)  # saves minimum throughput
+                    # take only +ve
+                    mean_latency_list = [x for x in mean_latency_list if x >= 0]
+                    max_latency_list = [x for x in max_latency_list if x >= 0]
+                    nn_latency_list = [x for x in nn_latency_list if x >= 0]
+                    min_throughput_list = [x for x in min_throughput_list if x >= 0]
+
+                    # max_mean_latency_iter = max(mean_latency_list)
+                    # max_max_latency_iter = max(max_latency_list)  # saves the max of maximum latency
+                    # max_nn_latency_iter = max(nn_latency_list)  # 99P latency
+                    # min_throughput_iter = min(min_throughput_list)  # saves minimum throughput
+
+                    max_mean_latency_iter = np.mean(np.array(mean_latency_list).astype(np.float))
+                    max_max_latency_iter = np.mean(np.array(max_latency_list).astype(np.float))  # saves the mean of maximum latency
+                    max_nn_latency_iter = np.mean(np.array(nn_latency_list).astype(np.float))  # 99P latency
+                    min_throughput_iter = np.mean(np.array(min_throughput_list).astype(np.float))  # saves minimum throughput
 
                     if max_mean_latency_iter > max_mean_latency:
                         max_mean_latency = max_mean_latency_iter
@@ -416,24 +429,31 @@ def main():
     num_iterations = 5
 
     tests_duration = 10
-    measurement_rates = [10]  # generate a random number between [1,k] (MBPS)
+    measurement_rates = [5]  # generate a random number between [1,k] (MBPS)
     cap_rate = 0.1
 
     num_hosts_per_switch_list = [2]
     same_output_queue_list = [False]
 
     # number_of_RT_flow_list = [2, 4, 6, 8]
-    # number_of_RT_flow_list = [5]
-    number_of_BE_flow_list = [3, 0]
-    number_of_RT_flow_list = [5, 4, 3, 2, 1]
+    # number_of_RT_flow_list = [3]
+    #number_of_BE_flow_list = [3, 0]
+    number_of_BE_flow_list = [3]
+    # number_of_RT_flow_list = [5, 4]
+    number_of_RT_flow_list = [7, 6, 5, 4, 3, 2]  # added for RTSS17 experiments
 
     number_of_switches = 5
 
     number_of_test_cases = 25  # number of experimental samples we want to examine
 
     #base_delay_budget = 0.000025  # in second (25us) (this is end-to-end requirement - netperf gives round trip)
-    base_delay_budget = 0.000100  # in second (100us) (this is end-to-end requirement - netperf gives round trip)
-    link_delay_upper_bound = 125  # in us, generate random delay between [k/5,k] (us)
+    # base_delay_budget = 0.000100  # in second (100us) (this is end-to-end requirement - netperf gives round trip)
+    # RTSS CAM-READY
+    # base_delay_budget = 0.000030  # in second (30*diameter = 120 us) (this is end-to-end requirement - netperf gives round trip)
+    base_delay_budget = 0.000010  # in second (10*diameter = 40 us) (this is end-to-end requirement - netperf gives round trip)
+    # link_delay_upper_bound = 125  # in us, generate random delay between [k/5,k] (us)
+    # link_delay_upper_bound = 30  # in us, generate random delay between [k-5, k] (us)
+    link_delay_upper_bound = 5  # in us
 
     topo_link_params = {'bw': 10, 'delay': str(link_delay_upper_bound) + 'us'}  # BW in MBPS
 

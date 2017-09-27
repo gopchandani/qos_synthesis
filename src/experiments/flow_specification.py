@@ -1,4 +1,5 @@
 from collections import defaultdict
+import random
 
 
 class FlowSpecification:
@@ -23,11 +24,15 @@ class FlowSpecification:
         self.mn_src_host = None
         self.mn_dst_host = None
 
-        self.num_sends_in_burst = 5
-        self.inter_burst_time = 1
+        self.num_sends_in_burst = 1
+        self.inter_burst_time = 10
 
-        self.send_size = configured_rate * 1000 / (8 * self.num_sends_in_burst)
+        # self.send_size = configured_rate * 1000 / (8 * self.num_sends_in_burst)
+        self.send_size = 25  # packet size (bytes)
         self.configured_rate_bps = self.send_size * 8 * self.num_sends_in_burst * 1000
+
+
+
 
         self.measurement_rate_bps = None
 
@@ -47,7 +52,8 @@ class FlowSpecification:
         # measurement_rate * 10^6 = (num_sends_in_burst * send_size * 8) / (1 * 10^-3)
         # so: send_size = measurement_rate * 10^3 / (8 * num_sends_in_burst)
 
-        self.send_size = measurement_rate * 1000 / (8 * self.num_sends_in_burst)
+        # self.send_size = measurement_rate * 1000 / (8 * self.num_sends_in_burst)
+        self.send_size = 25  # packet size (bytes)
         self.measurement_rate_bps = self.send_size * 8 * self.num_sends_in_burst * 1000
 
         if self.tag == "real-time":
@@ -61,6 +67,8 @@ class FlowSpecification:
                               "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY'" + \
                               " -T UDP_RR " + \
                               "-m " + str(self.send_size) + " &"
+
+
 
         elif self.tag == "best-effort":
 
@@ -97,11 +105,21 @@ class FlowSpecification:
 
     def parse_measurements(self, netperf_output_string):
 
-        if netperf_output_string.count("Throughput") > 1:
+        # if netperf_output_string.count("Throughput") > 1:
+        #     raise StandardError
+
+        # in case of invalid format
+        if netperf_output_string.count("Throughput") < 1:
             raise StandardError
 
         data_lines = netperf_output_string.split('\r\n')
-        output_line_tokens = data_lines[2].split(',')
+        #output_line_tokens = data_lines[2].split(',')
+
+        # print "data lines"
+        # print data_lines
+        output_line_tokens = data_lines[len(data_lines)-2].split(',')
+
+        # print output_line_tokens
 
         measurements = dict()
 

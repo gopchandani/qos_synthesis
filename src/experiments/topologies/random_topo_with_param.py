@@ -24,8 +24,11 @@ class RandomTopoWithParams(Topo):
             for j in xrange(self.params["num_hosts_per_switch"]):
                 curr_switch_host = self.addHost("h" + str(i+1) + str(j+1))
                 link_options = self.get_random_link_options(linkopts)
+                bw = link_options["bw"]
+                delay = '\'{}\''.format(link_options["delay"])
 
-                self.addLink(curr_switch, curr_switch_host, **link_options)
+                # self.addLink(curr_switch, curr_switch_host, **link_options)
+                self.addLink(curr_switch, curr_switch_host, bw=bw, delay=delay)
                 # save the link info
                 self.link_params.append({"node1": curr_switch,
                                          "node2": curr_switch_host,
@@ -36,8 +39,14 @@ class RandomTopoWithParams(Topo):
         if self.params["num_switches"] > 1:
             for i in xrange(self.params["num_switches"] - 1):
                 link_options = self.get_random_link_options(linkopts)
+                # print link_options
 
-                self.addLink(self.switch_names[i], self.switch_names[i+1], **link_options)
+                bw = link_options["bw"]
+                delay = '\'{}\''.format(link_options["delay"])
+
+                # self.addLink(self.switch_names[i], self.switch_names[i+1], **link_options)
+                self.addLink(self.switch_names[i], self.switch_names[i+1], bw=bw, delay=delay)
+
                 # save the link info
                 self.link_params.append({"node1": self.switch_names[i],
                                          "node2": self.switch_names[i+1],
@@ -48,7 +57,12 @@ class RandomTopoWithParams(Topo):
             if self.params["num_switches"] > 2:
                 link_options = self.get_random_link_options(linkopts)
 
-                self.addLink(self.switch_names[0], self.switch_names[-1], **link_options)
+                bw = link_options["bw"]
+                delay = '\'{}\''.format(link_options["delay"])
+
+                # self.addLink(self.switch_names[0], self.switch_names[-1], **link_options)
+                self.addLink(self.switch_names[0], self.switch_names[-1], bw=bw, delay=delay)
+
                 # save the link info
                 self.link_params.append({"node1": self.switch_names[0],
                                          "node2": self.switch_names[-1],
@@ -63,7 +77,11 @@ class RandomTopoWithParams(Topo):
 
                     link_options = self.get_random_link_options(linkopts)
 
-                    self.addLink(self.switch_names[nodelist[i]], self.switch_names[nodelist[i+1]], **link_options)
+                    bw = link_options["bw"]
+                    delay = '\'{}\''.format(link_options["delay"])
+
+                    # self.addLink(self.switch_names[nodelist[i]], self.switch_names[nodelist[i+1]], **link_options)
+                    self.addLink(self.switch_names[nodelist[i]], self.switch_names[nodelist[i + 1]], bw=bw, delay=delay)
                     # save the link info
                     self.link_params.append({"node1": self.switch_names[nodelist[i]],
                                              "node2": self.switch_names[nodelist[i+1]],
@@ -76,7 +94,10 @@ class RandomTopoWithParams(Topo):
         # delay = str(random.randint(1, delay)) + 'ms'
         #delay = str(random.uniform(0, delay)) + 'ms'
         #delay = str(random.uniform(delay/100, delay)) + 'us'
-        delay = str(random.randint(delay/5, delay)) + 'us'
+        #delay = str(random.randint(delay/5, delay)) + 'us'
+        # delay = str(random.randint(delay - 5, delay)) + 'us'  # RTSS camera ready
+        delay = str(delay) + 'us'  # RTSS camera ready
+
         link_options = {'bw': linkopts['bw'], 'delay': delay}
         return link_options
 
