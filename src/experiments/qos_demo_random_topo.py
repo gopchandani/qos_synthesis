@@ -84,8 +84,8 @@ class QosDemo(Experiment):
             # mhasan: MCP code will go there
             # mcph.print_delay_budget(nc)
 
-            #mcph.find_path_by_mcp(nc)  # update the path in 'path' variable of FlowSpecification
-            mcph.find_path_by_sp(nc)  # update the path in 'path' variable of FlowSpecification
+            mcph.find_path_by_mcp(nc)  # update the path in 'path' variable of FlowSpecification
+            #mcph.find_path_by_sp(nc)  # update the path in 'path' variable of FlowSpecification
 
             if not mcph.test_all_flow_is_schedulable(nc):
                 print "Network configuration is NOT feasible (no path found)!"
@@ -100,8 +100,8 @@ class QosDemo(Experiment):
             #mcph.synthesize_flow_specifications_default_queue(nc)
 
             # Synthesize flows (may have both RT and BE
-            #mcph.synthesize_flow_specifications_with_best_effort(nc)
-            mcph.synthesize_flow_specifications_with_best_effort_fixed_queue(nc, 10000000)
+            mcph.synthesize_flow_specifications_with_best_effort(nc)
+            #mcph.synthesize_flow_specifications_with_best_effort_fixed_queue(nc, 10000000)
 
             # nc.mininet_obj.pingAll('1')
             self.measure_flow_rates(nc)
