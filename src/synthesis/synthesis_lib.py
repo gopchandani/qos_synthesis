@@ -69,7 +69,7 @@ class SynthesisLib(object):
 
     def push_queue(self, sw, port, min_rate, max_rate):
 
-        self.queue_id_cntr = self.queue_id_cntr + 1
+        #self.queue_id_cntr = self.queue_id_cntr + 1
         min_rate_str = str(min_rate)
         max_rate_str = str(max_rate)
         sw_port_str = sw + "-" + "eth" + str(port)
@@ -422,6 +422,23 @@ class SynthesisLib(object):
             raise NotImplementedError
 
         return flow
+
+    def push_destination_host_mac_intent_flow_with_fixed_queue(self, switch_id, mac_intent, table_id, priority, q_id):
+
+        flow = self.create_base_flow(switch_id, table_id, priority)
+
+        if self.network_graph.controller == "ryu":
+            flow["match"] = mac_intent.flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+            output_action = {"type": "OUTPUT", "port": mac_intent.out_port}
+
+            enqueue_action = {"type": "SET_QUEUE", "queue_id": q_id, "port": mac_intent.out_port}
+            action_list = [enqueue_action, output_action]
+
+            self.populate_flow_action_instruction(flow, action_list, mac_intent.apply_immediately)
+            self.push_flow(switch_id, flow)
+
+        return flow
+
 
     def push_destination_host_mac_intent_flow_with_qos(self, switch_id, mac_intent, table_id, priority):
 

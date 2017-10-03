@@ -84,7 +84,8 @@ class QosDemo(Experiment):
             # mhasan: MCP code will go there
             # mcph.print_delay_budget(nc)
 
-            mcph.find_path_by_mcp(nc)  # update the path in 'path' variable of FlowSpecification
+            #mcph.find_path_by_mcp(nc)  # update the path in 'path' variable of FlowSpecification
+            mcph.find_path_by_sp(nc)  # update the path in 'path' variable of FlowSpecification
 
             if not mcph.test_all_flow_is_schedulable(nc):
                 print "Network configuration is NOT feasible (no path found)!"
@@ -99,7 +100,8 @@ class QosDemo(Experiment):
             #mcph.synthesize_flow_specifications_default_queue(nc)
 
             # Synthesize flows (may have both RT and BE
-            mcph.synthesize_flow_specifications_with_best_effort(nc)
+            #mcph.synthesize_flow_specifications_with_best_effort(nc)
+            mcph.synthesize_flow_specifications_with_best_effort_fixed_queue(nc, 10000000)
 
             # nc.mininet_obj.pingAll('1')
             self.measure_flow_rates(nc)
@@ -426,7 +428,7 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
 
 def main():
 
-    num_iterations = 5
+    num_iterations = 2
 
     tests_duration = 10
     measurement_rates = [5]  # generate a random number between [1,k] (MBPS)
@@ -440,7 +442,8 @@ def main():
     #number_of_BE_flow_list = [3, 0]
     number_of_BE_flow_list = [3]
     # number_of_RT_flow_list = [5, 4]
-    number_of_RT_flow_list = [7, 6, 5, 4, 3, 2]  # added for RTSS17 experiments
+    #number_of_RT_flow_list = [7, 6, 5, 4, 3, 2]  # added for RTSS17 experiments
+    number_of_RT_flow_list = [7]
 
     number_of_switches = 5
 

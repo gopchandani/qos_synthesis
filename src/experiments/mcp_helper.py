@@ -249,6 +249,49 @@ def print_delay_budget(nw_config):
         print "Delay budget for flow {} to {} is {}".format(current_flow.src_host_id, current_flow.dst_host_id,
                                                             current_flow.delay_budget)
 
+def find_path_by_sp(nw_config, x=10):
+    nw_graph = nw_config.ng.get_node_graph()
+
+    for flow_id, current_flow in enumerate(nw_config.flow_specs):
+
+        # do for every odd (forward flow), reverse flow will be the same.
+        if flow_id % 2 == 0:
+
+            src = current_flow.src_host_id
+            dst = current_flow.dst_host_id
+
+            if current_flow.tag == "real-time":
+                bw_req_flow = current_flow.configured_rate_bps
+                hmax = calculate_hmax(nw_graph)
+                delay_budget = current_flow.delay_budget
+                bw_budget = get_bw_budget(nw_config, bw_req_flow, hmax)
+                nw_graph = calibrate_graph(nw_config)
+                path = nx.shortest_path(nw_config.ng.get_node_graph(),source=src,target=dst)
+
+            elif current_flow.tag == "best-effort":
+                #print "Finding best-effort path"
+                path = nx.shortest_path(nw_config.ng.get_node_graph(),source=src,target=dst)
+                #print pp
+
+            else:
+                raise NotImplementedError
+
+            print "Found path for the flow", path
+
+            if not path:
+                print "No path found for flow {} to {}".format(current_flow.src_host_id, current_flow.dst_host_id)
+            else:
+                print "Path found for {} flow {} to {}".format(current_flow.tag, current_flow.src_host_id, current_flow.dst_host_id)
+                print path
+                # set the path for the flow
+                current_flow.path = path
+                reverse_path = path[::-1] # path for the reverse flow
+                nw_config.flow_specs[flow_id+1].path = reverse_path  # set the path for the reverse flow
+
+                # decrease the available bw in the path
+                update_reamining_bw(nw_graph, current_flow)
+
+
 
 
 def find_path_by_mcp(nw_config, x=10):
@@ -426,6 +469,15 @@ def synthesize_each_flow_default_queue(nc, fs, synthesis_lib):
     for intent in intent_list:
         synthesis_lib.push_destination_host_mac_intent_flow_default_queue(intent.switch_id, intent, 0, 100)
 
+def synthesize_each_flow_qos_fixed_queue(nc, fs, synthesis_lib):
+
+    # Compute intents for the path of the fs
+    intent_list = compute_path_intents(nc.ng, fs)
+
+    # Push intents one by one to the switches
+    for intent in intent_list:
+        synthesis_lib.push_destination_host_mac_intent_flow_with_fixed_queue(intent.switch_id, intent, 0, 100, 1)
+
 
 ## synthesize flow rules with best effort flow support
 
@@ -446,3 +498,23 @@ def synthesize_flow_specifications_with_best_effort(nc):
         else:
             raise NotImplementedError
 
+def synthesize_flow_specifications_with_best_effort_fixed_queue(nc, q_rate):
+
+    synthesis_lib = SynthesisLib("localhost", "8181", nc.ng)
+    for sw in nc.ng.get_switches():
+        for port in sw.ports:
+            print "Pushing q at sw:", sw.node_id, "port:", port, "q_rate:", q_rate
+            synthesis_lib.push_queue(sw.node_id, port, q_rate, q_rate)
+
+    print "Synthesizing rules and queues in the switches..."
+
+    for fs in nc.flow_specs:
+
+        if fs.tag == "real-time":
+            print "Synthesizing Real-Time Flow!"
+            synthesize_each_flow_qos_fixed_queue(nc, fs, synthesis_lib)
+        elif fs.tag == "best-effort":
+            print "Synthesizing Best-Effort Flow!"
+            synthesize_each_flow_qos_fixed_queue(nc, fs, synthesis_lib)
+        else:
+            raise NotImplementedError
