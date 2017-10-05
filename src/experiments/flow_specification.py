@@ -104,6 +104,7 @@ class FlowSpecification:
         return netperf_cmd_str
 
     def parse_measurements(self, netperf_output_string):
+        print netperf_output_string
 
         # if netperf_output_string.count("Throughput") > 1:
         #     raise StandardError

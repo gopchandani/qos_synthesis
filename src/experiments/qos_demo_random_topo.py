@@ -191,7 +191,6 @@ class QosDemo(Experiment):
                             fs.measurement_rates[j], nc.test_case_id, nc.number_of_RT_flows, nc.number_of_BE_flows,
                             fcnt)
 
-                        print netperf_output_string
 
                         try:
                             s1 = fs.parse_measurements(netperf_output_string)
@@ -233,6 +232,7 @@ class QosDemo(Experiment):
                     tmp = fs.measurements[fs.measurement_rates[j]]
 
                     mean_latency_list = [d['mean_latency'] for d in tmp if 'mean_latency' in d]
+
                     max_latency_list = [d['max_latency'] for d in tmp if 'max_latency' in d]
                     nn_latency_list = [d['nn_perc_latency'] for d in tmp if 'nn_perc_latency' in d]
                     min_throughput_list = [d['throughput'] for d in tmp if 'throughput' in d]
@@ -247,7 +247,7 @@ class QosDemo(Experiment):
                     # max_max_latency_iter = max(max_latency_list)  # saves the max of maximum latency
                     # max_nn_latency_iter = max(nn_latency_list)  # 99P latency
                     # min_throughput_iter = min(min_throughput_list)  # saves minimum throughput
-
+                    
                     max_mean_latency_iter = np.mean(np.array(mean_latency_list).astype(np.float))
                     max_max_latency_iter = np.mean(np.array(max_latency_list).astype(np.float))  # saves the mean of maximum latency
                     max_nn_latency_iter = np.mean(np.array(nn_latency_list).astype(np.float))  # 99P latency
@@ -271,24 +271,24 @@ class QosDemo(Experiment):
                     if fs.delay_budget < min_delay_budget:
                         min_delay_budget = fs.delay_budget
 
-                diameter = nx.diameter(nc.ng.get_node_graph())
-                max_possible_delay = self.link_delay_upper_bound * diameter
-                max_possible_delay *= 1000  # convert to microsecond (since netperf output in microsecond)
-                max_bw_req = max(self.measurement_rates)
+                    diameter = nx.diameter(nc.ng.get_node_graph())
+                    max_possible_delay = self.link_delay_upper_bound * diameter
+                    max_possible_delay *= 1000  # convert to microsecond (since netperf output in microsecond)
+                    max_bw_req = max(self.measurement_rates)
 
-                val_dict = {"number_of_RT_flows": nc.number_of_RT_flows,
-                            "number_of_BE_flows": nc.number_of_BE_flows,
-                            "max_possible_delay_e2e": max_possible_delay,  # this is end-to-end (NOT round-trip)
-                            "measurement_rates": self.measurement_rates[j],
-                            "max_mean_latency": float(max_mean_latency),
-                            "max_max_latency": float(max_max_latency),
-                            "max_nn_latency": float(max_nn_latency),
-                            "min_throughput": float(min_throughput),
-                            "max_delay_budget_e2e": max_delay_budget * 1000000,  # in microsecond
-                            "min_delay_budget_e2e": min_delay_budget * 1000000,  # in microsecond
-                            "max_bw_req": max_bw_req}
+                    val_dict = {"number_of_RT_flows": nc.number_of_RT_flows,
+                                "number_of_BE_flows": nc.number_of_BE_flows,
+                                "max_possible_delay_e2e": max_possible_delay,  # this is end-to-end (NOT round-trip)
+                                "measurement_rates": self.measurement_rates[j],
+                                "max_mean_latency": float(max_mean_latency),
+                                "max_max_latency": float(max_max_latency),
+                                "max_nn_latency": float(max_nn_latency),
+                                "min_throughput": float(min_throughput),
+                                "max_delay_budget_e2e": max_delay_budget * 1000000,  # in microsecond
+                                "min_delay_budget_e2e": min_delay_budget * 1000000,  # in microsecond
+                                "max_bw_req": max_bw_req}
 
-                output_data_list.append(val_dict)
+                    output_data_list.append(val_dict)
 
 
         #print output_data_list
@@ -393,23 +393,19 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
     flowlist = list(itertools.product(range(1, number_of_switches+1), range(1, hps+1)))
     print flowlist
 
+    # Making it so that all flows originate at a different host in s1 and
+    # arrive at s2, h1
+
     # for real-time flows
-    index_list = random.sample(range(2, len(flowlist)), number_of_RT_flows + 1) # for real-time flows
-    print index_list
-    
     print "RT Flows:"
+    src_indx = 0
+    dst_indx = number_of_RT_flows + number_of_BE_flows
 
     for i in range(number_of_RT_flows):
-        #src_endpoint = flowlist[index_list[i]]
-        #rnd = range(1, src_endpoint[0]) + range(src_endpoint[0]+1, number_of_switches+1)
-        #dst_endpoint = (random.choice(rnd), random.randint(1, hps))
    
-        if i < number_of_RT_flows/2:
-            src_endpoint = flowlist[0]
-        else:
-            src_endpoint = flowlist[1]
-
-        dst_endpoint = flowlist[index_list[i+1]]
+        src_endpoint = flowlist[src_indx]
+        src_indx += 1
+        dst_endpoint = flowlist[dst_indx]
         print src_endpoint, dst_endpoint
 
         forward_flow, reverse_flow = get_forward_reverse_flow(measurement_rates, cap_rate, src_endpoint, dst_endpoint, flow_match,
@@ -418,24 +414,14 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
         flow_specs.append(forward_flow)
         flow_specs.append(reverse_flow)
 
-
     # for best-effort flows
-    index_list = random.sample(range(2, len(flowlist)), number_of_BE_flows + 1)  # for best-effort flows
 
     print "BE Flows:"
     for i in range(number_of_BE_flows):
-        #src_endpoint = flowlist[index_list[i]]
-        #rnd = range(1, src_endpoint[0]) + range(src_endpoint[0] + 1, number_of_switches + 1)
-        #dst_endpoint = (random.choice(rnd), random.randint(1, hps))
 
-#        src_endpoint = flowlist[0]
-   
-        if i < number_of_BE_flows/2:
-            src_endpoint = flowlist[0]
-        else:
-            src_endpoint = flowlist[1]
-
-        dst_endpoint = flowlist[index_list[i+1]]
+        src_endpoint = flowlist[src_indx]
+        src_indx += 1
+        dst_endpoint = flowlist[dst_indx]
         print src_endpoint, dst_endpoint
 
         forward_flow, reverse_flow = get_forward_reverse_flow(measurement_rates, cap_rate, src_endpoint, dst_endpoint, flow_match,
@@ -449,13 +435,13 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
 
 def main():
 
-    num_iterations = 1
+    num_iterations = 2
 
     tests_duration = 10
     measurement_rates = [5]  # generate a random number between [1,k] (MBPS)
     cap_rate = 0.1
 
-    num_hosts_per_switch_list = [2]
+    num_hosts_per_switch_list = [10]
     same_output_queue_list = [False]
 
     # number_of_RT_flow_list = [2, 4, 6, 8]
