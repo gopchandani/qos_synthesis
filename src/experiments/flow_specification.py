@@ -9,7 +9,6 @@ class FlowSpecification:
                  delay_budget, tag):
         self.src_host_id = src_host_id
         self.dst_host_id = dst_host_id
-        self.configured_rate = configured_rate
         self.flow_match = flow_match
 
         self.measurement_rates = measurement_rates
@@ -24,15 +23,11 @@ class FlowSpecification:
         self.mn_src_host = None
         self.mn_dst_host = None
 
-        self.num_sends_in_burst = 1
-        self.inter_burst_time = 10
+        self.num_sends_in_burst = 10
+        self.inter_burst_time = 1
 
-        # self.send_size = configured_rate * 1000 / (8 * self.num_sends_in_burst)
-        self.send_size = 25  # packet size (bytes)
-        self.configured_rate_bps = self.send_size * 8 * self.num_sends_in_burst * 1000
-
-
-
+        self.configured_rate = configured_rate
+        self.configured_rate_bps = self.configured_rate * 1000000
 
         self.measurement_rate_bps = None
 
@@ -52,59 +47,23 @@ class FlowSpecification:
         # measurement_rate * 10^6 = (num_sends_in_burst * send_size * 8) / (1 * 10^-3)
         # so: send_size = measurement_rate * 10^3 / (8 * num_sends_in_burst)
 
-        # self.send_size = measurement_rate * 1000 / (8 * self.num_sends_in_burst)
-        self.send_size = 25  # packet size (bytes)
-        self.measurement_rate_bps = self.send_size * 8 * self.num_sends_in_burst * 1000
+        send_size = measurement_rate * 10000 / (8 * self.num_sends_in_burst)
 
-        if self.tag == "real-time":
+        self.measurement_rate_bps = measurement_rate * 1000000
 
-            netperf_cmd_str = "/usr/local/bin/netperf -H " + self.mn_dst_host.IP() + \
-                              " -w " + str(self.inter_burst_time) + \
-                              " -b " + str(self.num_sends_in_burst) + \
-                              " -l " + str(self.tests_duration) + \
-                              " -t omni -- -d send" + \
-                              " -o " + \
-                              "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY'" + \
-                              " -T UDP_RR " + \
-                              "-m " + str(self.send_size) + " &"
-
-
-
-        elif self.tag == "best-effort":
-
-            be_inter_burst_time = 10
-            be_num_sends_in_burst = 1
-            # be_send_size = measurement_rate * 1000 / (8 * be_num_sends_in_burst)
-            be_send_size = 0.5 * 1000 / (8 * be_num_sends_in_burst)
-
-            netperf_cmd_str = "/usr/local/bin/netperf -H " + self.mn_dst_host.IP() + \
-                              " -w " + str(be_inter_burst_time) + \
-                              " -b " + str(be_num_sends_in_burst) + \
-                              " -l " + str(self.tests_duration) + \
-                              " -t omni -- -d send" + \
-                              " -o " + \
-                              "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY'" + \
-                              " -T UDP_RR " + \
-                              "-m " + str(be_send_size) + " &"
-
-
-            # netperf_cmd_str = "/usr/local/bin/netperf " + \
-            #                   " -j " + \
-            #                   " -H " + self.mn_dst_host.IP() + \
-            #                   " -t UDP_RR " + \
-            #                   " -l " + str(self.tests_duration) + \
-            #                   " -t omni -- -d send" + \
-            #                   " -o " + \
-            #                   "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY'" + \
-            #                   " -m " + str(be_send_size) + \
-            #                   " &"
-        else:
-            raise NotImplementedError
+        netperf_cmd_str = "/usr/local/bin/netperf -H " + self.mn_dst_host.IP() + \
+                          " -w " + str(self.inter_burst_time) + \
+                          " -b " + str(self.num_sends_in_burst) + \
+                          " -l " + str(self.tests_duration) + \
+                          " -t omni -- -d send" + \
+                          " -o " + \
+                          "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY'" + \
+                          " -T TCP " + \
+                          "-m " + str(send_size) + " &"
 
         return netperf_cmd_str
 
     def parse_measurements(self, netperf_output_string):
-        print netperf_output_string
 
         # if netperf_output_string.count("Throughput") > 1:
         #     raise StandardError

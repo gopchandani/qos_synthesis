@@ -172,6 +172,7 @@ class QosDemo(Experiment):
                     print "Running for flow-id: {}".format(fcnt)
                     try:
                         netperf_output_string = fs.mn_src_host.read()
+                        print netperf_output_string
                     except MyTimeOutException:
                         print "==== Timeout while reading netperf output. Aborting... ===="
                         continue
@@ -357,8 +358,8 @@ def get_forward_reverse_flow(measurement_rates, cap_rate, indx, nxtindx, flow_ma
         configured_rate = cap_rate + 2
         measurement_rates = [2]
     else:
-        configured_rate = cap_rate + 20
-        measurement_rates = [20]
+        configured_rate = cap_rate + 2
+        measurement_rates = [2]
 
     src = "h" + str(indx[0]) + str(indx[1])
     dst = "h" + str(nxtindx[0]) + str(nxtindx[1])
@@ -396,12 +397,12 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
     print flowlist
 
     # Making it so that all flows originate at a different host in s1 and
-    # arrive at s2, h1
+    # arrive at s3, h1
 
     # for real-time flows
     print "RT Flows:"
     src_indx = 0
-    dst_indx = number_of_RT_flows + number_of_BE_flows
+    dst_indx = (number_of_RT_flows + number_of_BE_flows) * 2
 
     for i in range(number_of_RT_flows):
    
@@ -437,36 +438,18 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
 
 def main():
 
-    num_iterations = 2
-
+    num_iterations = 1
     tests_duration = 10
     measurement_rates = [5]  # generate a random number between [1,k] (MBPS)
     cap_rate = 0.1
-
-    num_hosts_per_switch_list = [5]
+    num_hosts_per_switch_list = [4]
     same_output_queue_list = [False]
-
-    # number_of_RT_flow_list = [2, 4, 6, 8]
-    # number_of_RT_flow_list = [3]
-    #number_of_BE_flow_list = [3, 0]
     number_of_BE_flow_list = [1]
-    # number_of_RT_flow_list = [5, 4]
-    #number_of_RT_flow_list = [7, 6, 5, 4, 3, 2]  # added for RTSS17 experiments
-    number_of_RT_flow_list = [4]
-
+    number_of_RT_flow_list = [3]
     number_of_switches = 5
-
     number_of_test_cases = 1  # number of experimental samples we want to examine
-
-    #base_delay_budget = 0.000025  # in second (25us) (this is end-to-end requirement - netperf gives round trip)
-    # base_delay_budget = 0.000100  # in second (100us) (this is end-to-end requirement - netperf gives round trip)
-    # RTSS CAM-READY
-    # base_delay_budget = 0.000030  # in second (30*diameter = 120 us) (this is end-to-end requirement - netperf gives round trip)
     base_delay_budget = 0.000010  # in second (10*diameter = 40 us) (this is end-to-end requirement - netperf gives round trip)
-    # link_delay_upper_bound = 125  # in us, generate random delay between [k/5,k] (us)
-    # link_delay_upper_bound = 30  # in us, generate random delay between [k-5, k] (us)
     link_delay_upper_bound = 5  # in us
-
     topo_link_params = {'bw': 10, 'delay': str(link_delay_upper_bound) + 'us'}  # BW in MBPS
 
     network_configurations = prepare_network_configurations(num_hosts_per_switch_list,
