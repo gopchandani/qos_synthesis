@@ -357,8 +357,8 @@ def get_forward_reverse_flow(measurement_rates, cap_rate, indx, nxtindx, flow_ma
         configured_rate = cap_rate + 2
         measurement_rates = [2]
     else:
-        configured_rate = cap_rate + 4
-        measurement_rates = [4]
+        configured_rate = cap_rate + 20
+        measurement_rates = [20]
 
     src = "h" + str(indx[0]) + str(indx[1])
     dst = "h" + str(nxtindx[0]) + str(nxtindx[1])
