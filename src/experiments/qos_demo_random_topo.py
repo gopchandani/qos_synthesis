@@ -352,27 +352,29 @@ def prepare_network_configurations(num_hosts_per_switch_list,
 
 def get_forward_reverse_flow(measurement_rates, cap_rate, indx, nxtindx, flow_match, delay_budget, tests_duration, tag):
     # generate random bw_requirements
-    current_flow_measurement_rates = []
-    for j in range(len(measurement_rates)):
-        current_flow_measurement_rates.append(random.randint(1, measurement_rates[j]))
 
-    current_flow_cap_rate = cap_rate + max(current_flow_measurement_rates)
+    if tag == "real-time":
+        configured_rate = cap_rate + 2
+        measurement_rates = [2]
+    else:
+        configured_rate = cap_rate + 4
+        measurement_rates = [4]
 
     src = "h" + str(indx[0]) + str(indx[1])
     dst = "h" + str(nxtindx[0]) + str(nxtindx[1])
 
     forward_flow = FlowSpecification(src_host_id=src,
                                      dst_host_id=dst,
-                                     configured_rate=current_flow_cap_rate,
+                                     configured_rate=configured_rate,
                                      flow_match=flow_match,
-                                     measurement_rates=current_flow_measurement_rates,
+                                     measurement_rates=measurement_rates,
                                      tests_duration=tests_duration,
                                      delay_budget=delay_budget,
                                      tag=tag)
 
     reverse_flow = FlowSpecification(src_host_id=dst,
                                      dst_host_id=src,
-                                     configured_rate=current_flow_cap_rate,
+                                     configured_rate=configured_rate,
                                      flow_match=flow_match,
                                      measurement_rates=[],
                                      tests_duration=tests_duration,
