@@ -332,7 +332,8 @@ def prepare_network_configurations(num_hosts_per_switch_list,
 
                         # mhasan: change with link params
                         nc = NetworkConfiguration("ryu",
-                                                  "random_with_param",
+                                                  #"random_with_param",
+                                                  "ring_with_param",
                                                   {"num_switches": number_of_switches,
                                                    "num_hosts_per_switch": hps},
                                                   conf_root="configurations/",
@@ -390,34 +391,54 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
     flow_match["ethernet_type"] = 0x0800
 
     flowlist = list(itertools.product(range(1, number_of_switches+1), range(1, hps+1)))
+    print flowlist
 
     # for real-time flows
-    index_list = random.sample(range(len(flowlist)), number_of_RT_flows + 1) # for real-time flows
+    index_list = random.sample(range(2, len(flowlist)), number_of_RT_flows + 1) # for real-time flows
+    print index_list
+    
+    print "RT Flows:"
 
     for i in range(number_of_RT_flows):
-        indx = flowlist[index_list[i]]
-        rnd = range(1, indx[0]) + range(indx[0]+1, number_of_switches+1)
-        nxtindx = (random.choice(rnd), random.randint(1, hps))
+        #src_endpoint = flowlist[index_list[i]]
+        #rnd = range(1, src_endpoint[0]) + range(src_endpoint[0]+1, number_of_switches+1)
+        #dst_endpoint = (random.choice(rnd), random.randint(1, hps))
+   
+        if i < number_of_RT_flows/2:
+            src_endpoint = flowlist[0]
+        else:
+            src_endpoint = flowlist[1]
 
-        #nxtindx = flowlist[index_list[i+1]]
+        dst_endpoint = flowlist[index_list[i+1]]
+        print src_endpoint, dst_endpoint
 
-        forward_flow, reverse_flow = get_forward_reverse_flow(measurement_rates, cap_rate, indx, nxtindx, flow_match,
+        forward_flow, reverse_flow = get_forward_reverse_flow(measurement_rates, cap_rate, src_endpoint, dst_endpoint, flow_match,
                                                               delay_budget, tests_duration, "real-time")
 
         flow_specs.append(forward_flow)
         flow_specs.append(reverse_flow)
 
+
     # for best-effort flows
-    index_list = random.sample(range(len(flowlist)), number_of_BE_flows + 1)  # for best-effort flows
+    index_list = random.sample(range(2, len(flowlist)), number_of_BE_flows + 1)  # for best-effort flows
 
+    print "BE Flows:"
     for i in range(number_of_BE_flows):
-        indx = flowlist[index_list[i]]
-        rnd = range(1, indx[0]) + range(indx[0] + 1, number_of_switches + 1)
-        nxtindx = (random.choice(rnd), random.randint(1, hps))
+        #src_endpoint = flowlist[index_list[i]]
+        #rnd = range(1, src_endpoint[0]) + range(src_endpoint[0] + 1, number_of_switches + 1)
+        #dst_endpoint = (random.choice(rnd), random.randint(1, hps))
 
-        #nxtindx = flowlist[index_list[i + 1]]
+#        src_endpoint = flowlist[0]
+   
+        if i < number_of_BE_flows/2:
+            src_endpoint = flowlist[0]
+        else:
+            src_endpoint = flowlist[1]
 
-        forward_flow, reverse_flow = get_forward_reverse_flow(measurement_rates, cap_rate, indx, nxtindx, flow_match,
+        dst_endpoint = flowlist[index_list[i+1]]
+        print src_endpoint, dst_endpoint
+
+        forward_flow, reverse_flow = get_forward_reverse_flow(measurement_rates, cap_rate, src_endpoint, dst_endpoint, flow_match,
                                                               delay_budget, tests_duration, "best-effort")
 
         flow_specs.append(forward_flow)
@@ -428,7 +449,7 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
 
 def main():
 
-    num_iterations = 2
+    num_iterations = 1
 
     tests_duration = 10
     measurement_rates = [5]  # generate a random number between [1,k] (MBPS)
@@ -447,7 +468,7 @@ def main():
 
     number_of_switches = 5
 
-    number_of_test_cases = 25  # number of experimental samples we want to examine
+    number_of_test_cases = 1  # number of experimental samples we want to examine
 
     #base_delay_budget = 0.000025  # in second (25us) (this is end-to-end requirement - netperf gives round trip)
     # base_delay_budget = 0.000100  # in second (100us) (this is end-to-end requirement - netperf gives round trip)
