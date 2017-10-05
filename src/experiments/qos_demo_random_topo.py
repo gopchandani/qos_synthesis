@@ -280,10 +280,10 @@ class QosDemo(Experiment):
                                 "number_of_BE_flows": nc.number_of_BE_flows,
                                 "max_possible_delay_e2e": max_possible_delay,  # this is end-to-end (NOT round-trip)
                                 "measurement_rates": self.measurement_rates[j],
-                                "max_mean_latency": float(max_mean_latency),
-                                "max_max_latency": float(max_max_latency),
-                                "max_nn_latency": float(max_nn_latency),
-                                "min_throughput": float(min_throughput),
+                                "max_mean_latency": float(max_mean_latency_iter),
+                                "max_max_latency": float(max_max_latency_iter),
+                                "max_nn_latency": float(max_nn_latency_iter),
+                                "min_throughput": float(min_throughput_iter),
                                 "max_delay_budget_e2e": max_delay_budget * 1000000,  # in microsecond
                                 "min_delay_budget_e2e": min_delay_budget * 1000000,  # in microsecond
                                 "max_bw_req": max_bw_req}
@@ -441,16 +441,16 @@ def main():
     measurement_rates = [5]  # generate a random number between [1,k] (MBPS)
     cap_rate = 0.1
 
-    num_hosts_per_switch_list = [10]
+    num_hosts_per_switch_list = [5]
     same_output_queue_list = [False]
 
     # number_of_RT_flow_list = [2, 4, 6, 8]
     # number_of_RT_flow_list = [3]
     #number_of_BE_flow_list = [3, 0]
-    number_of_BE_flow_list = [3]
+    number_of_BE_flow_list = [1]
     # number_of_RT_flow_list = [5, 4]
     #number_of_RT_flow_list = [7, 6, 5, 4, 3, 2]  # added for RTSS17 experiments
-    number_of_RT_flow_list = [7]
+    number_of_RT_flow_list = [4]
 
     number_of_switches = 5
 
