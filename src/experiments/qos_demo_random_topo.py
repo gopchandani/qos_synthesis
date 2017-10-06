@@ -333,8 +333,8 @@ def prepare_network_configurations(num_hosts_per_switch_list,
 
                         # mhasan: change with link params
                         nc = NetworkConfiguration("ryu",
-                                                  #"random_with_param",
-                                                  "ring_with_param",
+                                                  "random_with_param",
+                                                  #"ring_with_param",
                                                   {"num_switches": number_of_switches,
                                                    "num_hosts_per_switch": hps},
                                                   conf_root="configurations/",
