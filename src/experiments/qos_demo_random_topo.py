@@ -436,7 +436,7 @@ def main():
 
     num_iterations = 1
     tests_duration = 20
-    measurement_rates = [5]  # generate a random number between [1,k] (MBPS)
+    measurement_rates = [4]  # generate a random number between [1,k] (MBPS)
     cap_rate = 0.1
     num_hosts_per_switch_list = [4]
     same_output_queue_list = [False]
