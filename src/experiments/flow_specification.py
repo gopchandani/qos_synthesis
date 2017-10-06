@@ -40,13 +40,6 @@ class FlowSpecification:
 
     def construct_netperf_cmd_str(self, measurement_rate):
 
-        # netperf input parameters
-
-        # measurement_rate is given in Mbps (Mega bits per second, fixing inter_burst_time to 1 (ms) and
-        # num_sends_in_burst to 10 for this calculation and using this equation
-        # measurement_rate * 10^6 = (num_sends_in_burst * send_size * 8) / (1 * 10^-3)
-        # so: send_size = measurement_rate * 10^3 / (8 * num_sends_in_burst)
-
         send_size = measurement_rate * 10000 / (8 * self.num_sends_in_burst)
 
         self.measurement_rate_bps = measurement_rate * 1000000
@@ -59,6 +52,7 @@ class FlowSpecification:
                           " -o " + \
                           "'THROUGHPUT, MEAN_LATENCY, STDDEV_LATENCY, P99_LATENCY, MIN_LATENCY, MAX_LATENCY'" + \
                           " -T TCP " + \
+                          " -t stream " + \
                           "-m " + str(send_size) + " &"
 
         return netperf_cmd_str

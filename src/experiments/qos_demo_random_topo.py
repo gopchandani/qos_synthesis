@@ -26,6 +26,8 @@ import numpy as np
 
 import signal
 
+rt_flow_rate = None
+be_flow_rate = None
 
 class MyTimeOutException(Exception):
     pass
@@ -355,11 +357,11 @@ def get_forward_reverse_flow(measurement_rates, cap_rate, indx, nxtindx, flow_ma
     # generate random bw_requirements
 
     if tag == "real-time":
-        configured_rate = cap_rate + 2
-        measurement_rates = [2]
+        configured_rate = cap_rate + rt_flow_rate
+        measurement_rates = [rt_flow_rate]
     else:
-        configured_rate = cap_rate + 2
-        measurement_rates = [2]
+        configured_rate = cap_rate + be_flow_rate
+        measurement_rates = [be_flow_rate]
 
     src = "h" + str(indx[0]) + str(indx[1])
     dst = "h" + str(nxtindx[0]) + str(nxtindx[1])
@@ -438,8 +440,13 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
 
 def main():
 
+    global rt_flow_rate, be_flow_rate
+
+    rt_flow_rate = 2
+    be_flow_rate = 4.0
+
     num_iterations = 1
-    tests_duration = 10
+    tests_duration = 20
     measurement_rates = [5]  # generate a random number between [1,k] (MBPS)
     cap_rate = 0.1
     num_hosts_per_switch_list = [4]
