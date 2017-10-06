@@ -272,24 +272,24 @@ class QosDemo(Experiment):
                     if fs.delay_budget < min_delay_budget:
                         min_delay_budget = fs.delay_budget
 
-                    diameter = nx.diameter(nc.ng.get_node_graph())
-                    max_possible_delay = self.link_delay_upper_bound * diameter
-                    max_possible_delay *= 1000  # convert to microsecond (since netperf output in microsecond)
-                    max_bw_req = max(self.measurement_rates)
+                diameter = nx.diameter(nc.ng.get_node_graph())
+                max_possible_delay = self.link_delay_upper_bound * diameter
+                max_possible_delay *= 1000  # convert to microsecond (since netperf output in microsecond)
+                max_bw_req = max(self.measurement_rates)
 
-                    val_dict = {"number_of_RT_flows": nc.number_of_RT_flows,
-                                "number_of_BE_flows": nc.number_of_BE_flows,
-                                "max_possible_delay_e2e": max_possible_delay,  # this is end-to-end (NOT round-trip)
-                                "measurement_rates": self.measurement_rates[j],
-                                "max_mean_latency": float(max_mean_latency_iter),
-                                "max_max_latency": float(max_max_latency_iter),
-                                "max_nn_latency": float(max_nn_latency_iter),
-                                "min_throughput": float(min_throughput_iter),
-                                "max_delay_budget_e2e": max_delay_budget * 1000000,  # in microsecond
-                                "min_delay_budget_e2e": min_delay_budget * 1000000,  # in microsecond
-                                "max_bw_req": max_bw_req}
+                val_dict = {"number_of_RT_flows": nc.number_of_RT_flows,
+                            "number_of_BE_flows": nc.number_of_BE_flows,
+                            "max_possible_delay_e2e": max_possible_delay,  # this is end-to-end (NOT round-trip)
+                            "measurement_rates": self.measurement_rates[j],
+                            "max_mean_latency": float(max_mean_latency),
+                            "max_max_latency": float(max_max_latency),
+                            "max_nn_latency": float(max_nn_latency),
+                            "min_throughput": float(min_throughput),
+                            "max_delay_budget_e2e": max_delay_budget * 1000000,  # in microsecond
+                            "min_delay_budget_e2e": min_delay_budget * 1000000,  # in microsecond
+                            "max_bw_req": max_bw_req}
 
-                    output_data_list.append(val_dict)
+                output_data_list.append(val_dict)
 
 
         #print output_data_list
@@ -434,16 +434,16 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
 
 def main():
 
-    num_iterations = 1
-    tests_duration = 20
-    measurement_rates = [4]  # generate a random number between [1,k] (MBPS)
+    num_iterations = 3 
+    tests_duration = 10
+    measurement_rates = [5]  # generate a random number between [1,k] (MBPS)
     cap_rate = 0.1
-    num_hosts_per_switch_list = [4]
+    num_hosts_per_switch_list = [10]
     same_output_queue_list = [False]
-    number_of_BE_flow_list = [1]
-    number_of_RT_flow_list = [3]
+    number_of_BE_flow_list = [3]
+    number_of_RT_flow_list = [7]
     number_of_switches = 5
-    number_of_test_cases = 1  # number of experimental samples we want to examine
+    number_of_test_cases = 5  # number of experimental samples we want to examine
     base_delay_budget = 0.000010  # in second (10*diameter = 40 us) (this is end-to-end requirement - netperf gives round trip)
     link_delay_upper_bound = 5  # in us
     topo_link_params = {'max_queue_size': 10000000, 'bw': 10, 'delay': str(link_delay_upper_bound) + 'us'}  # BW in MBPS
