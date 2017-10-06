@@ -398,7 +398,7 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
     # for real-time flows
     print "RT Flows:"
     src_indx = 0
-    dst_indx = (number_of_RT_flows + number_of_BE_flows) * 2
+    dst_indx = (number_of_RT_flows + number_of_BE_flows) * random.randint(1, 3)
 
     for i in range(number_of_RT_flows):
    
