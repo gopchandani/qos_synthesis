@@ -26,8 +26,6 @@ import numpy as np
 
 import signal
 
-rt_flow_rate = None
-be_flow_rate = None
 
 class MyTimeOutException(Exception):
     pass
@@ -355,13 +353,9 @@ def prepare_network_configurations(num_hosts_per_switch_list,
 
 def get_forward_reverse_flow(measurement_rates, cap_rate, indx, nxtindx, flow_match, delay_budget, tests_duration, tag):
     # generate random bw_requirements
+    configured_rate =  random.randint(1, measurement_rates[0])
+    measurement_rates = [configured_rate]
 
-    if tag == "real-time":
-        configured_rate = cap_rate + rt_flow_rate
-        measurement_rates = [rt_flow_rate]
-    else:
-        configured_rate = cap_rate + be_flow_rate
-        measurement_rates = [be_flow_rate]
 
     src = "h" + str(indx[0]) + str(indx[1])
     dst = "h" + str(nxtindx[0]) + str(nxtindx[1])
@@ -440,11 +434,6 @@ def prepare_flow_specifications(measurement_rates, tests_duration, number_of_swi
 
 def main():
 
-    global rt_flow_rate, be_flow_rate
-
-    rt_flow_rate = 2
-    be_flow_rate = 4.0
-
     num_iterations = 1
     tests_duration = 20
     measurement_rates = [5]  # generate a random number between [1,k] (MBPS)
@@ -457,7 +446,7 @@ def main():
     number_of_test_cases = 1  # number of experimental samples we want to examine
     base_delay_budget = 0.000010  # in second (10*diameter = 40 us) (this is end-to-end requirement - netperf gives round trip)
     link_delay_upper_bound = 5  # in us
-    topo_link_params = {'bw': 10, 'delay': str(link_delay_upper_bound) + 'us'}  # BW in MBPS
+    topo_link_params = {'max_queue_size': 10000000, 'bw': 10, 'delay': str(link_delay_upper_bound) + 'us'}  # BW in MBPS
 
     network_configurations = prepare_network_configurations(num_hosts_per_switch_list,
                                                             same_output_queue_list,
