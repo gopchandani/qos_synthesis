@@ -42,10 +42,10 @@ class QoSPica8Experiment(Experiment):
 
     def trigger(self):
         for nc in self.network_configurations:
-            self.clear_all_flows_queues()
+            # self.clear_all_flows_queues()
             nc.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
-            nc.init_flow_specs()
-            nc.synthesis.synthesize_flow_specifications(nc.flow_specs)
+            # nc.init_flow_specs()
+            # nc.synthesis.synthesize_flow_specifications(nc.flow_specs)
 
             self.push_arps(nc)
             self.measure_flow_rates(nc)
@@ -135,6 +135,13 @@ class QoSPica8Experiment(Experiment):
     def parse_measurements(self, data_lines):
 
         output_line_tokens = data_lines[2].split(',')
+
+        try:
+            output_line_tokens = data_lines[2].split(',')
+        except:
+            print data_lines
+            raise Exception("In parse meas. failure")
+
 
         measurements = dict()
 
@@ -505,9 +512,9 @@ def data_prep(exp):
 
 def main():
 
-    num_iterations = 100
+    num_iterations = 5
     same_output_queue_list = [True, False]
-    measurement_rates = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+    measurement_rates = [5]#, 10, 15, 20, 25, 30, 35, 40, 45, 50]
 
     nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
                                              measurement_rates=measurement_rates,

@@ -129,22 +129,10 @@ class NetworkConfiguration(object):
 
         sw = "s2347862419956695048"
         host_nodes[sw] = []
-        host_dict = {"host_switch_id": "s" + sw[1:],
+        host_dict = {"host_bridge_id": "s" + sw[1:],
                      "host_name": "38",
-                     "host_IP": "192.168.0.1",
-                     "mgmt_ip": "10.195.229.241",
-                     "usr": "pi",
-                     "psswd": "raspberry",
-                     "host_MAC": "b8:27:eb:6b:f7:38"}
-
-        self.h_hosts[host_dict["host_name"]] = host_dict
-
-        host_nodes[sw].append(host_dict)
-
-        host_dict = {"host_switch_id": "s" + sw[1:],
-                     "host_name": "e5",
-                     "host_IP": "192.168.0.2",
-                     "mgmt_ip": "10.194.45.219",
+                     "host_IP": "192.168.1.10",
+                     "mgmt_ip": "10.194.215.232",
                      "usr": "pi",
                      "psswd": "raspberry",
                      "host_MAC": "b8:27:eb:7a:19:e5"}
@@ -153,13 +141,25 @@ class NetworkConfiguration(object):
 
         host_nodes[sw].append(host_dict)
 
+        host_dict = {"host_bridge_id": "s" + sw[1:],
+                     "host_name": "e5",
+                     "host_IP": "192.168.1.20",
+                     "mgmt_ip": "10.194.179.16",
+                     "usr": "pi",
+                     "psswd": "raspberry",
+                     "host_MAC": "b8:27:eb:8b:02:7e"}
+
+        self.h_hosts[host_dict["host_name"]] = host_dict
+
+        host_nodes[sw].append(host_dict)
+
         sw = "s2347862419956695105"
         host_nodes[sw] = []
 
-        host_dict = {"host_switch_id": "s" + sw[1:],
+        host_dict = {"host_bridge_id": "s" + sw[1:],
                      "host_name": "66",
-                     "host_IP": "192.168.0.3",
-                     "mgmt_ip": "10.195.36.116",
+                     "host_IP": "192.168.1.30",
+                     "mgmt_ip": "10.195.162.179",
                      "usr": "pi",
                      "psswd": "raspberry",
                      "host_MAC": "b8:27:eb:4b:c7:66"}
@@ -168,13 +168,13 @@ class NetworkConfiguration(object):
 
         host_nodes[sw].append(host_dict)
 
-        host_dict = {"host_switch_id": "s" + sw[1:],
+        host_dict = {"host_bridge_id": "s" + sw[1:],
                      "host_name": "7e",
-                     "host_IP": "192.168.0.4",
-                     "mgmt_ip": "10.195.161.97",
+                     "host_IP": "192.168.1.40",
+                     "mgmt_ip": "10.193.214.117",
                      "usr": "pi",
                      "psswd": "raspberry",
-                     "host_MAC": "b8:27:eb:8b:02:7e"}
+                     "host_MAC": "b8:27:eb:6b:f7:38"}
 
         self.h_hosts[host_dict["host_name"]] = host_dict
 
@@ -243,7 +243,7 @@ class NetworkConfiguration(object):
         self.get_switches()
 
         self.ng = NetworkGraph(network_configuration=self)
-        self.ng.parse_network_graph()
+        # self.ng.parse_network_graph()
 
         # TODO: Figure out a new home for these two
         self.synthesis.network_graph = self.ng
