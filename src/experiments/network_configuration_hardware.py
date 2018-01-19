@@ -9,9 +9,7 @@ import networkx as nx
 
 
 
-class NetworkConfigurationHardware\
-
-            (object):
+class NetworkConfigurationHardware(object):
 
     def __init__(self, controller,
                  conf_root,
@@ -21,7 +19,7 @@ class NetworkConfigurationHardware\
         self.conf_root = conf_root
         self.flow_specs = flow_specs
 
-        self.graph = nx.Graph()
+        self.graph = nx.DiGraph()
 
         self.controller_port = 6666
         self.nc_topo_str = None
@@ -70,9 +68,19 @@ class NetworkConfigurationHardware\
 
         self.graph.add_node(bridge_dict["bridge_name"], node_type="bridge", b=bridge_dict)
 
+    def get_host_dict(self, host_id):
+        return self.graph.node[host_id]['h']
+
+    def get_bridge_dict(self, bridge_id):
+        return self.graph.node[bridge_id]['b']
+
+    def get_link_dict(self, node1_id, node2_id):
+        return self.graph[node1_id][node2_id]['l']
+
     def add_host_nodes(self):
 
         host_dict = {"host_name": "e5",
+                     "bridge_id" : "br0",
                      "host_IP": "192.168.1.10",
                      "mgmt_ip": "10.194.215.232",
                      "usr": "pi",
@@ -82,6 +90,7 @@ class NetworkConfigurationHardware\
         self.graph.add_node(host_dict["host_name"], node_type="host", h=host_dict)
 
         host_dict = {"host_name": "7e",
+                     "bridge_id": "br2",
                      "host_IP": "192.168.1.20",
                      "mgmt_ip": "10.194.179.16",
                      "usr": "pi",
@@ -91,6 +100,7 @@ class NetworkConfigurationHardware\
         self.graph.add_node(host_dict["host_name"], node_type="host", h=host_dict)
 
         host_dict = {"host_name": "66",
+                     "bridge_id": "of-switch",
                      "host_IP": "192.168.1.30",
                      "mgmt_ip": "10.195.162.179",
                      "usr": "pi",
@@ -100,6 +110,7 @@ class NetworkConfigurationHardware\
         self.graph.add_node(host_dict["host_name"], node_type="host", h=host_dict)
 
         host_dict = {"host_name": "38",
+                     "bridge_id": "br1",
                      "host_IP": "192.168.1.40",
                      "mgmt_ip": "10.193.214.117",
                      "usr": "pi",
@@ -157,54 +168,86 @@ class NetworkConfigurationHardware\
                             link_dict["node2"],
                             l=link_dict)
 
+        link_dict = {"node2": "38",
+                     "node2_port": "eth0",
+                     "node1": "br1",
+                     "node1_port": "ge-1/1/31",
+                     "bw": pi_to_switch_bw,
+                     "delay": pi_to_switch_delay}
+
+        self.graph.add_edge(link_dict["node1"],
+                            link_dict["node2"],
+                            l=link_dict)
+
+        link_dict = {"node2": "66",
+                     "node2_port": "eth0",
+                     "node1": "of-switch",
+                     "node1_port": "ge-1/1/43",
+                     "bw": pi_to_switch_bw,
+                     "delay": pi_to_switch_delay}
+
+        self.graph.add_edge(link_dict["node1"],
+                            link_dict["node2"],
+                            l=link_dict)
+
+        link_dict = {"node2": "7e",
+                     "node2_port": "eth0",
+                     "node1": "br2",
+                     "node1_port": "ge-1/1/37",
+                     "bw": pi_to_switch_bw,
+                     "delay": pi_to_switch_delay}
+
+        self.graph.add_edge(link_dict["node1"],
+                            link_dict["node2"],
+                            l=link_dict)
+
+        link_dict = {"node2": "e5",
+                     "node2_port": "eth0",
+                     "node1": "br0",
+                     "node1_port": "ge-1/1/25",
+                     "bw": pi_to_switch_bw,
+                     "delay": pi_to_switch_delay}
+
+        self.graph.add_edge(link_dict["node1"],
+                            link_dict["node2"],
+                            l=link_dict)
+
     def add_bridge_links(self):
 
         bridge_to_bridge_bw = 1000000 * 1000 * 10  # Assume pi to switch bandwidth is 10 Gbps
         bridge_to_bridge_delay = 10e-9 * 10  # Assumes pi to switch latency is 10 nanoseconds
 
-        link_dict = {"bridge1": "of-switch",
-                     "bridge1_port": "ge-1/1/45",
-                     "bridge2": "br0",
-                     "node2_port": "ge-1/1/29",
-                     "bw": bridge_to_bridge_bw,
-                     "delay": bridge_to_bridge_delay}
+        links = [("br0", "of-switch", "ge=1/1/45", "ge-1/1/29"),
+                 ("br0", "br2", "ge=1/1/27", "ge-1/1/39"),
+                 ("of-switch", "br1", "ge=1/1/47", "ge-1/1/35"),
+                 ("br1", "br2", "ge=1/1/33", "ge-1/1/41")]
 
-        self.graph.add_edge(link_dict["bridge1"],
-                            link_dict["bridge2"],
-                            l=link_dict)
+        for node1, node2, node1_port, node2_port in links:
+            link_dict = {
+                "node1": node1,
+                "node2": node2,
+                "node1_port": node1_port,
+                "node2_port": node2_port,
+                "bw": bridge_to_bridge_bw,
+                "delay":bridge_to_bridge_delay
+            }
 
-        link_dict = {"bridge1": "br0",
-                     "bridge1_port": "ge-1/1/27",
-                     "bridge2": "br2",
-                     "node2_port": "ge-1/1/39",
-                     "bw": bridge_to_bridge_bw,
-                     "delay": bridge_to_bridge_delay}
+            self.graph.add_edge(link_dict["node1"],
+                                link_dict["node2"],
+                                l=link_dict)
+            link_dict = {
+                "node1": node2,
+                "node2": node1,
+                "node1_port": node2_port,
+                "node2_port": node1_port,
+                "bw": bridge_to_bridge_bw,
+                "delay": bridge_to_bridge_delay
+            }
 
-        self.graph.add_edge(link_dict["bridge1"],
-                            link_dict["bridge2"],
-                            l=link_dict)
+            self.graph.add_edge(link_dict["node1"],
+                                link_dict["node2"],
+                                l=link_dict)
 
-        link_dict = {"bridge1": "of-switch",
-                     "bridge1_port": "ge-1/1/47",
-                     "bridge2": "br1",
-                     "node2_port": "ge-1/1/35",
-                     "bw": bridge_to_bridge_bw,
-                     "delay": bridge_to_bridge_delay}
-
-        self.graph.add_edge(link_dict["bridge1"],
-                            link_dict["bridge2"],
-                            l=link_dict)
-
-        link_dict = {"bridge1": "br1",
-                     "bridge1_port": "ge-1/1/33",
-                     "bridge2": "br2",
-                     "node2_port": "ge-1/1/41",
-                     "bw": bridge_to_bridge_bw,
-                     "delay": bridge_to_bridge_delay}
-
-        self.graph.add_edge(link_dict["bridge1"],
-                            link_dict["bridge2"],
-                            l=link_dict)
 
     def setup_network_configuration(self):
 

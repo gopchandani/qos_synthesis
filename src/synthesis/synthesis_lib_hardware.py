@@ -18,34 +18,33 @@ class SynthesisLibHardware(object):
 
         self.group_id_cntr = 0
         self.flow_id_cntr = 0
-        self.queue_id_cntr = 1
+        self.queue_id_cntr = 0
 
         self.synthesized_primary_paths = defaultdict(defaultdict)
-        self.synthesized_failover_paths = defaultdict(defaultdict)        
+        self.synthesized_failover_paths = defaultdict(defaultdict)
 
-    def push_flow(self):
+        self.queue_id_cntr_per_br = defaultdict(int)
+
+    def push_flow(self, bridge_dict, port, src_mac, dst_mac, q_id):
         pass
 
-    def push_queue(self, sw, port, min_rate, max_rate):
-        self.queue_id_cntr_per_sw[sw] = self.queue_id_cntr_per_sw[sw] + 1
-        # self.queue_id_cntr = self.queue_id_cntr + 1
+    def push_queue(self, bridge_dict, port, min_rate, max_rate):
+        self.queue_id_cntr_per_br[bridge_dict["bridge_name"]] +=  1
         min_rate_str = str(min_rate)
         max_rate_str = str(max_rate)
-        # sw_port_str = sw + "-" + "eth" + str(port)
-        sw_port_str = "ge-1/1/" + str(port)
 
         queue_cmd = "ovs-vsctl " + \
-                    "--db=tcp:" + ip_map[sw] + ":6640 -- " + \
-                    "set Port " + sw_port_str + " qos=@newqos -- " + \
+                    "--db=tcp:" + bridge_dict["switch_IP"] + ":6640 -- " + \
+                    "set Port " + port + " qos=@newqos -- " + \
                     "--id=@newqos create qos type=linux-htb other-config:max-rate=" + max_rate_str + \
-                    " queues=" + str(self.queue_id_cntr_per_sw[sw]) + \
-                    "=@q" + str(self.queue_id_cntr_per_sw[sw]) + \
+                    " queues=" + str(self.queue_id_cntr_per_br[bridge_dict["bridge_name"]]) + \
+                    "=@q" + str(self.queue_id_cntr_per_br[bridge_dict["bridge_name"]]) + \
                     " -- " +\
-                    "--id=@q" + str(self.queue_id_cntr_per_sw[sw]) + \
+                    "--id=@q" + str(self.queue_id_cntr_per_br[bridge_dict["bridge_name"]]) + \
                     " create Queue other-config:min-rate=" + min_rate_str + \
                     " other-config:max-rate=" + max_rate_str
 
         os.system(queue_cmd)
         time.sleep(1)
 
-        return self.queue_id_cntr_per_sw[sw]
+        return self.queue_id_cntr_per_br[bridge_dict["bridge_name"]]

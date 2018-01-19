@@ -518,7 +518,7 @@ def main():
 
     exp = QoSPica8Experiment(nc_list, num_iterations, len(measurement_rates), measurement_rates,
                              synthesis_name="SynthesizeQoS",
-                             synthesis_params={"same_output_queue": True},
+                             synthesis_params={},
                              )
 
     exp.trigger()
