@@ -7,13 +7,13 @@ from model.intent import Intent
 import os
 
 
-class SynthesizeQoS:
+class SynthesizeQoSHardware:
 
     def __init__(self, params):
 
         self.params = params
 
-        self.network_graph = None
+        self.network_configuration = None
         self.synthesis_lib = None
         self.mininet_obj = None
 
@@ -37,19 +37,19 @@ class SynthesizeQoS:
 
         intent_list = []
 
-        fs.path = nx.shortest_path(self.network_graph.graph,
-                                   source=fs.ng_src_host.node_id,
-                                   target=fs.ng_dst_host.node_id,
+        fs.path = nx.shortest_path(self.network_configuration.graph,
+                                   source=fs.src_host_id,
+                                   target=fs.dst_host_id,
                                    weight='weight')
 
         # Get the port where the host connects at the first switch in the path
-        link_ports_dict = self.network_graph.get_link_ports_dict(fs.ng_src_host.node_id, fs.ng_src_host.sw.node_id)
+        link_ports_dict = self.network_configuration.get_link_ports_dict(fs.ng_src_host.node_id, fs.ng_src_host.sw.node_id)
         in_port = link_ports_dict[fs.ng_src_host.sw.node_id]
 
         # This loop always starts at a switch
         for i in range(1, len(fs.path) - 1):
 
-            link_ports_dict = self.network_graph.get_link_ports_dict(fs.path[i], fs.path[i+1])
+            link_ports_dict = self.network_configuration.get_link_ports_dict(fs.path[i], fs.path[i+1])
 
             fwd_flow_match = deepcopy(fs.flow_match)
 

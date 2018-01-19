@@ -10,9 +10,11 @@ import sys
 import json
 
 from experiment import Experiment
-from network_configuration_hardware import NetworkConfiguration
+from network_configuration_hardware import NetworkConfigurationHardware
 from flow_specification import FlowSpecification
 from model.match import Match
+from synthesis.synthesize_qos_hardware import SynthesizeQoSHardware
+from synthesis.synthesis_lib_hardware import SynthesisLibHardware
 
 sys.path.append("./")
 sys.path.append("../")
@@ -24,7 +26,9 @@ class QoSPica8Experiment(Experiment):
                  network_configurations,
                  num_iterations,
                  num_measurements,
-                 measurement_rates):
+                 measurement_rates,
+                 synthesis_name,
+                 synthesis_params):
 
         super(QoSPica8Experiment, self).__init__("qos_pica8_experiment", num_iterations)
         self.network_configurations = network_configurations
@@ -40,12 +44,16 @@ class QoSPica8Experiment(Experiment):
             "Maximum Latency": defaultdict(defaultdict)
         }
 
+        self.synthesis = SynthesizeQoSHardware(synthesis_params)
+
     def trigger(self):
         for nc in self.network_configurations:
             # self.clear_all_flows_queues()
-            nc.setup_network_graph(mininet_setup_gap=1, synthesis_setup_gap=1)
-            # nc.init_flow_specs()
-            # nc.synthesis.synthesize_flow_specifications(nc.flow_specs)
+            nc.setup_network_configuration()
+
+            self.synthesis.network_configuration = nc
+            self.synthesis.synthesis_lib = SynthesisLibHardware(nc)
+            self.synthesis.synthesize_flow_specifications(nc.flow_specs)
 
             self.push_arps(nc)
             self.measure_flow_rates(nc)
@@ -136,13 +144,6 @@ class QoSPica8Experiment(Experiment):
 
         output_line_tokens = data_lines[2].split(',')
 
-        try:
-            output_line_tokens = data_lines[2].split(',')
-        except:
-            print data_lines
-            raise Exception("In parse meas. failure")
-
-
         measurements = dict()
 
         measurements["throughput"] = output_line_tokens[0]
@@ -203,7 +204,9 @@ class QoSPica8Experiment(Experiment):
             command = "cat /home/%s/out_%s.txt"  % (client["usr"], str(rate))
             output_lines = self.run_cmd_via_paramiko(client["mgmt_ip"], 22, client["usr"], client["psswd"],
                                                      command)
-
+            print 'Cliient' + str(client)
+            print 'Server' + str(server)
+            print output_lines
             measurements = self.parse_measurements(output_lines)
 
             self.data["Throughput"][first_key][second_key].append(float(measurements["throughput"]))
@@ -323,7 +326,7 @@ class QoSPica8Experiment(Experiment):
         plt.show()
 
 
-def prepare_flow_specifications(measurement_rates=None, tests_duration=None, same_queue_output=False):
+def prepare_flow_specifications(measurement_rates=None, tests_duration=None):
 
     flow_specs = []
 
@@ -355,22 +358,17 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None, sam
     return flow_specs
 
 
-def prepare_network_configurations(same_output_queue_list,
-                                   measurement_rates,
+def prepare_network_configurations(measurement_rates,
                                    tests_duration):
 
     nc_list = []
 
-    for same_output_queue in same_output_queue_list:
-        flow_specs = prepare_flow_specifications(measurement_rates, tests_duration, same_output_queue)
+    flow_specs = prepare_flow_specifications(measurement_rates, tests_duration)
+    nc = NetworkConfigurationHardware("ryu_old",
+                               conf_root="configurations/",
+                               flow_specs=flow_specs)
 
-        nc = NetworkConfiguration("ryu_old",
-                                  conf_root="configurations/",
-                                  synthesis_name="SynthesizeQoS",
-                                  synthesis_params={"same_output_queue": same_output_queue},
-                                  flow_specs=flow_specs)
-
-        nc_list.append(nc)
+    nc_list.append(nc)
 
     return nc_list
 
@@ -513,14 +511,15 @@ def data_prep(exp):
 def main():
 
     num_iterations = 5
-    same_output_queue_list = [True, False]
     measurement_rates = [5]#, 10, 15, 20, 25, 30, 35, 40, 45, 50]
 
-    nc_list = prepare_network_configurations(same_output_queue_list=same_output_queue_list,
-                                             measurement_rates=measurement_rates,
-                                             tests_duration=15)
+    nc_list = prepare_network_configurations(measurement_rates=measurement_rates,
+                                             tests_duration=5)
 
-    exp = QoSPica8Experiment(nc_list, num_iterations, len(measurement_rates), measurement_rates)
+    exp = QoSPica8Experiment(nc_list, num_iterations, len(measurement_rates), measurement_rates,
+                             synthesis_name="SynthesizeQoS",
+                             synthesis_params={"same_output_queue": True},
+                             )
 
     exp.trigger()
 
