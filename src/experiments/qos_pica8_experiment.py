@@ -2,8 +2,6 @@ __author__ = 'Rakesh Kumar'
 
 from collections import defaultdict
 import threading
-import paramiko
-paramiko.util.log_to_file("filename.log")
 
 import matplotlib.pyplot as plt
 import sys
@@ -48,78 +46,24 @@ class QoSPica8Experiment(Experiment):
 
     def trigger(self):
         for nc in self.network_configurations:
-            # self.clear_all_flows_queues()
             nc.setup_network_configuration()
+            nc.clear_all_flows_queues()
+            self.push_arps(nc)
 
             self.synthesis.network_configuration = nc
             self.synthesis.synthesis_lib = SynthesisLibHardware(nc)
             self.synthesis.synthesize_flow_specifications(nc.flow_specs)
 
-            self.push_arps(nc)
-            self.measure_flow_rates(nc)
+            # self.measure_flow_rates(nc)
 
-    def run_cmd_via_paramiko(self, IP, port, username, password, command):
-
-        s = paramiko.SSHClient()
-        s.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        s.load_system_host_keys()
-        s.connect(IP, port, username, password)
-        (stdin, stdout, stderr) = s.exec_command(command)
-
-        output = list(stdout.readlines())
-        s.close()
-        return output
-
-    def clear_all_flows_queues(self):
-
-        switches = [{"IP": "192.168.1.101",
-                     "username": "admin",
-                     "password": "password"},
-                    {"IP": "192.168.1.103",
-                     "username": "admin",
-                     "password": "pica8"}
-                    ]
-
-        for sw in switches:
-            self.run_cmd_via_paramiko(sw["IP"],
-                                      22,
-                                      sw["username"],
-                                      sw["password"],
-                                          "/ovs/bin/ovs-ofctl del-flows of-switch")
-
-            self.run_cmd_via_paramiko(sw["IP"],
-                                      22,
-                                      sw["username"],
-                                      sw["password"],
-                                      "/ovs/bin/ovs-vsctl clear Port ge-1/1/43 qos")
-            self.run_cmd_via_paramiko(sw["IP"],
-                                      22,
-                                      sw["username"],
-                                      sw["password"],
-                                      "/ovs/bin/ovs-vsctl clear Port ge-1/1/45 qos")
-            self.run_cmd_via_paramiko(sw["IP"],
-                                      22,
-                                      sw["username"],
-                                      sw["password"],
-                                      "/ovs/bin/ovs-vsctl clear Port ge-1/1/47 qos")
-            self.run_cmd_via_paramiko(sw["IP"],
-                                      22,
-                                      sw["username"],
-                                      sw["password"],
-                                      "/ovs/bin/ovs-vsctl --all destroy QoS")
-            self.run_cmd_via_paramiko(sw["IP"],
-                                      22,
-                                      sw["username"],
-                                      sw["password"],
-                                      "/ovs/bin/ovs-vsctl --all destroy Queue")
 
     def push_arps(self, nc):
 
         # For each host in the topology,
         # send commands to add ARP entries for all other hosts
 
-        for cmd_host_dict in nc.h_hosts.values():
-            for other_host_dict in nc.h_hosts.values():
+        for cmd_host_dict in nc.host_dict_iter():
+            for other_host_dict in nc.host_dict_iter():
 
                 if cmd_host_dict["host_name"] == other_host_dict["host_name"]:
                     continue
@@ -128,17 +72,15 @@ class QoSPica8Experiment(Experiment):
 
                 print "Installing this at IP: %s" % cmd_host_dict["host_IP"]
 
-                self.run_cmd_via_paramiko(cmd_host_dict["mgmt_ip"], 22,
-                                          cmd_host_dict["usr"],
-                                          cmd_host_dict["psswd"],
-                                          arp_cmd)
+
+
 
             arp_cmd = "/usr/sbin/arp -n"
 
-            self.run_cmd_via_paramiko(cmd_host_dict["mgmt_ip"], 22,
-                                      cmd_host_dict["usr"],
-                                      cmd_host_dict["psswd"],
-                                      arp_cmd)
+            nc.run_cmd_via_paramiko(cmd_host_dict["mgmt_ip"], 22,
+                                    cmd_host_dict["usr"],
+                                    cmd_host_dict["psswd"],
+                                    arp_cmd)
 
     def parse_measurements(self, data_lines):
 
@@ -182,7 +124,7 @@ class QoSPica8Experiment(Experiment):
             command = "%s | cat > /home/%s/out_%s.txt" \
                       % (netperf_cmd, client["usr"], str(rate))
 
-            client_thread = threading.Thread(target=self.run_cmd_via_paramiko,
+            client_thread = threading.Thread(target=nc.run_cmd_via_paramiko,
                                              args=(client["mgmt_ip"], 22, client["usr"], client["psswd"], command))
             client_thread.start()
             client_threads.append(client_thread)
@@ -202,8 +144,8 @@ class QoSPica8Experiment(Experiment):
             second_key = rate
 
             command = "cat /home/%s/out_%s.txt"  % (client["usr"], str(rate))
-            output_lines = self.run_cmd_via_paramiko(client["mgmt_ip"], 22, client["usr"], client["psswd"],
-                                                     command)
+            output_lines = nc.run_cmd_via_paramiko(client["mgmt_ip"], 22, client["usr"], client["psswd"],
+                                                   command)
             print 'Cliient' + str(client)
             print 'Server' + str(server)
             print output_lines
@@ -219,8 +161,6 @@ class QoSPica8Experiment(Experiment):
 
     def measure_flow_rates(self, nc):
 
-        print "Using same output queues:", nc.synthesis_params["same_output_queue"]
-
         servers = [
             nc.h_hosts["66"],
             nc.h_hosts["7e"]
@@ -228,7 +168,7 @@ class QoSPica8Experiment(Experiment):
         # launch servers
         for serv in servers:
             command = "/usr/local/bin/netserver&"
-            self.run_cmd_via_paramiko(serv["mgmt_ip"], 22, serv["usr"], serv["psswd"], command)
+            nc.run_cmd_via_paramiko(serv["mgmt_ip"], 22, serv["usr"], serv["psswd"], command)
 
         clients = [
             nc.h_hosts["e5"],
@@ -337,10 +277,13 @@ def prepare_flow_specifications(measurement_rates=None, tests_duration=None):
     configured_rate = 50
 
     # for src_host, dst_host in permutations(switch_hosts, 2):
-    for src_host, dst_host in [("7e", "38"),
-                               ("38", "7e"),
-                               ("66", "e5"),
-                               ("e5", "66")]:
+    # for src_host, dst_host in [("7e", "38"),
+    #                            ("38", "7e"),
+    #                            ("66", "e5"),
+    #                            ("e5", "66")]:
+    #
+
+    for src_host, dst_host in [("e5", "7e"), ("7e", "e5")]:
         if src_host == dst_host:
             continue
 
@@ -365,8 +308,8 @@ def prepare_network_configurations(measurement_rates,
 
     flow_specs = prepare_flow_specifications(measurement_rates, tests_duration)
     nc = NetworkConfigurationHardware("ryu_old",
-                               conf_root="configurations/",
-                               flow_specs=flow_specs)
+                                      conf_root="configurations/",
+                                      flow_specs=flow_specs)
 
     nc_list.append(nc)
 
@@ -461,14 +404,14 @@ def load_data_collapse_flows(in_filename):
         for flow in this_data[ds]:
 
             if flow == "192.168.0.2->192.168.0.3 Different output queue" or \
-                            flow == "192.168.0.1->192.168.0.4 Different output queue":
+                    flow == "192.168.0.1->192.168.0.4 Different output queue":
 
                 collapsed_data[ds]["Different output queue"] = \
                     merge_flow_data(this_data[ds]["192.168.0.2->192.168.0.3 Different output queue"],
                                     this_data[ds]["192.168.0.1->192.168.0.4 Different output queue"])
 
             if flow == "192.168.0.2->192.168.0.3 Same output queue" or \
-                            flow == "192.168.0.1->192.168.0.4 Same output queue":
+                    flow == "192.168.0.1->192.168.0.4 Same output queue":
 
                 collapsed_data[ds]["Same output queue"] = \
                     merge_flow_data(this_data[ds]["192.168.0.2->192.168.0.3 Same output queue"],
@@ -520,7 +463,6 @@ def main():
                              synthesis_name="SynthesizeQoS",
                              synthesis_params={},
                              )
-
     exp.trigger()
 
     # exp.dump_data()

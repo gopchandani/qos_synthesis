@@ -6,7 +6,8 @@ import os
 from socket import *
 import networkx as nx
 
-
+import paramiko
+paramiko.util.log_to_file("filename.log")
 
 
 class NetworkConfigurationHardware(object):
@@ -39,32 +40,82 @@ class NetworkConfigurationHardware(object):
         self.h = httplib2.Http(".cache")
         self.h.add_credentials('admin', 'admin')
 
+    def run_cmd_via_paramiko(self, IP, port, username, password, command):
+
+        s = paramiko.SSHClient()
+        s.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        s.load_system_host_keys()
+        s.connect(IP, port, username, password)
+        (stdin, stdout, stderr) = s.exec_command(command)
+
+        output = list(stdout.readlines())
+        s.close()
+        return output
+
+
+    def clear_all_flows_queues(self):
+
+        for bridge_dict in self.bridge_dict_iter():
+
+            self.run_cmd_via_paramiko(bridge_dict["switch_IP"],
+                                      22,
+                                      bridge_dict["usr"],
+                                      bridge_dict["psswd"],
+                                      "/ovs/bin/ovs-ofctl del-flows " +  bridge_dict["bridge_name"])
+
+            self.run_cmd_via_paramiko(bridge_dict["switch_IP"],
+                                      22,
+                                      bridge_dict["usr"],
+                                      bridge_dict["psswd"],
+                                      "/ovs/bin/ovs-vsctl --all destroy qos")
+
+            self.run_cmd_via_paramiko(bridge_dict["switch_IP"],
+                                      22,
+                                      bridge_dict["usr"],
+                                      bridge_dict["psswd"],
+                                      "/ovs/bin/ovs-vsctl --all destroy queue")
+
+            for port in bridge_dict["port_list"]:
+                self.run_cmd_via_paramiko(bridge_dict["switch_IP"],
+                                          22,
+                                          bridge_dict["usr"],
+                                          bridge_dict["psswd"],
+                                          "/ovs/bin/ovs-vsctl clear Port " + port + " qos")
+
     def add_bridges(self):
         bridge_dict= {"bridge_name": "br0",
-                     "switch_IP": "192.168.1.101",
-                     "usr": "admin",
-                     "psswd": "password"}
+                      "switch_IP": "192.168.1.101",
+                      "usr": "admin",
+                      "psswd": "password",
+                      "of_port": "1235",
+                      "port_list":['ge-1/1/25','ge-1/1/27','ge-1/1/29']}
 
         self.graph.add_node(bridge_dict["bridge_name"], node_type="bridge", b=bridge_dict)
 
         bridge_dict = {"bridge_name": "br1",
                        "switch_IP": "192.168.1.101",
                        "usr": "admin",
-                       "psswd": "password"}
+                       "psswd": "password",
+                       "of_port": "1236",
+                       "port_list":['ge-1/1/31', 'ge-1/1/33', 'ge-1/1/35']}
 
         self.graph.add_node(bridge_dict["bridge_name"], node_type="bridge", b=bridge_dict)
 
         bridge_dict = {"bridge_name": "br2",
                        "switch_IP": "192.168.1.101",
                        "usr": "admin",
-                       "psswd": "password"}
+                       "psswd": "password",
+                       "of_port": "1237",
+                       "port_list":['ge-1/1/37', 'ge-1/1/39', 'ge-1/1/41']}
 
         self.graph.add_node(bridge_dict["bridge_name"], node_type="bridge", b=bridge_dict)
 
         bridge_dict = {"bridge_name": "of-switch",
                        "switch_IP": "192.168.1.101",
                        "usr": "admin",
-                       "psswd": "password"}
+                       "psswd": "password",
+                       "of_port": "1234",
+                       "port_list": ['ge-1/1/43', 'ge-1/1/45', 'ge-1/1/47']}
 
         self.graph.add_node(bridge_dict["bridge_name"], node_type="bridge", b=bridge_dict)
 
@@ -119,6 +170,17 @@ class NetworkConfigurationHardware(object):
 
         self.graph.add_node(host_dict["host_name"], node_type="host", h=host_dict)
 
+    def host_dict_iter(self):
+        for node_id in self.graph.node():
+
+            if self.graph.node[node_id]['node_type'] == "host":
+                yield self.graph.node[node_id]['h']
+
+    def bridge_dict_iter(self):
+        for node_id in self.graph.node():
+
+            if self.graph.node[node_id]['node_type'] == "bridge":
+                yield self.graph.node[node_id]['b']
 
     def add_host_links(self):
 
@@ -217,10 +279,10 @@ class NetworkConfigurationHardware(object):
         bridge_to_bridge_bw = 1000000 * 1000 * 10  # Assume pi to switch bandwidth is 10 Gbps
         bridge_to_bridge_delay = 10e-9 * 10  # Assumes pi to switch latency is 10 nanoseconds
 
-        links = [("br0", "of-switch", "ge=1/1/45", "ge-1/1/29"),
-                 ("br0", "br2", "ge=1/1/27", "ge-1/1/39"),
-                 ("of-switch", "br1", "ge=1/1/47", "ge-1/1/35"),
-                 ("br1", "br2", "ge=1/1/33", "ge-1/1/41")]
+        links = [("br0", "of-switch", "ge-1/1/45", "ge-1/1/29"),
+                 ("br0", "br2", "ge-1/1/27", "ge-1/1/39"),
+                 ("of-switch", "br1", "ge-1/1/47", "ge-1/1/35"),
+                 ("br1", "br2", "ge-1/1/33", "ge-1/1/41")]
 
         for node1, node2, node1_port, node2_port in links:
             link_dict = {
