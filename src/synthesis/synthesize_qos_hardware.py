@@ -59,6 +59,8 @@ class SynthesizeQoSHardware:
                             min_rate=fs.configured_rate_bps,
                             max_rate=fs.configured_rate_bps)
 
+            intent.src_ip = src_host_dict["host_IP"]
+            intent.dst_ip = dst_host_dict["host_IP"]
             intent.src_mac = src_host_dict["host_MAC"]
             intent.dst_mac = dst_host_dict["host_MAC"]
 
@@ -92,7 +94,7 @@ class SynthesizeQoSHardware:
                                                      intent.max_rate)
 
                 self.synthesis_lib.push_flow(intent.bridge_dict,
-                                             intent.out_port,
-                                             intent.src_mac,
+                                             intent.in_port,
                                              intent.dst_mac,
+                                             intent.out_port,
                                              q_id)

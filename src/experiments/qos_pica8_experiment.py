@@ -72,15 +72,17 @@ class QoSPica8Experiment(Experiment):
 
                 print "Installing this at IP: %s" % cmd_host_dict["host_IP"]
 
+                nc.run_cmd_via_paramiko(cmd_host_dict["mgmt_ip"], 22,
+                                        cmd_host_dict["usr"],
+                                        cmd_host_dict["psswd"],
+                                        arp_cmd)
 
-
-
-            arp_cmd = "/usr/sbin/arp -n"
-
-            nc.run_cmd_via_paramiko(cmd_host_dict["mgmt_ip"], 22,
-                                    cmd_host_dict["usr"],
-                                    cmd_host_dict["psswd"],
-                                    arp_cmd)
+            # arp_cmd = "/usr/sbin/arp -n"
+            #
+            # nc.run_cmd_via_paramiko(cmd_host_dict["mgmt_ip"], 22,
+            #                         cmd_host_dict["usr"],
+            #                         cmd_host_dict["psswd"],
+            #                         arp_cmd)
 
     def parse_measurements(self, data_lines):
 

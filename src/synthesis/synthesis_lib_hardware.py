@@ -25,17 +25,18 @@ class SynthesisLibHardware(object):
 
         self.queue_id_cntr_per_br = defaultdict(int)
 
-    def push_flow(self, bridge_dict, port, src_mac, dst_mac, q_id):
+    def push_flow(self, bridge_dict, in_port, dst_mac, out_port, q_id):
 
         push_flow_cmd = "ovs-ofctl add-flow " + \
-                       "tcp:" + bridge_dict["switch_IP"] + ":" + bridge_dict["of_port"] + \
-                       " dl_src=" + src_mac + \
+                       "tcp:" + bridge_dict["switch_IP"] + ":" + bridge_dict["of_port"] + " " \
+                       "in_port=" + str(in_port.split('/')[2]) +  \
                        ",dl_dst=" + dst_mac + \
-                        ",actions=" + "output:" + str(port.split('/')[2])
+                        ",actions=" + "output:" + str(out_port.split('/')[2])
                         #"set_queue:" + str(q_id) + ","\
 
 
         os.system(push_flow_cmd)
+        time.sleep(1)
 
     def push_queue(self, bridge_dict, port, min_rate, max_rate):
         self.queue_id_cntr_per_br[bridge_dict["bridge_name"]] +=  1

@@ -133,7 +133,7 @@ class NetworkConfigurationHardware(object):
         host_dict = {"host_name": "e5",
                      "bridge_id" : "br0",
                      "host_IP": "192.168.1.10",
-                     "mgmt_ip": "10.194.215.232",
+                     "mgmt_ip": "10.193.154.96",
                      "usr": "pi",
                      "psswd": "raspberry",
                      "host_MAC": "b8:27:eb:7a:19:e5"}
@@ -163,7 +163,7 @@ class NetworkConfigurationHardware(object):
         host_dict = {"host_name": "38",
                      "bridge_id": "br1",
                      "host_IP": "192.168.1.40",
-                     "mgmt_ip": "10.193.214.117",
+                     "mgmt_ip": "10.192.79.107",
                      "usr": "pi",
                      "psswd": "raspberry",
                      "host_MAC": "b8:27:eb:6b:f7:38"}
