@@ -133,7 +133,7 @@ class NetworkConfigurationHardware(object):
         host_dict = {"host_name": "e5",
                      "bridge_id" : "br0",
                      "host_IP": "192.168.1.10",
-                     "mgmt_ip": "10.193.154.96",
+                     "mgmt_ip": "10.192.149.214",
                      "usr": "pi",
                      "psswd": "raspberry",
                      "host_MAC": "b8:27:eb:7a:19:e5"}
@@ -163,12 +163,21 @@ class NetworkConfigurationHardware(object):
         host_dict = {"host_name": "38",
                      "bridge_id": "br1",
                      "host_IP": "192.168.1.40",
-                     "mgmt_ip": "10.192.79.107",
+                     "mgmt_ip": "10.193.214.117",
                      "usr": "pi",
                      "psswd": "raspberry",
                      "host_MAC": "b8:27:eb:6b:f7:38"}
 
         self.graph.add_node(host_dict["host_name"], node_type="host", h=host_dict)
+
+    def bridge_attached_host_dicts(self,bridge_dict):
+        host_dict_list=[]
+
+        for host_dict in self.host_dict_iter():
+                if host_dict["bridge_id"] == bridge_dict["bridge_name"]:
+                    host_dict_list.append(host_dict)
+
+        return host_dict_list
 
     def host_dict_iter(self):
         for node_id in self.graph.node():

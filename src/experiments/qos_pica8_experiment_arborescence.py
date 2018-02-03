@@ -42,7 +42,7 @@ class QoSPica8Experiment(Experiment):
             "Maximum Latency": defaultdict(defaultdict)
         }
 
-        self.synthesis = SynthesizeQoSHardware(synthesis_params)
+        self.synthesis = AboresceneSynthesisHardware(synthesis_params)
 
     def trigger(self):
         for nc in self.network_configurations:
