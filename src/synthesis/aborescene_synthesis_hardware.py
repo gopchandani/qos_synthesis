@@ -246,7 +246,6 @@ class AboresceneSynthesisHardware(object):
         for host_dict in self.network_configuration.bridge_attached_host_dicts(bridge_dict):
             link_dict = self.network_configuration.get_link_dict(bridge_dict["bridge_name"], host_dict["host_name"])
             self.synthesis_lib.push_vlan_tagged_table_jump_rule(bridge_dict,
-
                                                              self.other_switch_vlan_tagged_packet_rules,
                                                              self.aborescene_forwarding_rules)
 
@@ -259,21 +258,19 @@ class AboresceneSynthesisHardware(object):
             self.synthesis_lib.push_table_miss_goto_next_table_flow(bridge_dict, self.other_switch_vlan_tagged_packet_rules)
             self.synthesis_lib.push_table_miss_goto_next_table_flow(bridge_dict, self.tree_vlan_tag_push_rules)
             #
-            if self.network_configuration.bridge_attached_host_dicts(bridge_dict):
 
-                self.push_other_switch_vlan_tagged_packet_rules(bridge_dict)
 
-                self.push_local_mac_forwarding_rules_rules(bridge_dict)
+            self.push_other_switch_vlan_tagged_packet_rules(bridge_dict)
 
-                # k_eda = self.compute_k_edge_disjoint_aborescenes(k, bridge_dict)
-                #
-                # for i in range(k):
-                #     self.compute_sw_intent_lists(bridge_dict, k_eda[i], i+1)
+            self.push_local_mac_forwarding_rules_rules(bridge_dict)
 
-            else:
-                self.push_other_switch_vlan_tagged_packet_rules(bridge_dict)
+             # k_eda = self.compute_k_edge_disjoint_aborescenes(k, bridge_dict)
+             #
+             # for i in range(k):
+             #     self.compute_sw_intent_lists(bridge_dict, k_eda[i], i+1)
 
-            self.push_sw_intent_lists(k)
+
+             #self.push_sw_intent_lists(k)
 
     def synthesize_flow_specifications(self, flow_specs):
         self.synthesize_all_switches(2)
