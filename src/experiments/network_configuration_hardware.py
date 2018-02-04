@@ -296,7 +296,7 @@ class NetworkConfigurationHardware(object):
         bridge_to_bridge_bw = 1000000 * 1000 * 10  # Assume pi to switch bandwidth is 10 Gbps
         bridge_to_bridge_delay = 10e-9 * 10  # Assumes pi to switch latency is 10 nanoseconds
 
-        links = [("br0", "of-switch", "ge-1/1/45", "ge-1/1/29"),
+        links = [("br0", "of-switch", "ge-1/1/29", "ge-1/1/45"),
                  ("br0", "br2", "ge-1/1/27", "ge-1/1/39"),
                  ("of-switch", "br1", "ge-1/1/47", "ge-1/1/35"),
                  ("br1", "br2", "ge-1/1/33", "ge-1/1/41")]

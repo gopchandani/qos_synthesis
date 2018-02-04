@@ -117,3 +117,34 @@ class SynthesisLibHardware(object):
         #
 
         os.system(flow_rule)
+
+    def push_fast_failover_group_set_vlan_action(self, bridge_dict, intent_list, set_vlan_tags):
+
+        group_command = ''
+        group_id = self.group_id_cntr + 1
+
+        #TODO: Push a fast failover group where each bucket correspond to the intent in the intent_list
+        # Each bucket has two actions: It sets the vlan_id to the corresponding index in set_vlan_tags
+        # And sends the packet out to the out_port in the intent
+        # The watch port for a bucket is same as the out_port of the intent
+
+        # group["type"] = "FF"
+        # bucket_list = []
+        # for i in range(len(intent_list)):
+        #
+        #     intent = intent_list[i]
+        #
+        #     out_port, watch_port = self.get_out_and_watch_port(intent)
+        #     bucket = {}
+        #     bucket["actions"] = [{"type": "SET_FIELD", "field": "vlan_vid", "value": set_vlan_tags[i] + 0x1000},
+        #                          {"type": "OUTPUT", "port": out_port}]
+        #
+        #     bucket["watch_port"] = watch_port
+        #     bucket["watch_group"] = 4294967295
+        #     bucket_list.append(bucket)
+        #
+        # group["buckets"] = bucket_list
+        # group_id = group["group_id"]
+
+        os.system(group_command)
+        return group_id

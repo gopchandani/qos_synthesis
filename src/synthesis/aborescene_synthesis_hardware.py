@@ -138,24 +138,25 @@ class AboresceneSynthesisHardware(object):
                 else:
                     self.br_intent_lists[src_node_id][dst_node_id] = [intent]
 
-    def install_failover_group_vlan_tag_flow(self, src_br, dst_br, k):
+    def install_failover_group_vlan_tag_flow(self, src_bridge_dict, dst_bridge_dict, k, dst_bridge_tag):
 
         # Tags: as they are applied to packets leaving on a given tree in the failover buckets.
+        #The modified tags are different for the same destination bridge across different arborescence trees
         modified_tags = []
         for i in range(k):
-            modified_tags.append(int(dst_br.synthesis_tag) | (i + 1 << self.num_bits_for_switches))
+            modified_tags.append(dst_bridge_tag | (i + 1 << self.num_bits_for_switches))
 
-        sw_intent_list = deepcopy(self.br_intent_lists[src_br][dst_br])
+        sw_intent_list = deepcopy(self.br_intent_lists[src_bridge_dict["bridge_name"]][dst_bridge_dict["bridge_name"]])
 
         # Push a fail-over group with each bucket containing a modify VLAN tag action,
         # Each one of these buckets represent actions to be applied to send the packet in one tree
-        group_id = self.synthesis_lib.push_fast_failover_group_set_vlan_action(src_br.node_id,
+        group_id = self.synthesis_lib.push_fast_failover_group_set_vlan_action(src_bridge_dict,
                                                                                sw_intent_list,
                                                                                modified_tags)
 
         # Push a group/vlan_id setting flow rule
         flow_match = deepcopy(sw_intent_list[0].flow_match)
-        flow_match["vlan_id"] = int(dst_br.synthesis_tag) | (1 << self.num_bits_for_switches)
+        flow_match["vlan_id"] = int(dst_bridge_tag) | (1 << self.num_bits_for_switches)
 
         flow = self.synthesis_lib.push_match_per_in_port_destination_instruct_group_flow(
                 src_br.node_id,
@@ -183,7 +184,7 @@ class AboresceneSynthesisHardware(object):
 
                 # Push a group/vlan_id setting flow rule
                 flow_match = deepcopy(sw_intent_list[0].flow_match)
-                flow_match["vlan_id"] = int(dst_br.synthesis_tag) | (1 << self.num_bits_for_switches)
+                flow_match["vlan_id"] = int(dst_bridge_tag) | (1 << self.num_bits_for_switches)
                 flow_match["in_port"] = link_data.link_ports_dict[src_br.node_id]
 
                 flow = self.synthesis_lib.push_match_per_in_port_destination_instruct_group_flow(
@@ -194,10 +195,10 @@ class AboresceneSynthesisHardware(object):
                         flow_match,
                         self.apply_group_intents_immediately)
 
-    def install_all_group_vlan_tag_flow(self, src_br, dst_br, k):
+    def install_all_group_vlan_tag_flow(self, src_br, dst_br, k, dst_bridge_tag):
 
         # Tags: as they are applied to packets leaving on a given tree in the failover buckets.
-        modified_tag = int(dst_br.synthesis_tag) | (2 << self.num_bits_for_switches)
+        modified_tag = int(dst_bridge_tag) | (2 << self.num_bits_for_switches)
 
         sw_intent_list = [self.br_intent_lists[src_br][dst_br][1]]
 
@@ -209,7 +210,7 @@ class AboresceneSynthesisHardware(object):
 
         # Push a group/vlan_id setting flow rule
         flow_match = deepcopy(sw_intent_list[0].flow_match)
-        flow_match["vlan_id"] = int(dst_br.synthesis_tag) | (2 << self.num_bits_for_switches)
+        flow_match["vlan_id"] = int(dst_bridge_tag) | (2 << self.num_bits_for_switches)
 
         flow = self.synthesis_lib.push_match_per_in_port_destination_instruct_group_flow(
                 src_br.node_id,
@@ -228,8 +229,8 @@ class AboresceneSynthesisHardware(object):
 
                 # Install the rules to put the vlan tags on for hosts that are at this destination switch
                 self.push_src_br_vlan_push_intents(src_bridge_dict, dst_bridge_dict, i+1)
-                self.install_failover_group_vlan_tag_flow(src_bridge_dict, dst_bridge_dict, k)
-                self.install_all_group_vlan_tag_flow(src_bridge_dict, dst_bridge_dict, k)
+                self.install_failover_group_vlan_tag_flow(src_bridge_dict, dst_bridge_dict, k, i+1)
+                self.install_all_group_vlan_tag_flow(src_bridge_dict, dst_bridge_dict, k, i+1)
 
     def push_src_br_vlan_push_intents(self, src_bridge_dict, dst_bridge_dict, dst_bridge_tag):
         for host_dict in self.network_configuration.bridge_attached_host_dicts(dst_bridge_dict):
