@@ -34,8 +34,6 @@ class Intent:
             return False
 
     def __str__(self):
-        return "Hash Value: " + str(self.hash_value) + " " +\
-               "Intent Type: " + str(self.intent_type) + " " + \
-               "Flow Match: " + str(self.flow_match) + " " + \
+        return "Tree id: " + str(self.tree_id) + " " +\
                "In Port: " + str(self.in_port) + " " + \
                "Out Port: " + str(self.out_port)

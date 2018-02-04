@@ -191,6 +191,14 @@ class NetworkConfigurationHardware(object):
             if self.graph.node[node_id]['node_type'] == "bridge":
                 yield self.graph.node[node_id]['b']
 
+    def get_node_type(self, node_id):
+        node_type = None
+
+        if self.graph.has_node(node_id):
+            node_type = self.graph.node[node_id]["node_type"]
+
+        return node_type
+
     def add_host_links(self):
 
         pi_to_switch_bw = 1000000 * 50 #Assume pi to switch bandwidth is 50 Mbps

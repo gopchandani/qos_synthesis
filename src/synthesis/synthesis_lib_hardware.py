@@ -92,3 +92,28 @@ class SynthesisLibHardware(object):
 
         os.system(flow_rule)
 
+    def push_vlan_push_intents(self, bridge_dict, dst_host_mac, required_vlan_id, vlan_tag_push_rules_table_id):
+
+        flow_rule = ''
+
+        # TODO: Push a flow rule in the table vlan_tag_push_rules_table_id
+        # Match on the dst_host_mac
+        # Do three things:
+        # 1. Push a vlan tag
+        # 2. Set the vlan tag to required_vlan_id
+        # 3. Send the packet out to vlan_tag_push_rules_table_id + 1
+
+        # # Compile match
+        # flow["match"] = push_vlan_intent.flow_match.generate_match_json(self.network_graph.controller,
+        #                                                                 flow["match"])
+        #
+        # action_list = [{"type": "PUSH_VLAN", "ethertype": 0x8100},
+        #                {"type": "SET_FIELD", "field": "vlan_vid", "value": push_vlan_intent.required_vlan_id + 0x1000}]
+        #
+        # self.populate_flow_action_instruction(flow, action_list, push_vlan_intent.apply_immediately)
+        #
+        # flow["instructions"].append({"type": "GOTO_TABLE", "table_id": str(vlan_tag_push_rules_table_id + 1)})
+        #
+        #
+
+        os.system(flow_rule)
