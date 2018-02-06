@@ -138,7 +138,7 @@ class AboresceneSynthesisHardware(object):
                 else:
                     self.br_intent_lists[src_node_id][dst_node_id] = [intent]
 
-    def install_failover_group_vlan_tag_flow(self, src_bridge_dict, dst_bridge_dict, k, dst_bridge_tag):
+    def install_failover_group_vlan_tag_flow(self, src_bridge_dict, dst_bridge_dict, k, dst_bridge_tag, priority):
 
         # Tags: as they are applied to packets leaving on a given tree in the failover buckets.
         #The modified tags are different for the same destination bridge across different arborescence trees
@@ -158,7 +158,7 @@ class AboresceneSynthesisHardware(object):
             src_bridge_dict,
             self.aborescene_forwarding_rules,
             group_id,
-            dst_bridge_tag | (1 << self.num_bits_for_switches))
+            dst_bridge_tag | (1 << self.num_bits_for_switches),priority)
 
         # Need to install some more rules to handle the IN_PORT as out_port case.
         for src_bridge_port in src_bridge_dict["port_list"]:
@@ -181,9 +181,10 @@ class AboresceneSynthesisHardware(object):
                     self.aborescene_forwarding_rules,
                     group_id,
                     int(dst_bridge_tag) | (1 << self.num_bits_for_switches),
+                    3,
                     in_port=src_bridge_port)
 
-    def install_all_group_vlan_tag_flow(self, src_bridge_dict, dst_bridge_dict, k, dst_bridge_tag):
+    def install_all_group_vlan_tag_flow(self, src_bridge_dict, dst_bridge_dict, k, dst_bridge_tag, priority):
 
         # Tags: as they are applied to packets leaving on a given tree in the failover buckets.
         modified_tag = int(dst_bridge_tag) | (2 << self.num_bits_for_switches)
@@ -198,7 +199,7 @@ class AboresceneSynthesisHardware(object):
             src_bridge_dict,
             self.aborescene_forwarding_rules,
             group_id,
-            int(dst_bridge_tag) | (2 << self.num_bits_for_switches))
+            int(dst_bridge_tag) | (2 << self.num_bits_for_switches),priority)
 
     def push_br_intent_lists(self, k):
 
@@ -208,11 +209,11 @@ class AboresceneSynthesisHardware(object):
                 dst_bridge_dict = self.network_configuration.get_bridge_dict(dst_br_id)
 
                 # Install the rules to put the vlan tags on for hosts that are at this destination switch
-                self.push_src_br_vlan_push_intents(src_bridge_dict, dst_bridge_dict, i+1)
-                self.install_failover_group_vlan_tag_flow(src_bridge_dict, dst_bridge_dict, k, i+1)
-                self.install_all_group_vlan_tag_flow(src_bridge_dict, dst_bridge_dict, k, i+1)
+                self.push_src_br_vlan_push_intents(src_bridge_dict, dst_bridge_dict, i+1, 2)
+                self.install_failover_group_vlan_tag_flow(src_bridge_dict, dst_bridge_dict, k, i+1, 2)
+                self.install_all_group_vlan_tag_flow(src_bridge_dict, dst_bridge_dict, k, i+1, 2)
 
-    def push_src_br_vlan_push_intents(self, src_bridge_dict, dst_bridge_dict, dst_bridge_tag):
+    def push_src_br_vlan_push_intents(self, src_bridge_dict, dst_bridge_dict, dst_bridge_tag, priority):
         for host_dict in self.network_configuration.bridge_attached_host_dicts(dst_bridge_dict):
 
             required_vlan_id = dst_bridge_tag | (1 << self.num_bits_for_switches)
@@ -220,7 +221,7 @@ class AboresceneSynthesisHardware(object):
             self.synthesis_lib.push_vlan_push_intents(src_bridge_dict,
                                                       host_dict["host_MAC"],
                                                       required_vlan_id,
-                                                      self.tree_vlan_tag_push_rules)
+                                                      self.tree_vlan_tag_push_rules, priority)
 
     def push_local_mac_forwarding_rules_rules(self, bridge_dict):
 
@@ -231,7 +232,7 @@ class AboresceneSynthesisHardware(object):
             self.synthesis_lib.push_flow_rule_match_dst_mac_action_outport(bridge_dict,
                                                                            host_dict["host_MAC"],
                                                                            link_dict["node1_port"],
-                                                                           self.local_mac_forwarding_rules)
+                                                                           self.local_mac_forwarding_rules,2)
 
 
     def push_other_switch_vlan_tagged_packet_rules(self, bridge_dict):
@@ -240,16 +241,16 @@ class AboresceneSynthesisHardware(object):
             link_dict = self.network_configuration.get_link_dict(bridge_dict["bridge_name"], host_dict["host_name"])
             self.synthesis_lib.push_vlan_tagged_table_jump_rule(bridge_dict,
                                                                 self.other_switch_vlan_tagged_packet_rules,
-                                                                self.aborescene_forwarding_rules)
+                                                                self.aborescene_forwarding_rules,2)
 
     def synthesize_all_switches(self, k):
 
         for bridge_dict in self.network_configuration.bridge_dict_iter():
 
             # Push table switch rules
-            self.synthesis_lib.push_table_miss_goto_next_table_flow(bridge_dict, self.local_mac_forwarding_rules)
-            self.synthesis_lib.push_table_miss_goto_next_table_flow(bridge_dict, self.other_switch_vlan_tagged_packet_rules)
-            self.synthesis_lib.push_table_miss_goto_next_table_flow(bridge_dict, self.tree_vlan_tag_push_rules)
+            self.synthesis_lib.push_table_miss_goto_next_table_flow(bridge_dict, self.local_mac_forwarding_rules,1)
+            self.synthesis_lib.push_table_miss_goto_next_table_flow(bridge_dict, self.other_switch_vlan_tagged_packet_rules,1)
+            self.synthesis_lib.push_table_miss_goto_next_table_flow(bridge_dict, self.tree_vlan_tag_push_rules,1)
             #
 
 

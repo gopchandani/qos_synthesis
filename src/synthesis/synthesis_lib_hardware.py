@@ -31,7 +31,8 @@ class SynthesisLibHardware(object):
                        "tcp:" + bridge_dict["switch_IP"] + ":" + bridge_dict["of_port"] + " " \
                        "in_port=" + str(in_port.split('/')[2]) +  \
                        ",dl_dst=" + dst_mac + \
-                        ",actions=" + "output:" + str(out_port.split('/')[2])
+                        ",vlan_vid=0x1000/0x1000" + "," + \
+                        "actions=strip_vlan," + "output:" + str(out_port.split('/')[2])
                         #"set_queue:" + str(q_id) + ","\
 
 
@@ -59,43 +60,49 @@ class SynthesisLibHardware(object):
 
         return self.queue_id_cntr_per_br[bridge_dict["bridge_name"]]
 
-    def push_table_miss_goto_next_table_flow(self, bridge_dict, src_table):
+    def push_table_miss_goto_next_table_flow(self, bridge_dict, src_table,priority):
 
         dst_table_id = src_table + 1
 
         flow_rule = "ovs-ofctl" + " " + \
                     "add-flow " + "tcp:"+ bridge_dict["switch_IP"] + ":" + \
                     bridge_dict["of_port"] + " " + \
-                    "table=" + str(src_table)+ "," + "actions=goto_table:" + str(dst_table_id)
+                    "table=" + str(src_table)+ "," + \
+                    'priority=' + str(priority) + ',' + \
+                    "actions=goto_table:" + str(dst_table_id)
 
         os.system(flow_rule)
 
-    def push_flow_rule_match_dst_mac_action_outport(self,bridge_dict, dst_mac,out_port, table_id):
+    def push_flow_rule_match_dst_mac_action_outport(self,bridge_dict, dst_mac,out_port, table_id,priority):
 
         flow_rule = "ovs-ofctl" + " " + \
                     "add-flow " + "tcp:"+ bridge_dict["switch_IP"] + ":" + bridge_dict["of_port"] + ": " + \
                     "table=" + str(table_id) + "," + \
+                    'priority=' + str(priority) + ',' + \
+                    "vlan_vid=0x1000/0x1000" + "," + \
                     "dl_dst=" + dst_mac + "," + \
-                    "actions=output:" + str(out_port.split('/')[2])
+                    "actions=strip_vlan,output:" + str(out_port.split('/')[2])
 
         os.system(flow_rule)
 
 
-    def push_vlan_tagged_table_jump_rule(self, bridge_dict, src_table, dst_table):
+    def push_vlan_tagged_table_jump_rule(self, bridge_dict, src_table, dst_table, priority):
 
         flow_rule = "ovs-ofctl" + " " + \
                     "add-flow " + "tcp:"+ bridge_dict["switch_IP"] + ":" + \
                     bridge_dict["of_port"] + " " + \
                     "table=" + str(src_table) + "," + \
+                    'priority=' + str(priority) + ',' + \
                     "vlan_vid=0x1000/0x1000" + "," + \
                     "actions=goto_table:" + str(dst_table)
 
         os.system(flow_rule)
 
-    def push_vlan_push_intents(self, bridge_dict, dst_host_mac, required_vlan_id, vlan_tag_push_rules_table_id):
+    def push_vlan_push_intents(self, bridge_dict, dst_host_mac, required_vlan_id, vlan_tag_push_rules_table_id,priority):
 
         flow_rule = 'ovs-ofctl -O OpenFlow13 add-flow' + ' ' + \
                     'tcp:' + bridge_dict['switch_IP'] + ':' + bridge_dict['of_port'] + ' ' + \
+                    'priority=' + str(priority) + ',' + \
                     'dl_dst=' + dst_host_mac + ',' + \
                     'actions=push_vlan:0x8100' + ',mod_vlan_vid:' + str(required_vlan_id) + ',' + \
                     'goto_table:' + str(vlan_tag_push_rules_table_id)
@@ -192,13 +199,14 @@ class SynthesisLibHardware(object):
 
 
 
-    def push_match_per_in_port_destination_instruct_group_flow(self, bridge_dict, table_id, group_id, vlan_id, in_port=None):
+    def push_match_per_in_port_destination_instruct_group_flow(self, bridge_dict, table_id, group_id, vlan_id,priority,in_port=None):
 
         if in_port is None:
 
             flow_rule = 'ovs-ofctl -O OpenFlow13 add-flow ' + ' ' + \
                     'tcp:' + bridge_dict['switch_IP'] + ':' + bridge_dict['of_port'] + ' ' + \
                     'table=' + str(table_id) + ',' + \
+                    'priority=' + str(priority) + ',' + \
                     'vlan_vid='+ str(vlan_id) + ',' + \
                     'actions=group:' + str(group_id)
         else:
@@ -207,6 +215,7 @@ class SynthesisLibHardware(object):
                         'tcp:' + bridge_dict['switch_IP'] + ':' + bridge_dict['of_port'] + ' ' + \
                         'in_port=' + str(in_port.split('/')[2]) + ',' + \
                         'table=' + str(table_id) + ',' + \
+                        'priority=' + str(priority) + ',' + \
                         'vlan_vid=' + str(vlan_id) + ',' + \
                         'actions=group:' + str(group_id)
 
