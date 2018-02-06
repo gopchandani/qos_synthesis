@@ -154,71 +154,51 @@ class AboresceneSynthesisHardware(object):
                                                                                sw_intent_list,
                                                                                modified_tags)
 
-        # Push a group/vlan_id setting flow rule
-        flow_match = deepcopy(sw_intent_list[0].flow_match)
-        flow_match["vlan_id"] = int(dst_bridge_tag) | (1 << self.num_bits_for_switches)
-
         flow = self.synthesis_lib.push_match_per_in_port_destination_instruct_group_flow(
-                src_br.node_id,
-                self.aborescene_forwarding_rules,
-                group_id,
-                1,
-                flow_match,
-                self.apply_group_intents_immediately)
+            src_bridge_dict,
+            self.aborescene_forwarding_rules,
+            group_id,
+            dst_bridge_tag | (1 << self.num_bits_for_switches))
 
         # Need to install some more rules to handle the IN_PORT as out_port case.
-        for adjacent_br_id, link_data in self.network_configuration.get_adjacent_switch_link_data(src_br.node_id):
+        for src_bridge_port in src_bridge_dict["port_list"]:
 
-            sw_intent_list = deepcopy(self.br_intent_lists[src_br][dst_br])
+            sw_intent_list = deepcopy(self.br_intent_lists[src_bridge_dict["bridge_name"]][dst_bridge_dict["bridge_name"]])
 
             # If the intent is such that it is sending the packet back out to the adjacent switch...
-            if sw_intent_list[1].out_port == link_data.link_ports_dict[src_br.node_id]:
+            if sw_intent_list[1].out_port == src_bridge_port:
 
                 # Push a fail-over group with each bucket containing a modify VLAN tag action,
                 # Each one of these buckets represent actions to be applied to send the packet in one tree
-
-                sw_intent_list[1].in_port = link_data.link_ports_dict[src_br.node_id]
-                group_id = self.synthesis_lib.push_fast_failover_group_set_vlan_action(src_br.node_id,
+                sw_intent_list[1].in_port = src_bridge_port
+                group_id = self.synthesis_lib.push_fast_failover_group_set_vlan_action(src_bridge_dict,
                                                                                        sw_intent_list,
                                                                                        modified_tags)
 
-                # Push a group/vlan_id setting flow rule
-                flow_match = deepcopy(sw_intent_list[0].flow_match)
-                flow_match["vlan_id"] = int(dst_bridge_tag) | (1 << self.num_bits_for_switches)
-                flow_match["in_port"] = link_data.link_ports_dict[src_br.node_id]
-
+                # TODO Flow must beat a higher priority
                 flow = self.synthesis_lib.push_match_per_in_port_destination_instruct_group_flow(
-                        src_br.node_id,
-                        self.aborescene_forwarding_rules,
-                        group_id,
-                        2,
-                        flow_match,
-                        self.apply_group_intents_immediately)
+                    src_bridge_dict,
+                    self.aborescene_forwarding_rules,
+                    group_id,
+                    int(dst_bridge_tag) | (1 << self.num_bits_for_switches),
+                    in_port=src_bridge_port)
 
-    def install_all_group_vlan_tag_flow(self, src_br, dst_br, k, dst_bridge_tag):
+    def install_all_group_vlan_tag_flow(self, src_bridge_dict, dst_bridge_dict, k, dst_bridge_tag):
 
         # Tags: as they are applied to packets leaving on a given tree in the failover buckets.
         modified_tag = int(dst_bridge_tag) | (2 << self.num_bits_for_switches)
 
-        sw_intent_list = [self.br_intent_lists[src_br][dst_br][1]]
+        sw_intent_list = deepcopy(self.br_intent_lists[src_bridge_dict["bridge_name"]][dst_bridge_dict["bridge_name"]])
 
-        # Push a failover group with each bucket containing a modify VLAN tag action,
-        # Each one of these buckets represent actions to be applied to send the packet in one tree
-        group_id = self.synthesis_lib.push_select_all_group_set_vlan_action(src_br.node_id,
+        group_id = self.synthesis_lib.push_select_all_group_set_vlan_action(src_bridge_dict,
                                                                             sw_intent_list,
                                                                             modified_tag)
 
-        # Push a group/vlan_id setting flow rule
-        flow_match = deepcopy(sw_intent_list[0].flow_match)
-        flow_match["vlan_id"] = int(dst_bridge_tag) | (2 << self.num_bits_for_switches)
-
         flow = self.synthesis_lib.push_match_per_in_port_destination_instruct_group_flow(
-                src_br.node_id,
-                self.aborescene_forwarding_rules,
-                group_id,
-                1,
-                flow_match,
-                self.apply_group_intents_immediately)
+            src_bridge_dict,
+            self.aborescene_forwarding_rules,
+            group_id,
+            int(dst_bridge_tag) | (2 << self.num_bits_for_switches))
 
     def push_br_intent_lists(self, k):
 
@@ -259,8 +239,8 @@ class AboresceneSynthesisHardware(object):
         for host_dict in self.network_configuration.bridge_attached_host_dicts(bridge_dict):
             link_dict = self.network_configuration.get_link_dict(bridge_dict["bridge_name"], host_dict["host_name"])
             self.synthesis_lib.push_vlan_tagged_table_jump_rule(bridge_dict,
-                                                             self.other_switch_vlan_tagged_packet_rules,
-                                                             self.aborescene_forwarding_rules)
+                                                                self.other_switch_vlan_tagged_packet_rules,
+                                                                self.aborescene_forwarding_rules)
 
     def synthesize_all_switches(self, k):
 
@@ -280,7 +260,7 @@ class AboresceneSynthesisHardware(object):
             k_ada = self.compute_k_edge_disjoint_aborescenes(k, bridge_dict)
 
             for i in range(k):
-                  self.compute_br_intent_lists(bridge_dict, k_ada[i], i+1)
+                self.compute_br_intent_lists(bridge_dict, k_ada[i], i+1)
 
 
         self.push_br_intent_lists(k)

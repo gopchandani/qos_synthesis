@@ -67,6 +67,12 @@ class NetworkConfigurationHardware(object):
                                       22,
                                       bridge_dict["usr"],
                                       bridge_dict["psswd"],
+                                      "/ovs/bin/ovs-ofctl del-groups " +  bridge_dict["bridge_name"])
+
+            self.run_cmd_via_paramiko(bridge_dict["switch_IP"],
+                                      22,
+                                      bridge_dict["usr"],
+                                      bridge_dict["psswd"],
                                       "/ovs/bin/ovs-vsctl --all destroy qos")
 
             self.run_cmd_via_paramiko(bridge_dict["switch_IP"],
@@ -296,12 +302,12 @@ class NetworkConfigurationHardware(object):
         bridge_to_bridge_bw = 1000000 * 1000 * 10  # Assume pi to switch bandwidth is 10 Gbps
         bridge_to_bridge_delay = 10e-9 * 10  # Assumes pi to switch latency is 10 nanoseconds
 
-        links = [("br0", "of-switch", "ge-1/1/29", "ge-1/1/45"),
-                 ("br0", "br2", "ge-1/1/27", "ge-1/1/39"),
-                 ("of-switch", "br1", "ge-1/1/47", "ge-1/1/35"),
-                 ("br1", "br2", "ge-1/1/33", "ge-1/1/41")]
+        links = [("br0", "of-switch", "ge-1/1/29", "ge-1/1/45","br-br"),
+                 ("br0", "br2", "ge-1/1/27", "ge-1/1/39","br-br"),
+                 ("of-switch", "br1", "ge-1/1/47", "ge-1/1/35","br-br"),
+                 ("br1", "br2", "ge-1/1/33", "ge-1/1/41","br-br")]
 
-        for node1, node2, node1_port, node2_port in links:
+        for node1, node2, node1_port, node2_port, link_type in links:
             link_dict = {
                 "node1": node1,
                 "node2": node2,
@@ -313,7 +319,7 @@ class NetworkConfigurationHardware(object):
 
             self.graph.add_edge(link_dict["node1"],
                                 link_dict["node2"],
-                                l=link_dict)
+                                l=link_dict, t=link_type)
             link_dict = {
                 "node1": node2,
                 "node2": node1,
@@ -325,8 +331,7 @@ class NetworkConfigurationHardware(object):
 
             self.graph.add_edge(link_dict["node1"],
                                 link_dict["node2"],
-                                l=link_dict)
-
+                                l=link_dict, t=link_type)
 
     def setup_network_configuration(self):
 

@@ -86,7 +86,7 @@ class SynthesisLibHardware(object):
         flow_rule = "ovs-ofctl" + " " + \
                     "add-flow " + "tcp:"+ bridge_dict["switch_IP"] + ":" + \
                     bridge_dict["of_port"] + " " + \
-                    "table=" + str(src_table)+ "," + \
+                    "table=" + str(src_table) + "," + \
                     "vlan_vid=0x1000/0x1000" + "," + \
                     "actions=goto_table:" + str(dst_table)
 
@@ -94,7 +94,12 @@ class SynthesisLibHardware(object):
 
     def push_vlan_push_intents(self, bridge_dict, dst_host_mac, required_vlan_id, vlan_tag_push_rules_table_id):
 
-        flow_rule = ''
+        flow_rule = 'ovs-ofctl -O OpenFlow13 add-flow' + ' ' + \
+                    'tcp:' + bridge_dict['switch_IP'] + ':' + bridge_dict['of_port'] + ' ' + \
+                    'dl_dst=' + dst_host_mac + ',' + \
+                    'actions=push_vlan:0x8100' + ',mod_vlan_vid:' + str(required_vlan_id) + ',' + \
+                    'goto_table:' + str(vlan_tag_push_rules_table_id)
+
 
         # TODO: Push a flow rule in the table vlan_tag_push_rules_table_id
         # Match on the dst_host_mac
@@ -119,9 +124,20 @@ class SynthesisLibHardware(object):
         os.system(flow_rule)
 
     def push_fast_failover_group_set_vlan_action(self, bridge_dict, intent_list, set_vlan_tags):
+        self.group_id_cntr += 1
+        group_id = self.group_id_cntr
 
-        group_command = ''
-        group_id = self.group_id_cntr + 1
+        group_command = 'ovs-ofctl -O OpenFlow13 add-group' + ' ' \
+                        'tcp:' + bridge_dict['switch_IP'] + ':' + bridge_dict['of_port'] + ' ' + \
+                        'group_id=' + str(group_id) + ',' + \
+                        'type=fast_failover' + ',' + \
+                        'bucket=watch_port:' + intent_list[0].out_port.split('/')[2] + ',' \
+                        'actions=mod_vlan_vid:' + str(set_vlan_tags[0]) + ',output:' + \
+                        intent_list[0].out_port.split('/')[2] + ',' + \
+                        'bucket=watch_port:' + intent_list[1].out_port.split('/')[2] + ',' \
+                        'actions=mod_vlan_vid:' + str(set_vlan_tags[1]) + ',output:' + \
+                        intent_list[1].out_port.split('/')[2]
+
 
         #TODO: Push a fast failover group where each bucket correspond to the intent in the intent_list
         # Each bucket has two actions: It sets the vlan_id to the corresponding index in set_vlan_tags
@@ -148,3 +164,61 @@ class SynthesisLibHardware(object):
 
         os.system(group_command)
         return group_id
+
+    def push_select_all_group_set_vlan_action(self, bridge_dict, intent_list, modified_tag):
+
+        self.group_id_cntr += 1
+        group_id = self.group_id_cntr
+
+        group_command = 'ovs-ofctl -O OpenFlow13 add-group' + ' ' \
+                        'tcp:' + bridge_dict['switch_IP'] + ':' + bridge_dict['of_port'] + ' ' + \
+                        'group_id=' + str(group_id) + ',' + \
+                        'type=all' + ',' + \
+                        'bucket=actions=mod_vlan_vid:' + str(modified_tag) + ',output:' + \
+                        intent_list[0].out_port.split('/')[2] + ',' + \
+                        'bucket=actions=mod_vlan_vid:' + str(modified_tag) + ',output:' + \
+                        intent_list[1].out_port.split('/')[2]
+
+
+        # ovs - ofctl - O
+        # OpenFlow13
+        # add - group
+        # br0
+        # group_id = 111, type = all, bucket = output:2
+
+
+        os.system(group_command)
+        return group_id
+
+
+
+    def push_match_per_in_port_destination_instruct_group_flow(self, bridge_dict, table_id, group_id, vlan_id, in_port=None):
+
+        if in_port is None:
+
+            flow_rule = 'ovs-ofctl -O OpenFlow13 add-flow ' + ' ' + \
+                    'tcp:' + bridge_dict['switch_IP'] + ':' + bridge_dict['of_port'] + ' ' + \
+                    'table=' + str(table_id) + ',' + \
+                    'vlan_vid='+ str(vlan_id) + ',' + \
+                    'actions=group:' + str(group_id)
+        else:
+
+            flow_rule = 'ovs-ofctl -O OpenFlow13 add-flow ' + ' ' + \
+                        'tcp:' + bridge_dict['switch_IP'] + ':' + bridge_dict['of_port'] + ' ' + \
+                        'in_port=' + str(in_port.split('/')[2]) + ',' + \
+                        'table=' + str(table_id) + ',' + \
+                        'vlan_vid=' + str(vlan_id) + ',' + \
+                        'actions=group:' + str(group_id)
+
+
+
+        # TODO: Push a flow rule to the table_id at bridge_dict
+        # Match on vlan_id
+        # The only action is the group action defined by group_id
+
+        # flow["match"] = flow_match.generate_match_json(self.network_graph.controller, flow["match"])
+        # action_list = [{"type": "GROUP", "group_id": group_id}]
+        # self.populate_flow_action_instruction(flow, action_list, apply_immediately)
+
+        os.system(flow_rule)
+
