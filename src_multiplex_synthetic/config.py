@@ -38,9 +38,7 @@ class PARAMS(Const):
     PERIOD_MIN = 10
     PERIOD_MAX = 1000
 
-
     N_PRIO_LEVEL = 3  # number of priority levels
-
 
     # this two variable must be in same length
     PKT_SIZE_LIST = [400*8, 512*8, 1024*8]  # size of the packets (in bits)

@@ -6,6 +6,7 @@ import flow_config as fc
 import path_generator as pg
 import networkx as nx
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 from config import *
 
 
@@ -36,7 +37,7 @@ def run_path_layout_experiment(topology, flow_specs):
     # plt.tight_layout()
     plt.xticks([])
     plt.yticks([])
-    
+
     plt.savefig("toplogy_layout.pdf")
 
     print("=== Printing flow specs: ===")
@@ -64,7 +65,7 @@ if __name__ == "__main__":
 
     n_switch = PARAMS.NUMBER_OF_SWITCHES
     n_host_per_switch = PARAMS.NUM_HOST_PER_SWITCH
-    n_flow_each_prio = 2  # number of flow in each priority level
+    n_flow_each_prio = 5  # number of flow in each priority level
 
     # create the topology (you can also hard code it -- a networkx object, similar to RTSS paper)
     topology = tc.TopologyConfiguration(n_switch=n_switch,
