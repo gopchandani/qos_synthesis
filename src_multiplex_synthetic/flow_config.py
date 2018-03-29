@@ -7,6 +7,7 @@ import helper_functions as hf
 import math
 from config import *
 
+
 class Flow:
 
     def __init__(self, id, src, dst, period, e2e_deadline, pckt_size, pkt_processing_time, prio, flowclass="RT"):
@@ -20,6 +21,7 @@ class Flow:
         self.prio = prio
         self.flowclass = flowclass
         self.bw_req = pckt_size/period
+        self.path = []  # will be updated later
 
 
 def get_flow_by_param(id, indx, nxtindx, period, e2e_deadline, prio):
@@ -28,10 +30,13 @@ def get_flow_by_param(id, indx, nxtindx, period, e2e_deadline, prio):
     src = "h" + str(indx[0]) + str(indx[1])
     dst = "h" + str(nxtindx[0]) + str(nxtindx[1])
 
-    pckt_size = random.randint(PARAMS.PKT_SIZE_MIN, PARAMS.PKT_SIZE_MAX)
+    pktindx = random.randint(0, len(PARAMS.PKT_SIZE_LIST)-1)
+
+    pckt_size = PARAMS.PKT_SIZE_LIST[pktindx]
+    pkt_processing_time = PARAMS.PKT_PROCESSING_TIME_LIST[pktindx]
 
     f = Flow(id=id, src=src, dst=dst, period=period, e2e_deadline=e2e_deadline,
-             pckt_size=pckt_size, pkt_processing_time=PARAMS.PCKT_PROCESSING_TIME,
+             pckt_size=pckt_size, pkt_processing_time=pkt_processing_time,
              prio=prio)
 
     return f
@@ -66,7 +71,6 @@ def get_flow_specs_by_base_delay(n_rt_flows, n_switch, n_host_per_switch, hp_flo
         e2e_deadline += PARAMS.DELAY_DELTA  # update deadline for next flow
 
         flow_specs.append(f)
-
 
     return flow_specs
 
@@ -114,3 +118,22 @@ def get_flow_specs(n_rt_flows, n_switch, n_host_per_switch, nw_diameter, prio=No
 
     return flow_specs
 
+
+def get_flow_specs_equal_per_queue(n_prio_level, n_flow_each_prio, n_switch, n_host_per_switch, nw_diameter):
+    """Create flows (each queue contains fixed number of flows """
+
+    # create flows
+    flow_specs = []
+    for i in range(n_prio_level):
+        for j in range(n_flow_each_prio):
+            f = get_flow_specs(n_rt_flows=1, n_switch=n_switch, n_host_per_switch=n_host_per_switch,
+                               nw_diameter=nw_diameter, prio=i)
+            flow_specs.append(f[0])  # since f returns a list
+
+    # update flow ids
+    id = 0
+    for f in flow_specs:
+        f.id = id
+        id += 1
+
+    return flow_specs

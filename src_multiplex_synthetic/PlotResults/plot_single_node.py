@@ -20,7 +20,17 @@ def get_delay(result, delay_dict, tag_flow_prio):
 
 
 def plot_single_node():
-    filename = "../" + PARAMS.EXP_SINGLE_NODE_FILENAME
+
+    # change font to Arial
+    plt.rcParams["font.family"] = "Arial"
+    plt.rcParams['font.size'] = 15
+    plt.rcParams['legend.fontsize'] = 13
+    plt.rcParams['axes.titlesize'] = 15
+    plt.rcParams['ytick.labelsize'] = 10
+    plt.rcParams['xtick.labelsize'] = 10
+
+    # filename = "../" + PARAMS.EXP_SINGLE_NODE_FILENAME
+    filename = "exp_single_node_test1.pickle.gzip"
     result = hf.load_object_from_file(filename)
 
     all_delay_dict = result.all_delay_dict
@@ -51,8 +61,8 @@ def plot_single_node():
                 dl.append(all_delay_dict[n_flow_each_prio][tag_flow_prio][count])
 
             print("Trace:", dl)
-            mean_delay[n_flow_each_prio][tag_flow_prio] = np.mean(dl)
-            std_delay[n_flow_each_prio][tag_flow_prio] = np.std(dl)
+            mean_delay[n_flow_each_prio][tag_flow_prio] = np.mean(dl)/1000
+            std_delay[n_flow_each_prio][tag_flow_prio] = np.std(dl)/1000
 
 
     print(mean_delay)
@@ -102,18 +112,15 @@ def plot_single_node():
     plt.xticks(y_pos+bar_width, result.N_FLOW_EACH_PRIO_LIST)
 
     plt.xlabel('Number of Flows Each Queue')
-    plt.ylabel('Mean Observed Delay ($\mu$s)')
+    plt.ylabel('Mean Observed Delay (ms)')
     plt.legend()
 
-    # change font to Arial
-    plt.rcParams["font.family"] = "Arial"
-    plt.rcParams['font.size'] = 15
-    plt.rcParams['legend.fontsize'] = 13
-    plt.rcParams['axes.titlesize'] = 15
-    plt.rcParams['ytick.labelsize'] = 10
-    plt.rcParams['xtick.labelsize'] = 10
 
-    plt.show()
+    # plt.show()
+
+    plt.tight_layout()
+
+    plt.savefig("delay_validation.pdf")
 
 
 if __name__ == '__main__':

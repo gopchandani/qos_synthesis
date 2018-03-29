@@ -4,8 +4,6 @@
 import math
 from config import *
 
-# NOTE: all delay values are in microsecond
-
 
 def fifo_delay_eqn(tag_flow, same_sw_flow_set, w):
 
@@ -30,6 +28,18 @@ def max_delay(tag_flow, same_sw_flow_set):
     # return max(maxdelay)
 
     return tag_flow.period
+
+
+def get_fifo_delay_by_pck_size(tag_flow_indx, flow_specs, same_sw_flow_set):
+
+    tag_flow = flow_specs[tag_flow_indx]
+
+    fifo_delay = 0
+    for fk in same_sw_flow_set:
+        # if with the same prio-level
+        if fk.prio == tag_flow.prio:
+            fifo_delay += fk.pkt_processing_time
+    return fifo_delay
 
 
 def isFeasible(tag_flow, same_sw_flow_set):
@@ -135,8 +145,12 @@ def get_fifo_delay(tag_flow_indx, flow_specs, same_sw_flow_set):
         # print("Return due to infeasibility!")
         return max_delay(tag_flow, same_sw_flow_set)  # return the max length
 
-    window_list = get_fifo_window_sizes(tag_flow_indx, flow_specs)
-    window_list = max(window_list)
+    # window_list = get_fifo_window_sizes(tag_flow_indx, flow_specs)
+    # window_list = max(window_list)
+
+    # loop through whole period instead of busy-window
+    # (this is to resolve the problem of millisecond/microsecond unit conversion)
+    window_list = tag_flow.period
     max_fifo = 0
 
     # get the max fifo delay

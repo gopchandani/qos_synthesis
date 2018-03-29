@@ -21,8 +21,6 @@ class TopologyConfiguration(object):
 
         return link_data
 
-
-
     def get_random_topology(self):
 
         """
