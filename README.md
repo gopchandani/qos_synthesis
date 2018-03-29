@@ -1,4 +1,7 @@
+
 # Place all traces for the Multiplexing expeirments
+
+Trace 1: Switch Processing Time
 
 The excel file SwitchProcessingTime contains two excel sheets. The sheet 'Final Data' contains the data for
 processing time as a function of packet sizes. This sheet also contains the end-to-end delay (also
