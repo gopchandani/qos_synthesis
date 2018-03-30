@@ -5,6 +5,7 @@ import itertools
 import random
 import helper_functions as hf
 import math
+import copy
 from config import *
 
 
@@ -92,9 +93,10 @@ def get_flow_specs(n_rt_flows, n_switch, n_host_per_switch, nw_diameter, prio=No
     # period_list = [math.ceil(PARAMS.PCKT_PROCESSING_TIME/util) for util in util_list]
 
     period_list = [random.randint(PARAMS.PERIOD_MIN, PARAMS.PERIOD_MAX) for i in range(n_rt_flows)]
-    # period_list.sort()  # sorted (HP flows gets shorter period)
+    period_list.sort()  # sorted (HP flows gets shorter period)
 
-    deadline_list = [nw_diameter * (PARAMS.PROP_DELAY_MAX + period_list[i]) for i in range(n_rt_flows)]
+    # deadline_list = [nw_diameter * (PARAMS.PROP_DELAY_MAX + period_list[i]) for i in range(n_rt_flows)]
+    deadline_list = copy.deepcopy(period_list)  # deadline = period
 
     # print("Period list is", period_list)
     # print("Deadline list is", deadline_list)

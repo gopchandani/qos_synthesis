@@ -131,10 +131,21 @@ class PathGenerator:
         for flow in self.flow_specs:
             flowid = flow.id
             simplepaths = self.get_feasible_simple_paths_by_flow_id(flowid)
+            # print("flowid:", flowid, "#of simple paths", len(simplepaths))
+
+            # in case no simple path found
+            if len(simplepaths) == 0:
+                simplepaths = nx.all_shortest_paths(self.toplogy, source=flow.src, target=flow.dst)
+                simplepaths = list(simplepaths)
+                # print("Get shortest paths. Flowid:", flowid, "length:", len(simplepaths))
+                # print("simplepaths", simplepaths)
+
             for p in simplepaths:
                 cpd = CandidatePathData(flowid=flowid, path=p)
                 candidate_paths[flowid].append(cpd)
 
+        # print("Printing Candidate paths:")
+        # self.print_candidate_paths(candidate_paths)
         return candidate_paths
 
     def get_flow_list_by_switch_name(self, candidate_paths, sw_name):
@@ -292,11 +303,15 @@ class PathGenerator:
 
     def terminate_loop(self, candidate_paths):
         """ The function returns whether we can terminate the loop in path generation """
+
         for flowid, candidate_path_data in candidate_paths.items():
             for cpd in candidate_path_data:
                 if not cpd.visited:
                     return False
 
+        # for flowid, candidate_path_data in candidate_paths.items():
+        #     if len(candidate_path_data) > 1:
+        #         return False
         return True
 
     def print_candidate_paths(self, candidate_paths):
@@ -308,7 +323,7 @@ class PathGenerator:
 
             for cpd in cpathdata:
                 path = cpd.path
-                print("Entry", cnt, "## Flowid", flowid,  "Path", path, "II:", cpd.intf_indx)
+                print("Entry", cnt, "## Flowid", flowid,  "Path", path, "II:", cpd.intf_indx, "visited:", cpd.visited)
                 cnt +=1
 
     def update_candiate_paths(self, candidate_paths):
@@ -317,58 +332,67 @@ class PathGenerator:
             set 'path' (in 'Flow' variable) if the path is the only available path for the flow
             Update 'visited' flag"""
 
-        max_ii = 0
+        max_ii = -1 * PARAMS.LARGE_NUMBER
         max_fid = -1
         max_cpd = None
         for flowid, candidate_path_data in candidate_paths.items():
             for cpd in candidate_path_data:
-                path = cpd.path
-                intf_indx = self.get_intf_indx_by_path(candidate_paths=candidate_paths, flowid=flowid, path=path)
-                cpd.intf_indx = intf_indx  # update intf_indx
-                # print("Flow id:", flowid, "II Index:", intf_indx)
-                if intf_indx >= max_ii:
-                    max_ii = intf_indx
-                    max_fid = flowid
-                    max_cpd = cpd
-
-        print("MaxII flowid:", max_fid, "Max II:", max_ii, "MaxII path:", max_cpd.path)
+                if not cpd.visited:
+                    path = cpd.path
+                    intf_indx = self.get_intf_indx_by_path(candidate_paths=candidate_paths, flowid=flowid, path=path)
+                    cpd.intf_indx = intf_indx  # update intf_indx
+                    # print("Flow id:", flowid, "II Index:", intf_indx, "visited", cpd.visited)
+                    if intf_indx > max_ii:
+                        max_ii = intf_indx
+                        max_fid = flowid
+                        max_cpd = cpd
 
         # print("\n Before: ===")
         # self.print_candidate_paths(candidate_paths)
 
-        cpdlist =  candidate_paths[max_fid]
+        if max_fid >= 0:
+            print("MaxII flowid:", max_fid, "Max II:", max_ii, "MaxII path:", max_cpd.path)
 
-        # the flow has more than one candidate path
-        if len(cpdlist) > 1:
-            # remove the path from list
-            candidate_paths[max_fid].remove(max_cpd)
+            cpdlist = candidate_paths[max_fid]
 
-        else:
-            # this is the only path for the flow
-            candidate_paths[max_fid].remove(max_cpd)
-            max_cpd.visited = True
-            flowindx = self.get_flow_idex_by_id(max_fid)
-            self.flow_specs[flowindx].path = copy.deepcopy(max_cpd.path)
-            print("Got last candidate path for Flow#", max_fid, ":: set the path variable and update residual BW.")
+            # the flow has more than one candidate path
+            if len(cpdlist) > 1:
+                # remove the path from list
+                candidate_paths[max_fid].remove(max_cpd)
 
-            # update residual bandwitdh
-            for i in range(len(max_cpd.path) - 1):
-                e0 = max_cpd.path[i]
-                e1 = max_cpd.path[i + 1]
+            elif len(cpdlist) == 1:
+                # this is the only path for the flow
+                # candidate_paths[max_fid].remove(max_cpd)
+                max_cpd.visited = True
+                flowindx = self.get_flow_idex_by_id(max_fid)
+                self.flow_specs[flowindx].path = copy.deepcopy(max_cpd.path)
+                print("Got last candidate path for Flow#", max_fid, ":: set the path variable and update residual BW.")
 
-                # if this is a switch-switch link
-                if 's' in e0 and 's' in e1:
-                    self.toplogy[e0][e1]['link_bw'] -= self.flow_specs[flowindx].bw_req
+                # update residual bandwitdh
+                for i in range(len(max_cpd.path) - 1):
+                    e0 = max_cpd.path[i]
+                    e1 = max_cpd.path[i + 1]
 
-        # print("\n After: ===")
-        # self.print_candidate_paths(candidate_paths)
+                    # if this is a switch-switch link
+                    if 's' in e0 and 's' in e1:
+                        self.toplogy[e0][e1]['link_bw'] -= self.flow_specs[flowindx].bw_req
+
+            # print("\n After: ===")
+            # self.print_candidate_paths(candidate_paths)
 
     def run_path_layout_algo(self):
         """ This is the main algorithm that generates path"""
 
         candidate_paths = self.get_all_candidate_paths()
-        print("\nCandidate path generation complete. # of Candidate paths:",
-              get_candidate_path_dict_size(candidate_paths))
+
+        isRunnable = self.check_all_flow_has_candidate_path(candidate_paths)
+        if not isRunnable:
+            raise Exception("Not all flow gets candidate path -- algorithm will not work. Mark flowset UNSCHEDULABLE.")
+        else:
+            print("\nCandidate path generation complete. All flow has at least one candidate path.")
+
+        all_cand_dict_size = get_candidate_path_dict_size(candidate_paths)
+        print("# of Candidate paths:", all_cand_dict_size)
         print("Running path layout algorithm (pruning path with max interference) ...")
 
         count = 0
@@ -376,9 +400,31 @@ class PathGenerator:
             print("\n==== Iteration #", count, "====")
             count += 1
             self.update_candiate_paths(candidate_paths)
+
+            # print("Printing candidate paths...")
+            # self.print_candidate_paths(candidate_paths)
+
             if self.terminate_loop(candidate_paths):
                 print("Done with path layout!! Terminating loop...")
+                print("Printing candidate paths...")
+                self.print_candidate_paths(candidate_paths)
                 break
+
+            if count > all_cand_dict_size+1:
+                print("!!! Loop running more than #of candidate paths. Terminating... [Flow set is not schedulable] !!!")
+
+    def check_all_flow_has_candidate_path(self, candidate_paths):
+
+        cpath_fid = list(candidate_paths.keys())
+        fid_list = []
+        for f in self.flow_specs:
+            fid_list.append(copy.deepcopy(f.id))
+
+        if set(cpath_fid) == set(fid_list):
+            return True
+
+        return False
+
 
     def is_schedulable(self):
         """Check the schedulability of the flow-set"""
@@ -402,10 +448,10 @@ class PathGenerator:
         # check delay and BW constraints:
         for f in self.flow_specs:
             total_delay = self.get_total_delay_by_path(allocated_paths, f.id, f.path)
-            print("Flowid:", f.id, "Observed Delay:", total_delay, "E2E deadline:", f.e2e_deadline)
+            print("Flowid:", f.id, "Prio:", f.prio, "Observed Delay:", total_delay, "E2E deadline:", f.e2e_deadline)
             if total_delay > f.e2e_deadline:
-                print("\n ####  Delay Constraint violated for Flow:", f.id,
-                      "Deadline:", f.e2e_deadline, "Observed Delay:", total_delay, "####")
+                print("\n ####  Delay Constraint violated for Flowid:", f.id,
+                      " ==> Deadline:", f.e2e_deadline, "Observed Delay:", total_delay, "####")
                 return False
 
             for i in range(len(f.path) - 1):

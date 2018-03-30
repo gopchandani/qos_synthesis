@@ -7,6 +7,7 @@ import path_generator as pg
 import networkx as nx
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
+import random
 from config import *
 
 
@@ -45,6 +46,7 @@ def run_path_layout_experiment(topology, flow_specs):
         print("\nID:", f.id)
         print("Source:", f.src)
         print("Destination:", f.dst)
+        print("Period:", f.period)
         print("E2E Deadline:", f.e2e_deadline)
         print("Packet Size:", f.pckt_size)
         print("Packet Processing time:", f.pkt_processing_time)
@@ -57,15 +59,17 @@ def run_path_layout_experiment(topology, flow_specs):
 
     if isSched:
         print("\n=== FLOW SET IS SCHEDULABLE BY PROPOSED SCHEME ====")
+    else:
+        print("\n===!!! Flow set is NOT SCHEDULABLE by proposed scheme !!!====")
 
 
 if __name__ == "__main__":
 
-    # change those based on your needs
+    # random.seed(3)
 
     n_switch = PARAMS.NUMBER_OF_SWITCHES
     n_host_per_switch = PARAMS.NUM_HOST_PER_SWITCH
-    n_flow_each_prio = 5  # number of flow in each priority level
+    n_flow_each_prio = 6  # number of flow in each priority level
 
     # create the topology (you can also hard code it -- a networkx object, similar to RTSS paper)
     topology = tc.TopologyConfiguration(n_switch=n_switch,
