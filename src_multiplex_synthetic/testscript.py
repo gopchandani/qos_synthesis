@@ -173,7 +173,7 @@ def path_layout_experiment():
 
     # flowid = 2
 
-    path_gen = pg.PathGenerator(toplogy=random_topo, flow_specs=flow_specs)
+    path_gen = pg.PathGenerator(topology=random_topo, flow_specs=flow_specs)
     # spath = path_gen.get_shortest_path_by_flow_id(flowid=flowid)
     #
     # print("\n == Shortest path by flowid:", spath, "=== \n")

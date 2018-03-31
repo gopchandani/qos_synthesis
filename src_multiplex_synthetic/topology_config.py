@@ -16,7 +16,8 @@ class TopologyConfiguration(object):
         self.prop_delay_max = prop_delay_max
 
     def get_random_link_data(self):
-        propdelay = random.randint(self.prop_delay_min, self.prop_delay_max)  # get a random delay
+        # propdelay = random.randint(self.prop_delay_min, self.prop_delay_max)  # get a random delay
+        propdelay = max(self.prop_delay_min, self.prop_delay_max)  # get a given delay
         link_data = {'prop_delay': propdelay, 'link_bw': self.link_bw}
 
         return link_data

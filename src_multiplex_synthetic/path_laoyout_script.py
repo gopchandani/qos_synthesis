@@ -52,15 +52,29 @@ def run_path_layout_experiment(topology, flow_specs):
         print("Packet Processing time:", f.pkt_processing_time)
         print("Prio:", f.prio)
 
-    path_gen = pg.PathGenerator(toplogy=topology, flow_specs=flow_specs)
+    path_gen_prop = pg.PathGenerator(topology=topology, flow_specs=flow_specs)
 
-    path_gen.run_path_layout_algo()
-    isSched = path_gen.is_schedulable()
+    path_gen_prop.run_path_layout_algo()
+
+    print("\n=== Path info for PROPOSED scheme ===")
+    isSched = path_gen_prop.is_schedulable()
 
     if isSched:
         print("\n=== FLOW SET IS SCHEDULABLE BY PROPOSED SCHEME ====")
     else:
-        print("\n===!!! Flow set is NOT SCHEDULABLE by proposed scheme !!!====")
+        print("\n===!!! Flow set is NOT SCHEDULABLE by Proposed scheme !!!====")
+
+    # path_gen_sp = pg.PathGenerator(topology=topology, flow_specs=flow_specs)
+    #
+    # path_gen_sp.run_shortest_path_algo()
+    #
+    # print("\n=== Path info for SHORTEST PATH scheme ===")
+    # isSched = path_gen_sp.is_schedulable()
+    #
+    # if isSched:
+    #     print("\n=== FLOW SET IS SCHEDULABLE BY SHORTEST_PATH SCHEME ====")
+    # else:
+    #     print("\n===!!! Flow set is NOT SCHEDULABLE by Shortest_Path scheme !!!====")
 
 
 if __name__ == "__main__":
@@ -69,7 +83,7 @@ if __name__ == "__main__":
 
     n_switch = PARAMS.NUMBER_OF_SWITCHES
     n_host_per_switch = PARAMS.NUM_HOST_PER_SWITCH
-    n_flow_each_prio = 6  # number of flow in each priority level
+    n_flow_each_prio = 8  # number of flow in each priority level
 
     # create the topology (you can also hard code it -- a networkx object, similar to RTSS paper)
     topology = tc.TopologyConfiguration(n_switch=n_switch,
@@ -79,15 +93,17 @@ if __name__ == "__main__":
                                         prop_delay_max=PARAMS.PROP_DELAY_MAX)
     random_topo = topology.get_random_topology()  # returns a networkx object
 
-
     # specify flow specs
     nw_diameter = tc.get_topo_diameter(random_topo)  # get the diameter
-    flow_specs = fc.get_flow_specs_equal_per_queue(n_prio_level=PARAMS.N_PRIO_LEVEL,
-                                                  n_flow_each_prio=n_flow_each_prio,
-                                                  n_switch=n_switch,
-                                                  n_host_per_switch=n_host_per_switch,
-                                                  nw_diameter=nw_diameter)
+    print("Network diameter:", nw_diameter)
 
+    base_e2e_beta = PARAMS.BASE_E2E_BETA_LIST[4]  # set the deadline based on NW topology (base deadline)
+    flow_specs = fc.get_flow_specs_by_base_deadline_eq_per_queue(n_prio_level=PARAMS.N_PRIO_LEVEL,
+                                                                 n_flow_each_prio=n_flow_each_prio,
+                                                                 n_switch=n_switch,
+                                                                 n_host_per_switch=n_host_per_switch,
+                                                                 nw_diameter=nw_diameter,
+                                                                 base_e2e_beta=base_e2e_beta)
 
     run_path_layout_experiment(random_topo, flow_specs)
 

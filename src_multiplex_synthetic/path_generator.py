@@ -29,9 +29,10 @@ def get_candidate_path_dict_size(candidate_paths):
 class PathGenerator:
     """ Helper class for path generator"""
 
-    def __init__(self, toplogy, flow_specs):
-        self.toplogy = toplogy
-        self.flow_specs = flow_specs
+    def __init__(self, topology, flow_specs, _debug=True):
+        self.topology = copy.deepcopy(topology)  # create own copy
+        self.flow_specs = copy.deepcopy(flow_specs)
+        self.DEBUG = _debug  # if true print output
 
     def get_shortest_path_by_flow_id(self, flowid):
 
@@ -43,7 +44,7 @@ class PathGenerator:
 
         src = flow.src
         dst = flow.dst
-        path = nx.shortest_path(self.toplogy, source=src, target=dst)
+        path = nx.shortest_path(self.topology, source=src, target=dst)
 
         return path
 
@@ -77,15 +78,14 @@ class PathGenerator:
 
         src = flow.src
         dst = flow.dst
-        paths = nx.all_simple_paths(self.toplogy, source=src, target=dst)
+        paths = nx.all_simple_paths(self.topology, source=src, target=dst)
         paths = list(paths)  # convert generator to a list
 
         return paths
 
     def get_all_simple_paths_by_src_dst(self, src, dst):
 
-
-        paths = nx.all_simple_paths(self.toplogy, source=src, target=dst)
+        paths = nx.all_simple_paths(self.topology, source=src, target=dst)
         paths = list(paths)  # convert generator to a list
 
         return paths
@@ -113,7 +113,7 @@ class PathGenerator:
                 e0 = path[i]
                 e1 = path[i+1]
 
-                pdelay = self.toplogy[e0][e1]['prop_delay']
+                pdelay = self.topology[e0][e1]['prop_delay']
                 pdelay_sum += pdelay
 
             if pdelay_sum <= flow.e2e_deadline:
@@ -135,7 +135,7 @@ class PathGenerator:
 
             # in case no simple path found
             if len(simplepaths) == 0:
-                simplepaths = nx.all_shortest_paths(self.toplogy, source=flow.src, target=flow.dst)
+                simplepaths = nx.all_shortest_paths(self.topology, source=flow.src, target=flow.dst)
                 simplepaths = list(simplepaths)
                 # print("Get shortest paths. Flowid:", flowid, "length:", len(simplepaths))
                 # print("simplepaths", simplepaths)
@@ -218,7 +218,7 @@ class PathGenerator:
 
             # if this is a switch-switch link
             if 's' in e0 and 's' in e1:
-                pdelay = self.toplogy[e0][e1]['prop_delay']
+                pdelay = self.topology[e0][e1]['prop_delay']
                 prop_delay += pdelay
 
         return prop_delay
@@ -253,7 +253,7 @@ class PathGenerator:
         return flow_list
 
     def get_residual_bw_by_edge(self, candidate_paths, node0, node1):
-        link_bw = self.toplogy[node0][node1]['link_bw']
+        link_bw = self.topology[node0][node1]['link_bw']
         flow_list = self.get_flow_list_by_edge(candidate_paths, node0, node1)
         sum_bw_req = 0
         for f in flow_list:
@@ -276,8 +276,12 @@ class PathGenerator:
             # if this is a switch-switch link
             if 's' in e0 and 's' in e1:
                 res_bw = self.get_residual_bw_by_edge(candidate_paths, e0, e1)
-                util = tag_flow.pckt_size/res_bw
-                bw_util += util  # sum-up for the path
+
+                if res_bw == 0:  # if no residual BW, set to large number
+                    bw_util = PARAMS.LARGE_NUMBER
+                else:
+                    util = tag_flow.pckt_size/res_bw
+                    bw_util += util  # sum-up for the path
 
         # if negative, set to a large value
         if bw_util < 0:
@@ -351,7 +355,8 @@ class PathGenerator:
         # self.print_candidate_paths(candidate_paths)
 
         if max_fid >= 0:
-            print("MaxII flowid:", max_fid, "Max II:", max_ii, "MaxII path:", max_cpd.path)
+            if self.DEBUG:
+                print("MaxII flowid:", max_fid, "Max II:", max_ii, "MaxII path:", max_cpd.path)
 
             cpdlist = candidate_paths[max_fid]
 
@@ -366,16 +371,18 @@ class PathGenerator:
                 max_cpd.visited = True
                 flowindx = self.get_flow_idex_by_id(max_fid)
                 self.flow_specs[flowindx].path = copy.deepcopy(max_cpd.path)
-                print("Got last candidate path for Flow#", max_fid, ":: set the path variable and update residual BW.")
 
-                # update residual bandwitdh
+                if self.DEBUG:
+                    print("Got last candidate path for Flow#", max_fid, ":: set the path variable and update residual BW.")
+
+                # update residual bandwidth
                 for i in range(len(max_cpd.path) - 1):
                     e0 = max_cpd.path[i]
                     e1 = max_cpd.path[i + 1]
 
                     # if this is a switch-switch link
                     if 's' in e0 and 's' in e1:
-                        self.toplogy[e0][e1]['link_bw'] -= self.flow_specs[flowindx].bw_req
+                        self.topology[e0][e1]['link_bw'] -= self.flow_specs[flowindx].bw_req
 
             # print("\n After: ===")
             # self.print_candidate_paths(candidate_paths)
@@ -393,11 +400,15 @@ class PathGenerator:
 
         all_cand_dict_size = get_candidate_path_dict_size(candidate_paths)
         print("# of Candidate paths:", all_cand_dict_size)
-        print("Running path layout algorithm (pruning path with max interference) ...")
+
+        if self.DEBUG:
+            print("Running path layout algorithm (pruning path with max interference) ...")
 
         count = 0
         while True:
-            print("\n==== Iteration #", count, "====")
+            if self.DEBUG:
+                print("\n==== Iteration #", count, "====")
+
             count += 1
             self.update_candiate_paths(candidate_paths)
 
@@ -406,8 +417,8 @@ class PathGenerator:
 
             if self.terminate_loop(candidate_paths):
                 print("Done with path layout!! Terminating loop...")
-                print("Printing candidate paths...")
-                self.print_candidate_paths(candidate_paths)
+                # print("Printing candidate paths...")
+                # self.print_candidate_paths(candidate_paths)
                 break
 
             if count > all_cand_dict_size+1:
@@ -430,12 +441,14 @@ class PathGenerator:
         """Check the schedulability of the flow-set"""
         for f in self.flow_specs:
             if not f.path:
-                print("== Not all flow get path assigned! The path layout algorithm must run first! ==")
+                print("== Not all flow get path assigned! Flow set is unschedulable! ==")
                 return False
 
+        isSched = True
         # print paths
-        for f in self.flow_specs:
-            print("Flowid:", f.id, "Path:", f.path)
+        if self.DEBUG:
+            for f in self.flow_specs:
+                print("Flowid:", f.id, "Path:", f.path)
 
         # prepare a dict to store all assigned paths
         allocated_paths = defaultdict(list)
@@ -448,11 +461,15 @@ class PathGenerator:
         # check delay and BW constraints:
         for f in self.flow_specs:
             total_delay = self.get_total_delay_by_path(allocated_paths, f.id, f.path)
-            print("Flowid:", f.id, "Prio:", f.prio, "Observed Delay:", total_delay, "E2E deadline:", f.e2e_deadline)
+            if self.DEBUG:
+                print("\nFlowid:", f.id, "Prio:", f.prio, "Observed Delay:", total_delay, "E2E deadline:", f.e2e_deadline)
             if total_delay > f.e2e_deadline:
-                print("\n ####  Delay Constraint violated for Flowid:", f.id,
-                      " ==> Deadline:", f.e2e_deadline, "Observed Delay:", total_delay, "####")
-                return False
+                # print("####  Delay Constraint violated for Flowid:", f.id,
+                #       " ==> Deadline:", f.e2e_deadline, "Observed Delay:", total_delay, "####")
+                if self.DEBUG:
+                    print("==> Delay Constraint violated for Flowid:", f.id)
+                # return False
+                isSched = False
 
             for i in range(len(f.path) - 1):
                 e0 = f.path[i]
@@ -460,9 +477,41 @@ class PathGenerator:
 
                 # if this is a switch-switch link
                 if 's' in e0 and 's' in e1:
-                    if self.toplogy[e0][e1]['link_bw'] < 0:
-                        print("\n ####  BW Constraint violated for Flow:", f.id,
-                              "Link BW:", self.toplogy[e0][e1]['link_bw'], "####")
-                        return False
+                    if self.topology[e0][e1]['link_bw'] < 0:
+                        # print("####  BW Constraint violated for Flow:", f.id,
+                        #       "Link BW:", self.topology[e0][e1]['link_bw'], "####")
+                        if self.DEBUG:
+                            print("==> BW Constraint violated for Flow:", f.id, "Link:", e0, "-", e1)
+                        # return False
+                        isSched = False
 
-        return True
+        # return True
+        return isSched
+
+    def run_shortest_path_algo(self):
+
+        nx.set_edge_attributes(self.topology, 'cost', 1)  # add a new attribute COST
+
+        # print("\n\n printing topo info...")
+        # print(self.topology.edges(data=True))
+
+        for flow in self.flow_specs:
+            try:
+                spath = nx.shortest_path(self.topology, source=flow.src, target=flow.dst, weight="cost")
+                flow.path = copy.deepcopy(spath)  # update path
+            except nx.NetworkXNoPath:
+                print("No SP returned by NetworkX!")
+                flow.path = []
+                continue
+
+            # update residual bandwidth
+            for i in range(len(spath) - 1):
+                e0 = spath[i]
+                e1 = spath[i + 1]
+
+                # if this is a switch-switch link
+                if 's' in e0 and 's' in e1:
+                    self.topology[e0][e1]['link_bw'] -= flow.bw_req
+                    if self.topology[e0][e1]['link_bw'] <= 0:
+                        print("\nSP: Link overloaded! -> Current flow", flow.id)
+                        self.topology[e0][e1]['link_bw'] = PARAMS.LARGE_NUMBER  # set the high cost for that link

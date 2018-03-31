@@ -6,6 +6,9 @@ import helper_functions as hf
 from collections import defaultdict
 import numpy as np
 
+import matplotlib
+matplotlib.use('TkAgg')
+
 import matplotlib.pyplot as plt; plt.rcdefaults()
 import numpy as np
 import matplotlib.pyplot as plt
@@ -52,7 +55,6 @@ def plot_single_node():
 
     mean_delay = defaultdict(lambda: defaultdict(dict))
     std_delay = defaultdict(lambda: defaultdict(dict))
-
 
     for n_flow_each_prio in result.N_FLOW_EACH_PRIO_LIST:
         for tag_flow_prio in result.TAG_FLOW_PRIO_LIST:
