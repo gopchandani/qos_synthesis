@@ -20,3 +20,4 @@ It increases with increasing packet size.
 2) Since processing time in the switch affects the one-way trip time, packet size
 impacts one-way trip time as well.
 
+Trace2: ProcessingTime_DATA_EMSOFT contains traces using (400B, 512B, 1024B, 1408B) at periods of (10ms, 100ms). These are compiled in excel sheets At10ms.xls and At100ms.xls
