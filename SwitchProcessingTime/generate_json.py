@@ -45,7 +45,7 @@ def generate_json():
 
     # Dump the json file
     with open(data_root + 'data.json', 'w') as outfile:
-        json.dump(data_dict, outfile)
+        json.dump(data_dict, outfile, indent=2)
 
 
 generate_json()
