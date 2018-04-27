@@ -22,12 +22,17 @@ def convert_csv_to_process_time_list(period_str, num_switches_str, payload_str):
             field_of_interest = reader.fieldnames[3]
             next(reader)
             for row in reader:
-                processing_time_list.append(float(row[field_of_interest]))
+                val = float(row[field_of_interest])/1000
+
+                if val > 10000:
+                    print "Ignoring anomalous high value:", val, "in:", csv_file_path
+                else:
+                    processing_time_list.append(val)
 
     return processing_time_list
 
 
-def generate_json():
+def get_data_dict():
 
     # Initialize the data dictionary
     data_dict = dict()
@@ -43,9 +48,14 @@ def generate_json():
                 data_dict[period_str][num_switches_str][payload_str] = \
                     convert_csv_to_process_time_list(period_str, num_switches_str, payload_str)
 
-    # Dump the json file
-    with open(data_root + 'data.json', 'w') as outfile:
-        json.dump(data_dict, outfile, indent=2)
+                # Sanity check
+                if period_str == '1000ms' and num_switches_str == '1' and payload_str == '1408B':
+                    pass
 
+    return data_dict
 
-generate_json()
+data_dict = get_data_dict()
+
+# Dump the json file
+with open(data_root + 'data.json', 'w') as outfile:
+    json.dump(data_dict, outfile, indent=2)
