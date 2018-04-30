@@ -8,14 +8,15 @@ from data_summary import get_data_dict, periods_str, num_switches_strs, payloads
 data_dict = get_data_dict()
 
 n_groups = 4
-fig, ax = plt.subplots(figsize=(10, 5))
+fig, ax = plt.subplots(1, 1, figsize=(10, 5), frameon=False)
 index = np.arange(n_groups)
-bar_width = 0.15
+bar_width = 0.20
 
-opacity = 0.4
-error_config = {'ecolor': '0.3'}
+error_config = dict(ecolor='black', alpha=0.7, lw=5, capsize=5, capthick=7)
 
-colors = ['black', 'red', 'green', 'blue']
+hatches = ['', '', '/', '/']
+opacities = [1.0, 0.7, 1.0, 0.7]
+
 i = 0
 
 for period_str in periods_str:
@@ -39,71 +40,40 @@ for period_str in periods_str:
         print stdevs
         label_str = "Period:" + period_str + ", Payload:" + payload_str
 
-        rects = ax.bar(index + i * bar_width, means, bar_width,
-                        alpha=opacity, color=colors[i],
-                        yerr=stdevs, error_kw=error_config,
-                        label=label_str)
+        rects = ax.bar(index + i * bar_width,
+                       means,
+                       bar_width,
+                       alpha=opacities[i],
+                       color='grey',
+                       hatch=hatches[i],
+                       yerr=stdevs,
+                       error_kw=error_config,
+                       label=label_str)
+
         i += 1
 
 
-ax.set_xlabel('Number of Switches', fontsize=16)
-ax.set_ylabel('End-to-End Delay (ns)', fontsize=16)
-ax.set_xticks(index + bar_width / 2)
-ax.set_xticklabels(('1', '2', '3', '4'), fontsize=14)
-ax.legend(ncol=1, fontsize=12, bbox_to_anchor=(1, 1))
+# Hide the right and top spines
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
+
+# Adjust spacing between labels and axes
+ax.tick_params(axis='x', which='major', pad=15)
+ax.tick_params(axis='y', which='major', pad=15)
+
+ax.set_xlabel('Number of Switches', fontsize=40, labelpad=25)
+ax.set_ylabel('End-to-End Delay (ns)', fontsize=40, labelpad=25)
+ax.set_xticks(index + bar_width * 4 / 2)
+ax.set_xticklabels(('1', '2', '3', '4'), fontsize=35)
+ax.set_yticklabels(('100', '200', '300', '400', '500', '600', '700'), fontsize=35)
+
+ax.legend(ncol=2,
+          fontsize=30,
+          loc='upper center',
+          bbox_to_anchor=[0.5, -0.4],
+          shadow=True,
+          fancybox=True)
 
 fig.tight_layout()
+plt.subplots_adjust(left=0.1, right=0.99, top=0.95, bottom=0.38)
 plt.show()
-
-exit(0)
-#
-# n_groups = 4
-#
-# means_1 = (20, 35, 30, 35)
-# std_1 = (2, 3, 4, 1)
-#
-# means_2 = (25, 32, 34, 25)
-# std_2 = (3, 5, 2, 3)
-#
-# means_3 = (20, 35, 30, 35)
-# std_3 = (2, 3, 4, 1)
-#
-# means_4 = (25, 32, 34, 25)
-# std_4 = (3, 5, 2, 3)
-#
-# fig, ax = plt.subplots()
-#
-# index = np.arange(n_groups)
-# bar_width = 0.2
-#
-# opacity = 0.4
-# error_config = {'ecolor': '0.3'}
-#
-# rects1 = ax.bar(index, means_1, bar_width,
-#                 alpha=opacity, color='black',
-#                 yerr=std_1, error_kw=error_config,
-#                 label='Laptops,  Period: 100ms, Payload: 256B')
-#
-# rects2 = ax.bar(index + 1 * bar_width, means_2, bar_width,
-#                 alpha=opacity, color='r',
-#                 yerr=std_2, error_kw=error_config,
-#                 label='Laptops,  Period: 100ms, Payload: 1408B')
-#
-# rects3 = ax.bar(index + 2 * bar_width, means_3, bar_width,
-#                 alpha=opacity, color='g',
-#                 yerr=std_3, error_kw=error_config,
-#                 label='Raspberry Pis,  Period: 1000ms, Payload: 256B')
-#
-# rects4 = ax.bar(index + 3 * bar_width, means_4, bar_width,
-#                 alpha=opacity, color='blue',
-#                 yerr=std_4, error_kw=error_config,
-#                 label='Raspberry Pis,  Period: 1000ms, Payload: 1408B')
-#
-# ax.set_xlabel('Number of Switches', fontsize=16)
-# ax.set_ylabel('End-to-End Delay (ns)', fontsize=16)
-# ax.set_xticks(index + bar_width / 2)
-# ax.set_xticklabels(('1', '2', '3', '4'), fontsize=14)
-# ax.legend(loc=0, ncol=2, fontsize=10)
-#
-# fig.tight_layout()
-# plt.show()
