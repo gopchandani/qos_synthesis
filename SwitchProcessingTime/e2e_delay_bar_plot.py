@@ -8,9 +8,9 @@ from data_summary import get_data_dict, periods_str, num_switches_strs, payloads
 data_dict = get_data_dict()
 
 n_groups = 4
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(10, 5))
 index = np.arange(n_groups)
-bar_width = 0.2
+bar_width = 0.15
 
 opacity = 0.4
 error_config = {'ecolor': '0.3'}
@@ -37,11 +37,12 @@ for period_str in periods_str:
 
         print means
         print stdevs
+        label_str = "Period:" + period_str + ", Payload:" + payload_str
 
         rects = ax.bar(index + i * bar_width, means, bar_width,
                         alpha=opacity, color=colors[i],
                         yerr=stdevs, error_kw=error_config,
-                        label='Laptops,  Period: 100ms, Payload: 256B')
+                        label=label_str)
         i += 1
 
 
@@ -49,7 +50,7 @@ ax.set_xlabel('Number of Switches', fontsize=16)
 ax.set_ylabel('End-to-End Delay (ns)', fontsize=16)
 ax.set_xticks(index + bar_width / 2)
 ax.set_xticklabels(('1', '2', '3', '4'), fontsize=14)
-ax.legend(loc=0, ncol=2, fontsize=10)
+ax.legend(ncol=1, fontsize=12, bbox_to_anchor=(1, 1))
 
 fig.tight_layout()
 plt.show()
