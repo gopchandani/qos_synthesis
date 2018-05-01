@@ -30,11 +30,11 @@ for period_str in periods_str:
         stdevs = []
 
         for num_switches_str in num_switches_strs:
-            mean = np.mean(data_dict[period_str][num_switches_str][payload_str])
-            stdev = np.std(data_dict[period_str][num_switches_str][payload_str])
-
+            mean = data_dict[period_str][num_switches_str][payload_str]["mean"]
+            stdev = data_dict[period_str][num_switches_str][payload_str]["stdev"]
             means.append(mean)
             stdevs.append(stdev)
+
 
         print means
         print stdevs

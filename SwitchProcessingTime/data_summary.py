@@ -1,6 +1,8 @@
 import csv
 import json
 import glob
+import numpy as np
+
 
 
 periods_str = ['1000ms', '100ms']
@@ -40,13 +42,25 @@ def get_data_dict():
         data_dict[period_str] = dict()
         for num_switches_str in num_switches_strs:
             data_dict[period_str][num_switches_str] = dict()
+            for payload_str in payloads_strs:
+                data_dict[period_str][num_switches_str][payload_str] = dict()
 
     # Populate the dictionary using CSV file
     for period_str in periods_str:
         for num_switches_str in num_switches_strs:
             for payload_str in payloads_strs:
-                data_dict[period_str][num_switches_str][payload_str] = \
-                    convert_csv_to_process_time_list(period_str, num_switches_str, payload_str)
+
+                raw = convert_csv_to_process_time_list(period_str, num_switches_str, payload_str)
+
+                data_dict[period_str][num_switches_str][payload_str]["raw"] = raw
+
+                data_dict[period_str][num_switches_str][payload_str]["mean"] = np.mean(raw)
+                data_dict[period_str][num_switches_str][payload_str]["stdev"] = np.std(raw)
+                data_dict[period_str][num_switches_str][payload_str]["95th_percentile"] = np.percentile(raw, 95)
+                data_dict[period_str][num_switches_str][payload_str]["99th_percentile"] = np.percentile(raw, 99)
+                data_dict[period_str][num_switches_str][payload_str]["max"] = np.min(raw)
+                data_dict[period_str][num_switches_str][payload_str]["max"] = np.max(raw)
+
 
                 # Sanity check
                 if period_str == '1000ms' and num_switches_str == '1' and payload_str == '1408B':
