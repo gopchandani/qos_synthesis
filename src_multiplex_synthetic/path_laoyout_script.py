@@ -5,11 +5,16 @@ import topology_config as tc
 import flow_config as fc
 import path_generator as pg
 import networkx as nx
-import matplotlib.pyplot as plt
-plt.switch_backend('agg')
+
 import random
 from config import *
 
+
+import matplotlib
+matplotlib.use('TkAgg')
+
+import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 
 """
 README: How can I hard code flows:
@@ -83,7 +88,7 @@ if __name__ == "__main__":
 
     n_switch = PARAMS.NUMBER_OF_SWITCHES
     n_host_per_switch = PARAMS.NUM_HOST_PER_SWITCH
-    n_flow_each_prio = 8  # number of flow in each priority level
+    n_flow_each_prio = 3  # number of flow in each priority level
 
     # create the topology (you can also hard code it -- a networkx object, similar to RTSS paper)
     topology = tc.TopologyConfiguration(n_switch=n_switch,
@@ -97,7 +102,7 @@ if __name__ == "__main__":
     nw_diameter = tc.get_topo_diameter(random_topo)  # get the diameter
     print("Network diameter:", nw_diameter)
 
-    base_e2e_beta = PARAMS.BASE_E2E_BETA_LIST[4]  # set the deadline based on NW topology (base deadline)
+    base_e2e_beta = PARAMS.BASE_E2E_BETA_LIST[6]  # set the deadline based on NW topology (base deadline)
     flow_specs = fc.get_flow_specs_by_base_deadline_eq_per_queue(n_prio_level=PARAMS.N_PRIO_LEVEL,
                                                                  n_flow_each_prio=n_flow_each_prio,
                                                                  n_switch=n_switch,

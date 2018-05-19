@@ -140,6 +140,7 @@ def single_node_exp_test():
 
     eh.run_single_node_experiment()
 
+
 def path_layout_experiment():
     topology = tc.TopologyConfiguration(n_switch=PARAMS.NUMBER_OF_SWITCHES,
                                         n_host_per_switch=PARAMS.NUM_HOST_PER_SWITCH,
@@ -295,6 +296,18 @@ def path_layout_experiment():
     # print the topology
     print("\n\n printing topo info...")
     print(random_topo.edges(data=True))
+
+    print("=== Printing flow specs: ===")
+    for f in flow_specs:
+        print("\nID:", f.id)
+        print("Source:", f.src)
+        print("Destination:", f.dst)
+        print("E2E Deadline:", f.e2e_deadline)
+        print("Packet Size:", f.pckt_size)
+        print("Packet Processing time:", f.pkt_processing_time)
+        print("Prio:", f.prio)
+        print("Path:", f.path)
+
 
 
 

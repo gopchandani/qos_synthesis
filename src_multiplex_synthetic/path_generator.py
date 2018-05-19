@@ -280,7 +280,8 @@ class PathGenerator:
                 if res_bw == 0:  # if no residual BW, set to large number
                     bw_util = PARAMS.LARGE_NUMBER
                 else:
-                    util = tag_flow.pckt_size/res_bw
+                    # util = tag_flow.pckt_size/res_bw
+                    util = tag_flow.bw_req / res_bw
                     bw_util += util  # sum-up for the path
 
         # if negative, set to a large value
@@ -301,7 +302,8 @@ class PathGenerator:
 
         bw_util = self.get_bw_utilization_by_path(candidate_paths, flowid, path)
 
-        intf_indx = tag_flow.e2e_deadline - prop_delay + queuing_delay + bw_util
+        # intf_indx = tag_flow.e2e_deadline - prop_delay + queuing_delay + bw_util
+        intf_indx = total_delay - tag_flow.e2e_deadline + bw_util
 
         return intf_indx
 

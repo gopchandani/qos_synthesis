@@ -54,8 +54,8 @@ class PARAMS(Const):
 
     # propagation delay ranges (in millisecond)
     # ((1024*8)/(10 * 1000 * 1000)) * 1000 = 0.8192 millisecond
-    PROP_DELAY_MIN = 0.8192
-    PROP_DELAY_MAX = 0.8192
+    PROP_DELAY_MIN = 0.8192 + 0.000505  # 505 nanosecond propagation delay, 0.8192 transmission delay
+    PROP_DELAY_MAX = 0.8192 + 0.000505
 
     LINK_BW = 10 * 1000  # link capacity in kbps
 
@@ -64,30 +64,27 @@ class PARAMS(Const):
     PERIOD_MAX = 1000
 
     DELAY_DELTA = 10  # how much e2e deadline we vary from flow to flow (function of base_e2e_delta and NW diameter)
-    BASE_E2E_BETA_LIST = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4]  # see RTSS paper, how we set E2E deadline based on Topology (diamaeter of NW)
+    BASE_E2E_BETA_LIST = [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0]  # see RTSS paper, how we set E2E deadline based on Topology (diamaeter of NW)
 
     N_PRIO_LEVEL = 3  # number of priority levels
 
     # this two variable must be in same length
-    # PKT_SIZE_LIST = [400*8, 512*8, 1024*8]  # size of the packets (in bits)
+    PKT_SIZE_LIST = [256 * 8, 1408 * 8]  # size of the packets (in bits)
+    PKT_PROCESSING_TIME_LIST = [8.548/1000, 22.54/1000]  # corresponding processing time (in millisecond)
 
-    PKT_SIZE_LIST = [400 * 8, 512 * 8, 1024 * 8]  # size of the packets (in bits)
-    # PKT_SIZE_LIST = [10 * 1000 * 8, 25 * 1000 * 8, 50 * 1000 * 8]  # size of the packets (in bits)
-    PKT_PROCESSING_TIME_LIST = [23.835/1000, 47.17/1000, 87.51/1000]  # corresponding processing time (in millisecond)
-
-    MAX_LOOP_COUNT = 1000  # just an upperbound of loop iteration
+    MAX_LOOP_COUNT = 10000  # just an upperbound of loop iteration
 
     LARGE_NUMBER = 100000  # a large number
     # PARAMS for single node experiment
 
-    N_FLOW_EACH_PRIO_LIST = [2, 5, 10, 20, 50]
-    N_FLOW_EACH_PRIO_LIST_SCHED = [1, 2, 3, 4, 5]  # number of each flow in each queue for schedualbility experiment
+    N_FLOW_EACH_PRIO_LIST = [1, 3, 5, 7, 9, 11]  # for single node experiment
+    N_FLOW_EACH_PRIO_LIST_SCHED = [1, 3, 5, 7, 9, 11]  # number of each flow in each queue for schedualbility experiment
 
     TAG_FLOW_PRIO_LIST = [0, 1, 2]  # HI, MED, LO
 
-    N_SINGLE_NODE_EXP_SAMPLE_RUN = 100  # number of sample runs for single node experiment
+    N_SINGLE_NODE_EXP_SAMPLE_RUN = 10000  # number of sample runs for single node experiment
 
-    SCHED_EXP_EACH_TRIAL_COUNT = 5  # number of trials for schedulability experiment
+    SCHED_EXP_EACH_TRIAL_COUNT = 50  # number of trials for schedulability experiment
 
     EXP_SINGLE_NODE_FILENAME = 'exp_single_node.pickle.gzip'
     EXP_SCHED_FILENAME = 'exp_sched.pickle.gzip'

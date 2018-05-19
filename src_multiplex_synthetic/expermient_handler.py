@@ -109,8 +109,8 @@ def run_single_node_experiment():
             for i in range(len(delay_list)):
                 all_delay_dict[n_flow_each_prio][PARAMS.TAG_FLOW_PRIO_LIST[i]][count] = delay_list[i]
 
-    print("Print dict...")
-    print(all_delay_dict)
+    # print("Print dict...")
+    # print(all_delay_dict)
 
     result = oc.ExportSingleNodeDelay(N_FLOW_EACH_PRIO_LIST=PARAMS.N_FLOW_EACH_PRIO_LIST,
                                       TAG_FLOW_PRIO_LIST=PARAMS.TAG_FLOW_PRIO_LIST,
@@ -202,3 +202,21 @@ def run_schedulablity_experiment(n_flow_each_prio_list, base_e2e_beta_list):
     # saving results to pickle file
     print("\n----> Saving schedulability result to file...")
     hf.write_object_to_file(result, PARAMS.EXP_SCHED_FILENAME)
+
+
+def get_delay_by_by_flow_spec_with_path(topology, flow_specs):
+    # this is for interference validation experiments
+
+    path_gen = pg.PathGenerator(topology=topology, flow_specs=flow_specs)
+    # prepare a dict to store all assigned paths
+    allocated_paths = defaultdict(list)
+    delay_list = []
+    for f in flow_specs:
+        flowid = f.id
+        path = f.path
+        cpd = pg.CandidatePathData(flowid=flowid, path=path)
+        allocated_paths[flowid].append(cpd)
+        total_delay = path_gen.get_total_delay_by_path(allocated_paths, f.id, f.path)
+        delay_list.append(total_delay)
+
+    return delay_list
