@@ -64,7 +64,7 @@ ax.set_xlabel('Number of Switches', fontsize=40, labelpad=25)
 ax.set_ylabel('End-to-End Delay (us)', fontsize=40, labelpad=25)
 ax.set_xticks(index + bar_width * 4 / 2)
 ax.set_xticklabels(('1', '2', '3', '4'), fontsize=35)
-ax.set_yticklabels(('100', '200', '300', '400', '500', '600', '700'), fontsize=35)
+ax.set_yticklabels(('0', '100', '200', '300', '400', '500', '600'), fontsize=35)
 
 ax.legend(ncol=2,
           fontsize=35,

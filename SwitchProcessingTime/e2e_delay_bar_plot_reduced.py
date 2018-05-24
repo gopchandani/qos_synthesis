@@ -6,9 +6,9 @@ from data_summary import get_data_dict, periods_str, num_switches_strs, payloads
 data_dict = get_data_dict()
 
 n_groups = 4
-fig, ax = plt.subplots(1, 1, figsize=(10, 5), frameon=False)
+fig, ax = plt.subplots(1, 1, figsize=(8, 5), frameon=False)
 index = np.arange(n_groups)
-bar_width = 0.20
+bar_width = 0.45
 
 error_config = dict(ecolor='black', alpha=0.7, lw=5, capsize=5, capthick=7)
 
@@ -18,6 +18,9 @@ opacities = [0.7, 1.0, 0.7, 1.0]
 i = 0
 
 for period_str in periods_str:
+
+    if period_str == '1000ms':
+        continue
 
     for payload_str in payloads_strs:
 
@@ -34,9 +37,6 @@ for period_str in periods_str:
             means.append(mean)
             stdevs.append(stdev)
 
-
-        print means
-        print stdevs
         label_str = "Period:" + period_str + ", Payload:" + payload_str
 
         rects = ax.bar(index + i * bar_width,
@@ -64,7 +64,7 @@ ax.set_xlabel('Number of Switches', fontsize=40, labelpad=25)
 ax.set_ylabel('End-to-End Delay (us)', fontsize=40, labelpad=25)
 ax.set_xticks(index + bar_width * 4 / 2)
 ax.set_xticklabels(('1', '2', '3', '4'), fontsize=35)
-ax.set_yticklabels(('100', '200', '300', '400', '500', '600', '700'), fontsize=35)
+ax.set_yticklabels(('0', '100', '200', '300', '400', '500', '600'), fontsize=35)
 
 ax.legend(ncol=2,
           fontsize=35,
@@ -74,5 +74,5 @@ ax.legend(ncol=2,
           fancybox=True)
 
 fig.tight_layout()
-plt.subplots_adjust(left=0.1, right=0.99, top=0.95, bottom=0.45)
+plt.subplots_adjust(left=0.15, right=0.85, top=0.95, bottom=0.45)
 plt.show()
