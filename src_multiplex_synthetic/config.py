@@ -5,6 +5,7 @@
     Found in: https://stackoverflow.com/questions/2682745/how-to-create-a-constant-in-python
 """
 
+
 class MetaConst(type):
     def __getattr__(cls, key):
         return cls[key]
