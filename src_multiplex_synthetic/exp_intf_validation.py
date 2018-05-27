@@ -57,14 +57,14 @@ def get_three_node_topo(_debug=False):
     return nw_graph
 
 
-def create_flow_specs(_debug=False):
+def create_flow_specs(packet_payload_in_bytes, _debug=False):
     flow_specs = []  # a set of flows with parameters
 
     # change accordingly for each flow -- put some value just for demonstration
     period = 1000  # (in millisecond)
     e2e_deadline = 3 * period
-    pckt_size = 256 * 8  # size of the packets (in bits)
-    pkt_processing_time = 8.548 / 1000  # corresponding processing time (in millisecond)
+    pckt_size = packet_payload_in_bytes * 8  # size of the packets (in bits)
+    pkt_processing_time = per_sw_processing_time_dict[packet_payload_in_bytes] / 1000  # corresponding processing time (in millisecond)
 
     # lower value means higher priority, also create high priority flows first (e.g., lower id)
     f_hp = fc.Flow(id=0,
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     print("Hello")
 
     topology = get_three_node_topo()
-    flow_specs = create_flow_specs(_debug=True)
+    flow_specs = create_flow_specs(1024, _debug=True)
     delay_list = eh.get_delay_by_by_flow_spec_with_path(topology=topology, flow_specs=flow_specs)
 
     # print e2e delay
