@@ -7,6 +7,7 @@ import expermient_handler as eh
 
 
 per_sw_processing_time_dict = {256: 8.548,
+                               1024: 11.606,
                                1408: 22.75}
 
 
