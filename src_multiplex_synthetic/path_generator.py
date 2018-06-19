@@ -517,3 +517,76 @@ class PathGenerator:
                     if self.topology[e0][e1]['link_bw'] <= 0:
                         print("\nSP: Link overloaded! -> Current flow", flow.id)
                         self.topology[e0][e1]['link_bw'] = PARAMS.LARGE_NUMBER  # set the high cost for that link
+
+
+def is_schedulable_by_flow_specs(topology, flow_specs, DEBUG=True):
+    """Check the schedulability of the flow-set"""
+
+    tcopy = copy.deepcopy(topology)
+
+    # if DEBUG:
+    #     for e in tcopy.edges():
+    #         e0 = e[0]
+    #         e1 = e[1]
+    #         print("Available BW", tcopy[e0][e1]['link_bw'], "Link:", e0, "-", e1)
+
+
+    for f in flow_specs:
+        if not f.path:
+            print("== Not all flow get path assigned! Flow set is unschedulable! ==")
+            return False
+
+    isSched = True
+    # print paths
+    if DEBUG:
+        for f in flow_specs:
+            print("Flowid:", f.id, "Path:", f.path)
+
+    pg = PathGenerator(topology=topology, flow_specs=flow_specs, _debug=True)
+    # prepare a dict to store all assigned paths
+    allocated_paths = defaultdict(list)
+    for f in flow_specs:
+        flowid = f.id
+        path = f.path
+        cpd = CandidatePathData(flowid=flowid, path=path)
+        allocated_paths[flowid].append(cpd)
+
+    # check delay and BW constraints:
+    for f in flow_specs:
+        total_delay = pg.get_total_delay_by_path(allocated_paths, f.id, f.path)
+        if DEBUG:
+            print("\nFlowid:", f.id, "Prio:", f.prio, "Observed Delay:", total_delay, "E2E deadline:", f.e2e_deadline)
+        if total_delay > f.e2e_deadline:
+            # print("####  Delay Constraint violated for Flowid:", f.id,
+            #       " ==> Deadline:", f.e2e_deadline, "Observed Delay:", total_delay, "####")
+            if DEBUG:
+                print("==> Delay Constraint violated for Flowid:", f.id)
+            # return False
+            isSched = False
+
+        for i in range(len(f.path) - 1):
+            e0 = f.path[i]
+            e1 = f.path[i + 1]
+
+            # if this is a switch-switch link
+            if 's' in e0 and 's' in e1:
+                # if topology[e0][e1]['link_bw'] < 0:
+                #     # print("####  BW Constraint violated for Flow:", f.id,
+                #     #       "Link BW:", self.topology[e0][e1]['link_bw'], "####")
+                #     if DEBUG:
+                #         print("==> BW Constraint violated for Flow:", f.id, "Link:", e0, "-", e1)
+                #     # return False
+                #     isSched = False
+                tcopy[e0][e1]['link_bw'] -= f.bw_req
+                print("Link:", e0, "-", e1, "Residual BW", tcopy[e0][e1]['link_bw'])
+
+                if tcopy[e0][e1]['link_bw'] < 0:
+                    # print("####  BW Constraint violated for Flow:", f.id,
+                    #       "Link BW:", self.topology[e0][e1]['link_bw'], "####")
+                    if DEBUG:
+                        print("==> BW Constraint violated for Flow:", f.id, "Link:", e0, "-", e1)
+                    # return False
+                    isSched = False
+
+    # return True
+    return isSched

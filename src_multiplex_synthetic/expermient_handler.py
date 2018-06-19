@@ -135,7 +135,7 @@ def run_path_layout_experiment(topology, flow_specs):
     #     print("Packet Processing time:", f.pkt_processing_time)
     #     print("Prio:", f.prio)
 
-    path_gen_prop = pg.PathGenerator(topology=topology, flow_specs=flow_specs, _debug=False)
+    path_gen_prop = pg.PathGenerator(topology=topology, flow_specs=flow_specs, _debug=True)
 
     path_gen_prop.run_path_layout_algo()
 

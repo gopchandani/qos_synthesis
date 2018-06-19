@@ -136,6 +136,7 @@ def plot_3d_surface(in_filename, out_filename, nw_diameter, fig_num):
     SCHED_EXP_EACH_TRIAL_COUNT = result.SCHED_EXP_EACH_TRIAL_COUNT
     sched_count_dict = result.sched_count_dict
 
+    BASE_E2E_BETA_LIST.pop()
     BASE_E2E_BETA_LIST.reverse()  # for better view
 
     N_FLOW = [N_FLOW_EACH_PRIO_LIST[i] * N_PRIO_LEVEL for i in range(len(N_FLOW_EACH_PRIO_LIST))]
@@ -182,12 +183,30 @@ def plot_3d_surface(in_filename, out_filename, nw_diameter, fig_num):
 
     ax.view_init(azim=-17, elev=25)
     ax.set_xticklabels(row_names)
-    ax.set_yticklabels(column_names)
+    #ax.set_yticklabels(column_names)
+    #ax.set_yticklabels(labels=column_names)
+
+
+    #print("colname:", column_names)
+    #print("base e2e beta:", BASE_E2E_BETA_LIST)
+    #ylabels = ax.get_yticklabels(locs=BASE_E2E_BETA_LIST, labels=column_names)
+
+    #labels = [yl.get_text() for yl in ylabels]
+    #print("labels", labels)
 
     # this two comment out if we don't want to show diameter
     # plt.yticks(rotation=20)
     # ax.yaxis.labelpad = 10
 
+    #print(ax.get_yticklabels())
+    ax.set_yticklabels(ax.get_yticks())  # must do this
+    labels = ax.get_yticklabels()
+
+    colnamelist  = [int(float(label.get_text())*1000*nw_diameter) for label in labels]
+    ax.set_yticklabels(labels=colnamelist)
+
+
+    print(colnamelist)
 
     ax.tick_params(direction='out', pad=1)
 

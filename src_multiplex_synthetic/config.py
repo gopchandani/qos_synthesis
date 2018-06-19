@@ -52,10 +52,10 @@ class PARAMS(Const):
     NUMBER_OF_SWITCHES = 5
     NUM_HOST_PER_SWITCH = 2
 
-    # propagation delay ranges (in millisecond)
-    # ((1024*8)/(10 * 1000 * 1000)) * 1000 = 0.8192 millisecond
-    PROP_DELAY_MIN = 0.8192 + 0.000505  # 505 nanosecond propagation delay, 0.8192 transmission delay
-    PROP_DELAY_MAX = 0.8192 + 0.000505
+    # propagation + transmission delay ranges (in millisecond)
+    # ((1408*8)/(10 * 1000 * 1000)) * 1000 = 1.1264 millisecond
+    PROP_DELAY_MIN = 1.1264 + 0.000505  # 505 nanosecond propagation delay, 0.8192 transmission delay
+    PROP_DELAY_MAX = 1.1264 + 0.000505
 
     LINK_BW = 10 * 1000  # link capacity in kbps
 
@@ -64,7 +64,8 @@ class PARAMS(Const):
     PERIOD_MAX = 1000
 
     DELAY_DELTA = 10  # how much e2e deadline we vary from flow to flow (function of base_e2e_delta and NW diameter)
-    BASE_E2E_BETA_LIST = [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0]  # see RTSS paper, how we set E2E deadline based on Topology (diamaeter of NW)
+    # BASE_E2E_BETA_LIST = [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0]  # see RTSS paper, how we set E2E deadline based on Topology (diamaeter of NW)
+    BASE_E2E_BETA_LIST = [0.2, 0.4, 0.6, 0.8, 1.0, 2.0]  # see RTSS paper, how we set E2E deadline based on Topology (diamaeter of NW)
 
     N_PRIO_LEVEL = 3  # number of priority levels
 
