@@ -1,0 +1,3 @@
+#!/bin/bash
+#ovs-vsctl add-port <bridge-name> ge-1/1/<port-no> -- set Interface ge-1/1/<port-no> type=pica8
+ovs-vsctl add-port $2 ge-1/1/$1 -- set Interface ge-1/1/$1 type=pica8

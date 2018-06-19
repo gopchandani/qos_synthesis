@@ -1,0 +1,3 @@
+#!/bin/bash
+#ovs-ofctl dump-flows <bridge-name>
+ovs-ofctl dump-flows $1

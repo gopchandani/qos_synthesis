@@ -1,0 +1,5 @@
+#!/bin/bash
+#Delete existing flows
+ovs-ofctl del-flows $1
+
+

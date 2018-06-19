@@ -1,0 +1,2 @@
+ovs-ofctl dump-ports-desc edge_br0
+ovs-ofctl dump-ports-desc edge_br1

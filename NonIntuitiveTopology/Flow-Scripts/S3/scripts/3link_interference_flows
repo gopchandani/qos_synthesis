@@ -1,0 +1,8 @@
+#High Priority
+ovs-ofctl add-flow br0 in_port=2,dl_dst=b8:27:eb:8b:02:7e,actions=set_queue:7,output:1
+#Low Priority
+ovs-ofctl add-flow br0 in_port=2,dl_dst=b8:27:eb:6b:f7:38,actions=set_queue:0,output:1
+#Background Traffic
+ovs-ofctl add-flow br0 in_port=2,dl_dst=28:f1:0e:1d:10:a4,actions=set_queue:4,output:1
+#Return flows are straightforward
+ovs-ofctl add-flow br0 in_port=1,actions=output:2

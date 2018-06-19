@@ -1,0 +1,8 @@
+ovs-vsctl list qos
+ovs-vsctl clear port $1 qos
+ovs-vsctl -- destroy qos $2
+ovs-vsctl -- destroy queue $3
+ovs-vsctl -- destroy queue $4
+ovs-vsctl -- destroy queue $5
+#ovs-vsctl remove qos <qos id> queues <queue-number> -- destroy queue <queue-id>
+

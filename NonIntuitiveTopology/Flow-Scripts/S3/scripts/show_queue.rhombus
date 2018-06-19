@@ -1,0 +1,3 @@
+ovs-vsctl list qos
+ovs-appctl qos/show ge-1/1/8
+ovs-appctl qos/show ge-1/1/2

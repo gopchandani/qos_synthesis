@@ -1,0 +1,17 @@
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.30,nw_dst=192.168.1.20,udp,tp_dst=10002,actions=set_queue:7,output:2
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.10,nw_dst=192.168.1.40,udp,tp_dst=10004,actions=set_queue:7,output:8
+
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.30,nw_dst=192.168.1.20,actions=output:2
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.10,nw_dst=192.168.1.40,actions=output:8
+
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.20,nw_dst=192.168.1.30,actions=output:1
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.40,nw_dst=192.168.1.10,actions=output:2
+
+# Background
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.70,nw_dst=192.168.1.80,actions=set_queue:0,output:8
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.80,nw_dst=192.168.1.70,actions=set_queue:0,output:2
+
+# Extra for timing
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.10,nw_dst=192.168.1.30,actions=output:1
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.30,nw_dst=192.168.1.10,actions=output:2
+

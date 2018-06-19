@@ -1,0 +1,6 @@
+#Flows from Pi(30)
+#30->10, 30->20, 30->40
+ovs-ofctl add-flow br0 in_port=1,actions=output:2
+#Return flows
+ovs-ofctl add-flow br0 in_port=2,actions=output:1
+

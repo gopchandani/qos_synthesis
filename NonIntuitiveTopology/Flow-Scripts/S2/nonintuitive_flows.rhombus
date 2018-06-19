@@ -1,0 +1,34 @@
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.10,nw_dst=192.168.1.20,udp,tp_dst=10001,actions=output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.30,nw_dst=192.168.1.20,udp,tp_dst=10002,actions=output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.10,nw_dst=192.168.1.40,udp,tp_dst=10003,actions=set_queue:7,output:8
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.10,nw_dst=192.168.1.40,udp,tp_dst=10004,actions=set_queue:7,output:8
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.10,nw_dst=192.168.1.40,udp,tp_dst=10005,actions=set_queue:7,output:8
+
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.10,nw_dst=192.168.1.20,actions=output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.30,nw_dst=192.168.1.20,actions=output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.10,nw_dst=192.168.1.40,actions=output:8
+
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.20,nw_dst=192.168.1.10,actions=output:4
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.20,nw_dst=192.168.1.30,actions=output:4
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.40,nw_dst=192.168.1.10,actions=output:4
+
+# Background
+#ovs-ofctl add-flow ashish ip,nw_src=192.168.1.50,nw_dst=192.168.1.60,udp,tp_dst=10005,actions=set_queue:0,output:8
+
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.50,nw_dst=192.168.1.60,actions=set_queue:0,output:8
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.60,nw_dst=192.168.1.50,actions=set_queue:0,output:4
+
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.70,nw_dst=192.168.1.80,actions=output:14
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.80,nw_dst=192.168.1.70,actions=set_queue:0,output:12
+
+
+# Extra for timing
+#ovs-ofctl add-flow ashish ip,nw_src=192.168.1.50,nw_dst=192.168.1.60,actions=output:8
+#ovs-ofctl add-flow ashish ip,nw_src=192.168.1.60,nw_dst=192.168.1.50,actions=output:4
+
+#ovs-ofctl add-flow ashish ip,nw_src=192.168.1.70,nw_dst=192.168.2.70,actions=output:8
+#ovs-ofctl add-flow ashish ip,nw_src=192.168.2.70,nw_dst=192.168.1.70,actions=output:4
+
+#ovs-ofctl add-flow ashish ip,nw_src=192.168.1.70,nw_dst=192.168.1.80,actions=output:8
+#ovs-ofctl add-flow ashish ip,nw_src=192.168.1.80,nw_dst=192.168.1.70,actions=output:4
+

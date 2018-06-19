@@ -1,0 +1,1 @@
+cat /ovs/var/log/openvswitch/ovs-vswitchd.log | tail -n 20
