@@ -14,7 +14,8 @@ ovs-ofctl add-flow br0 ip,nw_src=192.168.1.30,nw_dst=192.168.1.20,udp,tp_dst=100
 ovs-ofctl add-flow br0 ip,nw_src=192.168.1.31,nw_dst=192.168.1.20,udp,tp_dst=10008,actions=set_queue:7,output:7
 
 #Flow from h5 to h4
-ovs-ofctl add-flow ashish ip,nw_src=192.168.1.15,nw_dst=192.168.1.40,udp,tp_dst=10009,actions=output:8
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.15,nw_dst=192.168.1.40,udp,tp_dst=10009,actions=output:8
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.15,nw_dst=192.168.1.40,udp,tp_dst=10010,actions=output:7
 
 #ping traffic
 #ping between 8 and 40
@@ -29,7 +30,22 @@ ovs-ofctl add-flow br0 ip,nw_src=192.168.1.40,nw_dst=192.168.1.12,actions=output
 #ping between 9 and 20
 ovs-ofctl add-flow br0 ip,nw_src=192.168.1.9,nw_dst=192.168.1.20,actions=output:7
 ovs-ofctl add-flow br0 ip,nw_src=192.168.1.20,nw_dst=192.168.1.9,actions=output:4
+#ping between 10 and 20
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.10,nw_dst=192.168.1.20,actions=output:7
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.20,nw_dst=192.168.1.10,actions=output:2
 #ping between 11 and 20
 ovs-ofctl add-flow br0 ip,nw_src=192.168.1.11,nw_dst=192.168.1.20,actions=output:7
-ovs-ofctl add-flow br0 ip,nw_src=192.168.1.20,nw_dst=192.168.1.9,actions=output:6
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.20,nw_dst=192.168.1.11,actions=output:6
+#ping between 29 and 20
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.29,nw_dst=192.168.1.20,actions=output:7
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.20,nw_dst=192.168.1.29,actions=output:8
+#ping between 30 and 20
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.30,nw_dst=192.168.1.20,actions=output:7
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.20,nw_dst=192.168.1.30,actions=output:8
+#ping between 31 and 20
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.31,nw_dst=192.168.1.20,actions=output:7
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.20,nw_dst=192.168.1.31,actions=output:8
+#ping between 15 and 40
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.15,nw_dst=192.168.1.40,actions=output:8
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.40,nw_dst=192.168.1.15,actions=output:9
 

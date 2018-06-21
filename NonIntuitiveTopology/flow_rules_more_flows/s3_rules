@@ -10,7 +10,7 @@ ovs-ofctl add-flow br0 ip,nw_src=192.168.1.15,nw_dst=192.168.1.40,udp,tp_dst=100
 #ping traffic
 #ping between 15 and 40
 ovs-ofctl add-flow br0 ip,nw_src=192.168.1.15,nw_dst=192.168.1.40,actions=output:8
-ovs-ofctl add-flow br0 ip,nw_src=192.168.1.45,nw_dst=192.168.1.15,actions=output:2
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.40,nw_dst=192.168.1.15,actions=output:2
 #ping between 29 and 20
 ovs-ofctl add-flow br0 ip,nw_src=192.168.1.29,nw_dst=192.168.1.20,actions=output:2
 ovs-ofctl add-flow br0 ip,nw_src=192.168.1.20,nw_dst=192.168.1.29,actions=output:10
