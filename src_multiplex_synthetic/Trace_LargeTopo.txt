@@ -1,0 +1,43 @@
+
+==== EXPERIMENT: HOW THE ALGORITHM PICKS PATH FOR ALL FLOWS (IF PATHS ARE NOT ASSIGNED) =====
+Prop and transmission delay (us): 100.50500000000001
+BW req (for each flow): 1600000
+
+Candidate path generation complete. All flow has at least one candidate path.
+# of Candidate paths: 20
+Running path layout algorithm (pruning path with max interference) ...
+Done with path layout!! Terminating loop...
+
+** Note: Lower prio value means higher priority.
+
+Flowid: 0 Path: ['h1', 's1', 's2', 'hd1']
+Flowid: 1 Path: ['h2', 's1', 's2', 's4', 'hd2']
+Flowid: 2 Path: ['h3', 's1', 's2', 'hd1']
+Flowid: 3 Path: ['h4', 's1', 's2', 's4', 'hd2']
+Flowid: 4 Path: ['h5', 's1', 's2', 'hd1']
+Flowid: 5 Path: ['h6', 's1', 's2', 's4', 'hd2']
+Flowid: 6 Path: ['h7', 's3', 's2', 'hd1']
+Flowid: 7 Path: ['h8', 's3', 's2', 'hd1']
+Flowid: 8 Path: ['h9', 's3', 's2', 'hd1']
+Flowid: 9 Path: ['h10', 's1', 's2', 's4', 'hd2']
+
+Flowid: 0 Prio: 2 Observed Delay: 314.505 E2E deadline: 800
+
+Flowid: 1 Prio: 2 Observed Delay: 471.01 E2E deadline: 800
+
+Flowid: 2 Prio: 1 Observed Delay: 195.505 E2E deadline: 800
+
+Flowid: 3 Prio: 1 Observed Delay: 318.01 E2E deadline: 800
+
+Flowid: 4 Prio: 0 Observed Delay: 110.50500000000001 E2E deadline: 800
+
+Flowid: 5 Prio: 0 Observed Delay: 216.01000000000002 E2E deadline: 800
+
+Flowid: 6 Prio: 2 Observed Delay: 263.505 E2E deadline: 800
+
+Flowid: 7 Prio: 1 Observed Delay: 178.505 E2E deadline: 800
+
+Flowid: 8 Prio: 0 Observed Delay: 110.50500000000001 E2E deadline: 800
+
+Flowid: 9 Prio: 1 Observed Delay: 318.01 E2E deadline: 800
+---> Flow Set is Schedulable with the corresponding paths <---
