@@ -7,18 +7,18 @@ Flowid: 1 Path: ['h30', 's3', 's1', 's2', 'h20']
 Flowid: 2 Path: ['h10', 's1', 's2', 's4', 'h40']
 Flowid: 3 Path: ['h10', 's1', 's3', 's2', 's4', 'h40']
 
-Flowid: 0 Prio: 0 Observed Delay: 140.59813225746154 E2E deadline: 800
+Flowid: 0 Prio: 0 Observed Delay: 240.505 E2E deadline: 800
 Link: s1 - s2 Residual BW 7500
 
-Flowid: 1 Prio: 0 Observed Delay: 176.1962645149231 E2E deadline: 800
+Flowid: 1 Prio: 0 Observed Delay: 376.01 E2E deadline: 800
 Link: s3 - s1 Residual BW 7500
 Link: s1 - s2 Residual BW 5000
 
-Flowid: 2 Prio: 0 Observed Delay: 176.1962645149231 E2E deadline: 800
+Flowid: 2 Prio: 0 Observed Delay: 376.01 E2E deadline: 800
 Link: s1 - s2 Residual BW 2500
 Link: s2 - s4 Residual BW 7500
 
-Flowid: 3 Prio: 0 Observed Delay: 211.79439677238463 E2E deadline: 800
+Flowid: 3 Prio: 0 Observed Delay: 511.51500000000004 E2E deadline: 800
 Link: s1 - s3 Residual BW 5000
 Link: s3 - s2 Residual BW 7500
 Link: s2 - s4 Residual BW 5000
@@ -31,18 +31,18 @@ Flowid: 1 Path: ['h30', 's3', 's1', 's2', 'h20']
 Flowid: 2 Path: ['h10', 's1', 's2', 's4', 'h40']
 Flowid: 3 Path: ['h10', 's1', 's2', 's4', 'h40']
 
-Flowid: 0 Prio: 0 Observed Delay: 140.59813225746154 E2E deadline: 800
+Flowid: 0 Prio: 0 Observed Delay: 240.505 E2E deadline: 800
 Link: s1 - s2 Residual BW 7500
 
-Flowid: 1 Prio: 0 Observed Delay: 158.6962645149231 E2E deadline: 800
+Flowid: 1 Prio: 0 Observed Delay: 358.51 E2E deadline: 800
 Link: s3 - s1 Residual BW 7500
 Link: s1 - s2 Residual BW 5000
 
-Flowid: 2 Prio: 0 Observed Delay: 176.1962645149231 E2E deadline: 800
+Flowid: 2 Prio: 0 Observed Delay: 376.01 E2E deadline: 800
 Link: s1 - s2 Residual BW 2500
 Link: s2 - s4 Residual BW 7500
 
-Flowid: 3 Prio: 0 Observed Delay: 176.1962645149231 E2E deadline: 800
+Flowid: 3 Prio: 0 Observed Delay: 376.01 E2E deadline: 800
 Link: s1 - s2 Residual BW 0
 Link: s2 - s4 Residual BW 5000
 ---> Flow Set is Schedulable with the corresponding paths <---
@@ -50,21 +50,18 @@ Link: s2 - s4 Residual BW 5000
 ==== EXPERIMENT: HOW THE ALGORITHM PICKS PATH FOR ALL FLOWS (IF PATHS ARE NOT ASSIGNED) =====
 BW req (for each flow): 2500
 
-Candidate path generation complete. All flow has at least one candidate path.
-# of Candidate paths: 8
-Running path layout algorithm (pruning path with max interference) ...
-
 Done with path layout!! Terminating loop...
 Flowid: 0 Path: ['h10', 's1', 's3', 's2', 'h20']
 Flowid: 1 Path: ['h30', 's3', 's2', 'h20']
 Flowid: 2 Path: ['h10', 's1', 's2', 's4', 'h40']
 Flowid: 3 Path: ['h10', 's1', 's2', 's4', 'h40']
 
-Flowid: 0 Prio: 0 Observed Delay: 158.6962645149231 E2E deadline: 800
+Flowid: 0 Prio: 0 Observed Delay: 358.51 E2E deadline: 800
 
-Flowid: 1 Prio: 0 Observed Delay: 105.59813225746154 E2E deadline: 800
+Flowid: 1 Prio: 0 Observed Delay: 205.505 E2E deadline: 800
 
-Flowid: 2 Prio: 0 Observed Delay: 158.6962645149231 E2E deadline: 800
+Flowid: 2 Prio: 0 Observed Delay: 358.51 E2E deadline: 800
 
-Flowid: 3 Prio: 0 Observed Delay: 158.6962645149231 E2E deadline: 800
+Flowid: 3 Prio: 0 Observed Delay: 358.51 E2E deadline: 800
 ---> Flow Set is Schedulable with the corresponding paths <---
+

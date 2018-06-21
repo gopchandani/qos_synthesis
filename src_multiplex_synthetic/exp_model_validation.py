@@ -11,7 +11,8 @@ def get_four_node_topo(_debug=False):
     # propagation and transmission delay (in millisecond)
     # 505 nanosecond propagation delay, packetSize/linkBW transmission delay
     # link BW 10 GBps
-    prop_tran_delay = ((1000*8)/85899345920)*1000 + 0.000505
+    # prop_tran_delay = ((1000*8)/85899345920)*1000 + 0.000505
+    prop_tran_delay = ((1000 * 8) / (10 * 8000000)) * 1000 + 0.000505
 
     prop_tran_delay = prop_tran_delay * 1000  # change to microsecond
     link_bw = 10 * 1000  # link capacity in kbps
@@ -63,8 +64,8 @@ def create_flow_spec(_debug=False, is_path_given=True, is_longer_path_for_f4=Fal
     e2e_deadline = 800  # in microsecond
     pckt_size = 1000 * 8  # size of the packets (in bits)
     pkt_processing_time = 17.5  # corresponding processing time (in microsecond)
-    # bw_req = pckt_size / (3125/1000)
-    bw_req = 2500
+    bw_req = pckt_size / (3125/1000)
+    # bw_req = 2500
 
     print ("BW req (for each flow):", bw_req)
 
