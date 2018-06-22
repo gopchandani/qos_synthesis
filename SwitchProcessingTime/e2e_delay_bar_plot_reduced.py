@@ -62,7 +62,7 @@ ax.tick_params(axis='y', which='major', pad=15)
 
 ax.set_xlabel('Number of Switches', fontsize=40, labelpad=25)
 ax.set_ylabel('End-to-End Delay (us)', fontsize=40, labelpad=25)
-ax.set_xticks(index + bar_width * 4 / 2)
+ax.set_xticks(index + bar_width * 4 / 4)
 ax.set_xticklabels(('1', '2', '3', '4'), fontsize=35)
 ax.set_yticklabels(('0', '100', '200', '300', '400', '500', '600'), fontsize=35)
 
@@ -72,6 +72,7 @@ ax.legend(ncol=2,
           bbox_to_anchor=[0.5, -0.4],
           shadow=True,
           fancybox=True)
+
 
 fig.tight_layout()
 plt.subplots_adjust(left=0.15, right=0.85, top=0.95, bottom=0.45)
