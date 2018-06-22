@@ -1,0 +1,5 @@
+ovs-ofctl add-flow edge_br0 in_port=1,actions=output:15
+ovs-ofctl add-flow edge_br0 in_port=15,actions=output:1
+
+ovs-ofctl add-flow edge_br1 in_port=31,actions=output:17
+ovs-ofctl add-flow edge_br1 in_port=17,actions=output:31

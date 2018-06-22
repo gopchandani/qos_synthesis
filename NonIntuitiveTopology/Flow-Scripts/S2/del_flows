@@ -1,0 +1,2 @@
+ovs-ofctl del-flows edge_br0
+ovs-ofctl del-flows edge_br1

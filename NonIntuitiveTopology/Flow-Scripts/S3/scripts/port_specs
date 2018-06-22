@@ -1,0 +1,151 @@
+_uuid               : 7bd83125-3249-4a6a-90ca-d29fbd352e17
+admin_state         : up
+bfd                 : {}
+bfd_status          : {}
+cfm_fault           : []
+cfm_fault_status    : []
+cfm_flap_count      : []
+cfm_health          : []
+cfm_mpid            : []
+cfm_remote_mpids    : []
+cfm_remote_opstate  : []
+dscp_mapping        : {}
+duplex              : full
+external_ids        : {}
+ifindex             : 2
+ingress_policing_burst: 0
+ingress_policing_rate: 0
+lacp_current        : []
+link_resets         : 0
+link_speed          : 1000000000
+link_state          : up
+lldp_admin_status   : []
+lldp_neighbors      : []
+lldp_tx_delay       : []
+lldp_tx_interval    : []
+mac                 : []
+mac_in_use          : "48:6e:73:02:0c:41"
+mtu                 : 9212
+name                : "ge-1/1/2"
+ofport              : 2
+ofport_request      : []
+options             : {}
+other_config        : {}
+statistics          : {collisions=0, rx_bytes=470451801267, rx_crc_err=0, rx_dropped=24, rx_errors=0, rx_frame_err=0, rx_over_err=0, rx_packets=315076957, tx_bytes=47307240, tx_dropped=0, tx_errors=0, tx_packets=496836}
+status              : {}
+type                : "pica8"
+wred_queues         : {}
+
+_uuid               : abbb6f39-c9e1-4330-af1d-42581648af5f
+admin_state         : up
+bfd                 : {}
+bfd_status          : {}
+cfm_fault           : []
+cfm_fault_status    : []
+cfm_flap_count      : []
+cfm_health          : []
+cfm_mpid            : []
+cfm_remote_mpids    : []
+cfm_remote_opstate  : []
+dscp_mapping        : {}
+duplex              : full
+external_ids        : {}
+ifindex             : 1
+ingress_policing_burst: 0
+ingress_policing_rate: 0
+lacp_current        : []
+link_resets         : 0
+link_speed          : 1000000000
+link_state          : up
+lldp_admin_status   : []
+lldp_neighbors      : []
+lldp_tx_delay       : []
+lldp_tx_interval    : []
+mac                 : []
+mac_in_use          : "48:6e:73:02:0c:41"
+mtu                 : 9212
+name                : "ge-1/1/1"
+ofport              : 1
+ofport_request      : []
+options             : {}
+other_config        : {}
+statistics          : {collisions=0, rx_bytes=47426416, rx_crc_err=0, rx_dropped=1269, rx_errors=0, rx_frame_err=0, rx_over_err=0, rx_packets=498105, tx_bytes=470451819274, tx_dropped=0, tx_errors=0, tx_packets=315076947}
+status              : {}
+type                : "pica8"
+wred_queues         : {}
+
+_uuid               : c5ae4c4f-18f8-4e05-8b97-c93a017176ea
+admin_state         : up
+bfd                 : {}
+bfd_status          : {}
+cfm_fault           : []
+cfm_fault_status    : []
+cfm_flap_count      : []
+cfm_health          : []
+cfm_mpid            : []
+cfm_remote_mpids    : []
+cfm_remote_opstate  : []
+dscp_mapping        : {}
+duplex              : full
+external_ids        : {}
+ifindex             : 60009
+ingress_policing_burst: 0
+ingress_policing_rate: 0
+lacp_current        : []
+link_resets         : 2
+link_speed          : 10000000
+link_state          : up
+lldp_admin_status   : []
+lldp_neighbors      : []
+lldp_tx_delay       : []
+lldp_tx_interval    : []
+mac                 : []
+mac_in_use          : "48:6e:73:02:0c:41"
+mtu                 : 1500
+name                : "br0"
+ofport              : 65534
+ofport_request      : []
+options             : {}
+other_config        : {}
+statistics          : {collisions=0, rx_bytes=368, rx_crc_err=0, rx_dropped=0, rx_errors=0, rx_frame_err=0, rx_over_err=0, rx_packets=4, tx_bytes=0, tx_dropped=0, tx_errors=0, tx_packets=0}
+status              : {driver_name=tun, driver_version="1.6", firmware_version="N/A"}
+type                : internal
+wred_queues         : {}
+
+_uuid               : 8c715ba3-c006-480f-a445-b2af44ec3ac0
+admin_state         : up
+bfd                 : {}
+bfd_status          : {}
+cfm_fault           : []
+cfm_fault_status    : []
+cfm_flap_count      : []
+cfm_health          : []
+cfm_mpid            : []
+cfm_remote_mpids    : []
+cfm_remote_opstate  : []
+dscp_mapping        : {}
+duplex              : []
+external_ids        : {}
+ifindex             : 8
+ingress_policing_burst: 0
+ingress_policing_rate: 0
+lacp_current        : []
+link_resets         : 0
+link_speed          : []
+link_state          : down
+lldp_admin_status   : []
+lldp_neighbors      : []
+lldp_tx_delay       : []
+lldp_tx_interval    : []
+mac                 : []
+mac_in_use          : "48:6e:73:02:0c:41"
+mtu                 : 9212
+name                : "ge-1/1/8"
+ofport              : 8
+ofport_request      : []
+options             : {}
+other_config        : {}
+statistics          : {collisions=0, rx_bytes=0, rx_crc_err=0, rx_dropped=0, rx_errors=0, rx_frame_err=0, rx_over_err=0, rx_packets=0, tx_bytes=0, tx_dropped=0, tx_errors=0, tx_packets=0}
+status              : {}
+type                : "pica8"
+wred_queues         : {}

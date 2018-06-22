@@ -1,0 +1,3 @@
+kill $(cat /ovs/var/run/openvswitch/ovs-vswitchd.pid) &&
+rm /ovs/var/log/openvswitch/ovs-vswitchd.log && 
+/ovs/sbin/ovs-vswitchd --pidfile=ovs-vswitchd.pid --overwrite-pidfile --detach --log-file --verbose=info

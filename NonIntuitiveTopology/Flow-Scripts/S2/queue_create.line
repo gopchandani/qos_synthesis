@@ -1,0 +1,13 @@
+ovs-vsctl -- \
+set port ge-1/1/4 qos=@newqos -- \
+--id=@newqos create qos type=PRONTO_STRICT \
+        queues:0=@q0 \
+        queues:7=@q7 \
+        queues:4=@q4 -- \
+--id=@q0 create queue other-config:min-rate=1000000000 other-config:max-rate=1000000000 -- \
+--id=@q7 create queue other-config:min-rate=1000000000 other-config:max-rate=1000000000 -- \
+--id=@q4 create queue other-config:min-rate=1000000000 other-config:max-rate=1000000000
+
+
+
+

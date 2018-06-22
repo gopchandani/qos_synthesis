@@ -1,0 +1,25 @@
+#Flows from Pi(20)
+
+#Inflow from 8
+ovs-ofctl add-flow ashish in_port=8,dl_dst=b8:27:eb:8b:02:7e,actions=output:2
+ovs-ofctl add-flow ashish in_port=8,dl_dst=b8:27:eb:7a:19:e5,actions=output:4
+ovs-ofctl add-flow ashish in_port=8,dl_dst=b8:27:eb:4b:c7:66,actions=output:4
+
+#Outflow to 8
+ovs-ofctl add-flow ashish in_port=2,dl_dst=b8:27:eb:6b:f7:38,actions=output:8
+ovs-ofctl add-flow ashish in_port=4,dl_dst=b8:27:eb:6b:f7:38,actions=output:8
+
+#Inflow from 2
+ovs-ofctl add-flow ashish in_port=2,dl_dst=b8:27:eb:7a:19:e5,actions=output:4
+ovs-ofctl add-flow ashish in_port=2,dl_dst=b8:27:eb:4b:c7:66,actions=output:4
+#Outflow to 2
+ovs-ofctl add-flow ashish in_port=4,dl_dst=b8:27:eb:8b:02:7e,actions=output:2
+#First rule in infow from 8
+
+#Rules at 4 are covered automatically
+
+
+#Laptop
+ovs-ofctl add-flow ashish in_port=10,actions=output:4
+ovs-ofctl add-flow ashish in_port=4,dl_dst=28:f1:0e:1d:10:a4,actions=output:10
+

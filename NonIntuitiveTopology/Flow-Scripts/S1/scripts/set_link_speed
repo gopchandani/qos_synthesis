@@ -1,0 +1,3 @@
+#!/bin/sh
+
+ovs-vsctl set Interface ge-1/1/$1 type=pica8 options:link_speed=$2

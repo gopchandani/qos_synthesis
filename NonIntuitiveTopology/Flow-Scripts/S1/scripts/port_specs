@@ -1,0 +1,189 @@
+_uuid               : 1380bb6d-3144-418f-a258-2f7e5cef9f08
+admin_state         : up
+bfd                 : {}
+bfd_status          : {}
+cfm_fault           : []
+cfm_fault_status    : []
+cfm_flap_count      : []
+cfm_health          : []
+cfm_mpid            : []
+cfm_remote_mpids    : []
+cfm_remote_opstate  : []
+dscp_mapping        : {}
+duplex              : full
+external_ids        : {}
+ifindex             : 1
+ingress_policing_burst: 0
+ingress_policing_rate: 0
+lacp_current        : []
+link_resets         : 0
+link_speed          : 1000000000
+link_state          : up
+lldp_admin_status   : []
+lldp_neighbors      : []
+lldp_tx_delay       : []
+lldp_tx_interval    : []
+mac                 : []
+mac_in_use          : "48:6e:73:02:00:08"
+mtu                 : 9212
+name                : "ge-1/1/1"
+ofport              : 1
+ofport_request      : []
+options             : {}
+other_config        : {}
+statistics          : {collisions=0, rx_bytes=47046160, rx_crc_err=0, rx_dropped=9195, rx_errors=0, rx_frame_err=0, rx_over_err=0, rx_packets=494106, tx_bytes=439641642635, tx_dropped=0, tx_errors=0, tx_packets=294453012}
+status              : {}
+type                : "pica8"
+wred_queues         : {}
+
+_uuid               : 690bb251-160a-4775-843d-e7ddc893ca11
+admin_state         : up
+bfd                 : {}
+bfd_status          : {}
+cfm_fault           : []
+cfm_fault_status    : []
+cfm_flap_count      : []
+cfm_health          : []
+cfm_mpid            : []
+cfm_remote_mpids    : []
+cfm_remote_opstate  : []
+dscp_mapping        : {}
+duplex              : full
+external_ids        : {}
+ifindex             : 60009
+ingress_policing_burst: 0
+ingress_policing_rate: 0
+lacp_current        : []
+link_resets         : 2
+link_speed          : 10000000
+link_state          : up
+lldp_admin_status   : []
+lldp_neighbors      : []
+lldp_tx_delay       : []
+lldp_tx_interval    : []
+mac                 : []
+mac_in_use          : "48:6e:73:02:00:08"
+mtu                 : 1500
+name                : "br0"
+ofport              : 65534
+ofport_request      : []
+options             : {}
+other_config        : {}
+statistics          : {collisions=0, rx_bytes=368, rx_crc_err=0, rx_dropped=0, rx_errors=0, rx_frame_err=0, rx_over_err=0, rx_packets=4, tx_bytes=0, tx_dropped=0, tx_errors=0, tx_packets=0}
+status              : {driver_name=tun, driver_version="1.6", firmware_version="N/A"}
+type                : internal
+wred_queues         : {}
+
+_uuid               : 82c995cd-8694-43c7-a1b4-a998de4e6eee
+admin_state         : up
+bfd                 : {}
+bfd_status          : {}
+cfm_fault           : []
+cfm_fault_status    : []
+cfm_flap_count      : []
+cfm_health          : []
+cfm_mpid            : []
+cfm_remote_mpids    : []
+cfm_remote_opstate  : []
+dscp_mapping        : {}
+duplex              : full
+external_ids        : {}
+ifindex             : 2
+ingress_policing_burst: 0
+ingress_policing_rate: 0
+lacp_current        : []
+link_resets         : 0
+link_speed          : 100000000
+link_state          : up
+lldp_admin_status   : []
+lldp_neighbors      : []
+lldp_tx_delay       : []
+lldp_tx_interval    : []
+mac                 : []
+mac_in_use          : "48:6e:73:02:00:08"
+mtu                 : 9212
+name                : "ge-1/1/2"
+ofport              : 2
+ofport_request      : []
+options             : {}
+other_config        : {}
+statistics          : {collisions=0, rx_bytes=2478591836, rx_crc_err=3, rx_dropped=211, rx_errors=4, rx_frame_err=0, rx_over_err=0, rx_packets=1744976, tx_bytes=25655084, tx_dropped=0, tx_errors=0, tx_packets=269646}
+status              : {}
+type                : "pica8"
+wred_queues         : {}
+
+_uuid               : 63dc7eb6-9d5f-4171-ab76-1a64e9421e96
+admin_state         : up
+bfd                 : {}
+bfd_status          : {}
+cfm_fault           : []
+cfm_fault_status    : []
+cfm_flap_count      : []
+cfm_health          : []
+cfm_mpid            : []
+cfm_remote_mpids    : []
+cfm_remote_opstate  : []
+dscp_mapping        : {}
+duplex              : full
+external_ids        : {}
+ifindex             : 8
+ingress_policing_burst: 0
+ingress_policing_rate: 0
+lacp_current        : []
+link_resets         : 0
+link_speed          : 100000000
+link_state          : up
+lldp_admin_status   : []
+lldp_neighbors      : []
+lldp_tx_delay       : []
+lldp_tx_interval    : []
+mac                 : []
+mac_in_use          : "48:6e:73:02:00:08"
+mtu                 : 9212
+name                : "ge-1/1/8"
+ofport              : 8
+ofport_request      : []
+options             : {}
+other_config        : {}
+statistics          : {collisions=0, rx_bytes=2473157503, rx_crc_err=3, rx_dropped=222, rx_errors=3, rx_frame_err=0, rx_over_err=0, rx_packets=1709849, tx_bytes=17492671, tx_dropped=0, tx_errors=0, tx_packets=182759}
+status              : {}
+type                : "pica8"
+wred_queues         : {}
+
+_uuid               : 4f56fa3e-f128-4923-8db4-71ad86476fe8
+admin_state         : up
+bfd                 : {}
+bfd_status          : {}
+cfm_fault           : []
+cfm_fault_status    : []
+cfm_flap_count      : []
+cfm_health          : []
+cfm_mpid            : []
+cfm_remote_mpids    : []
+cfm_remote_opstate  : []
+dscp_mapping        : {}
+duplex              : full
+external_ids        : {}
+ifindex             : 10
+ingress_policing_burst: 0
+ingress_policing_rate: 0
+lacp_current        : []
+link_resets         : 0
+link_speed          : 1000000000
+link_state          : up
+lldp_admin_status   : []
+lldp_neighbors      : []
+lldp_tx_delay       : []
+lldp_tx_interval    : []
+mac                 : []
+mac_in_use          : "48:6e:73:02:00:08"
+mtu                 : 9212
+name                : "ge-1/1/10"
+ofport              : 10
+ofport_request      : []
+options             : {}
+other_config        : {}
+statistics          : {collisions=0, rx_bytes=435704849670, rx_crc_err=0, rx_dropped=668870, rx_errors=0, rx_frame_err=0, rx_over_err=0, rx_packets=291667210, tx_bytes=3133618, tx_dropped=0, tx_errors=0, tx_packets=32506}
+status              : {}
+type                : "pica8"
+wred_queues         : {}

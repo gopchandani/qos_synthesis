@@ -1,0 +1,22 @@
+#Flows from Pi(10)
+#10->20
+ovs-ofctl add-flow br0 in_port=1,dl_dst=b8:27:eb:8b:02:7e,actions=output:2
+#20->10 or 40->10
+ovs-ofctl add-flow br0 in_port=2,dl_dst=b8:27:eb:7a:19:e5,actions=output:1
+#10->40
+ovs-ofctl add-flow br0 in_port=1,dl_dst=b8:27:eb:6b:f7:38,actions=output:2
+
+#20->30 or 40->30 
+ovs-ofctl add-flow br0 in_port=2,dl_dst=b8:27:eb:4b:c7:66,actions=output:8
+ovs-ofctl add-flow br0 in_port=8,dl_dst=b8:27:eb:8b:02:7e,actions=output:2
+ovs-ofctl add-flow br0 in_port=8,dl_dst=b8:27:eb:6b:f7:38,actions=output:2
+
+#10->30
+ovs-ofctl add-flow br0 in_port=1,dl_dst=b8:27:eb:4b:c7:66,actions=output:8
+#30->10
+ovs-ofctl add-flow br0 in_port=8,dl_dst=b8:27:eb:7a:19:e5,actions=output:1
+
+#Laptop
+ovs-ofctl add-flow br0 in_port=10,actions=output:2
+ovs-ofctl add-flow br0 in_port=2,dl_dst=28:d2:44:89:8b:78,actions=output:10
+

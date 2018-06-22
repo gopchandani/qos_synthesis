@@ -1,0 +1,46 @@
+#Flows from S1 going to h2 via S2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.9,nw_dst=192.168.1.20,udp,tp_dst=10003,actions=set_queue=1,output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.10,nw_dst=192.168.1.20,udp,tp_dst=10004,actions=set_queue=4,output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.11,nw_dst=192.168.1.20,udp,tp_dst=10005,actions=set_queue=7,output:2
+
+#Flows from S3 going to h2 via S1 and then S2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.29,nw_dst=192.168.1.20,udp,tp_dst=10006,actions=set_queue=1,output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.30,nw_dst=192.168.1.20,udp,tp_dst=10007,actions=set_queue=4,output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.31,nw_dst=192.168.1.20,udp,tp_dst=10008,actions=set_queue=7,output:2
+
+#Flows from S1 going to h4 via S2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.8,nw_dst=192.168.1.40,udp,tp_dst=10000,actions=set_queue=1,output:8
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.10,nw_dst=192.168.1.40,udp,tp_dst=10001,actions=set_queue=4,output:8
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.12,nw_dst=192.168.1.40,udp,tp_dst=10002,actions=set_queue=7,output:8
+
+#Flows from h5(in S1) to h4 via S2(giving from h5 highest prio here)
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.15,nw_dst=192.168.1.40,udp,tp_dst=10009,actions=set_queue=7,output:8
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.15,nw_dst=192.168.1.40,udp,tp_dst=10010,actions=set_queue=7,output:8
+
+#ping traffic
+#ping between 9 and 20
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.9,nw_dst=192.168.1.20,actions=output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.20,nw_dst=192.168.1.9,actions=output:4
+#ping between 10 and 20
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.10,nw_dst=192.168.1.20,actions=output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.20,nw_dst=192.168.1.10,actions=output:4
+#ping between 11 and 20
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.11,nw_dst=192.168.1.20,actions=output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.20,nw_dst=192.168.1.11,actions=output:4
+#ping between 29 and 20
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.29,nw_dst=192.168.1.20,actions=output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.20,nw_dst=192.168.1.29,actions=output:4
+#ping between 30 and 20
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.30,nw_dst=192.168.1.20,actions=output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.20,nw_dst=192.168.1.30,actions=output:4
+#ping between 31 and 20
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.31,nw_dst=192.168.1.20,actions=output:2
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.20,nw_dst=192.168.1.31,actions=output:4
+#ping between (8,10,12) and 40
+ovs-ofctl add-flow ashish ip,nw_dst=192.168.1.40,actions=output:8
+ovs-ofctl add-flow ashish ip,nw_dst=192.168.1.8,actions=output:4
+ovs-ofctl add-flow ashish ip,nw_dst=192.168.1.10,actions=output:4
+ovs-ofctl add-flow ashish ip,nw_dst=192.168.1.12,actions=output:4
+#ping between 15 and 40
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.15,nw_dst=192.168.1.40,actions=output:8
+ovs-ofctl add-flow ashish ip,nw_src=192.168.1.40,nw_dst=192.168.1.15,actions=output:12

@@ -1,0 +1,23 @@
+#Flows originating from S3 destined to h2 
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.29,nw_dst=192.168.1.20,udp,tp_dst=10006,actions=set_queue:1,output:2
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.30,nw_dst=192.168.1.20,udp,tp_dst=10007,actions=set_queue:4,output:2
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.31,nw_dst=192.168.1.20,udp,tp_dst=10008,actions=set_queue:7,output:2
+
+
+#Flows originating from h5 (in S1) destined to h4-- no need to have prio here -- since it is dedicated link
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.15,nw_dst=192.168.1.40,udp,tp_dst=10009,actions=output:8
+
+#ping traffic
+#ping between 15 and 40
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.15,nw_dst=192.168.1.40,actions=output:8
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.40,nw_dst=192.168.1.15,actions=output:2
+#ping between 29 and 20
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.29,nw_dst=192.168.1.20,actions=output:2
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.20,nw_dst=192.168.1.29,actions=output:10
+#ping between 30 and 20
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.30,nw_dst=192.168.1.20,actions=output:2
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.20,nw_dst=192.168.1.30,actions=output:12
+#ping between 31 and 20
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.31,nw_dst=192.168.1.20,actions=output:2
+ovs-ofctl add-flow br0 ip,nw_src=192.168.1.20,nw_dst=192.168.1.31,actions=output:14
+

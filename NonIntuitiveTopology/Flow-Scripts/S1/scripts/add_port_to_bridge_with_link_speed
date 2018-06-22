@@ -1,0 +1,1 @@
+ovs-vsctl add-port br0 ge-1/1/1 -- set Interface ge-1/1/1 type=pica8 options:link_speed=500M
