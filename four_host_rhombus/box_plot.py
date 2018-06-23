@@ -29,11 +29,11 @@ else:
 
 
 fig, ax = plt.subplots(1, 1, figsize=(8, 5), frameon=False)
-ax.boxplot([np.log(d["d_diff"]), np.log(d["d_same"])])
+ax.boxplot([np.log10(d["d_diff"]), np.log10(d["d_same"])])
 
 ax.set_xlabel('Flow Paths', fontsize=40, labelpad=10)
 ax.set_ylabel('$Log_{10}$ of the End-to-End Delay (us)', fontsize=40, labelpad=25)
 ax.set_xticklabels(('Different', 'Same'), fontsize=35)
-ax.set_yticklabels(('12', '14', '16', '18', '20', '22'), fontsize=35)
+ax.set_yticklabels(('5.0', '5.5', '6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5'), fontsize=35)
 
 plt.show()
