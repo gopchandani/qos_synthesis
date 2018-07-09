@@ -67,6 +67,8 @@ class PARAMS(Const):
     # BASE_E2E_BETA_LIST = [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0]  # see RTSS paper, how we set E2E deadline based on Topology (diamaeter of NW)
     BASE_E2E_BETA_LIST = [0.2, 0.4, 0.6, 0.8, 1.0, 2.0]  # see RTSS paper, how we set E2E deadline based on Topology (diamaeter of NW)
 
+    BASE_E2E_BETA_LIST_MULTIPLEX_COMP = [0.6, 1.0]  # see RTSS paper, how we set E2E deadline based on Topology (diamaeter of NW)
+
     N_PRIO_LEVEL = 3  # number of priority levels
 
     # this two variable must be in same length
@@ -79,7 +81,8 @@ class PARAMS(Const):
     # PARAMS for single node experiment
 
     N_FLOW_EACH_PRIO_LIST = [1, 3, 5, 7, 9, 11]  # for single node experiment
-    N_FLOW_EACH_PRIO_LIST_SCHED = [1, 3, 5, 7, 9, 11]  # number of each flow in each queue for schedualbility experiment
+    N_FLOW_EACH_PRIO_LIST_SCHED = [1, 3, 5, 7, 9, 11]  # number of each flow in each queue for schedulability experiment
+    # N_FLOW_EACH_PRIO_LIST_SCHED = [1, 11]  # number of each flow in each queue for schedulability experiment
 
     TAG_FLOW_PRIO_LIST = [0, 1, 2]  # HI, MED, LO
 
@@ -87,5 +90,13 @@ class PARAMS(Const):
 
     SCHED_EXP_EACH_TRIAL_COUNT = 50  # number of trials for schedulability experiment
 
+    SCHED_MULTIPLEX_EXP_EACH_TRIAL_COUNT = 20  # number of trials (comparing with multiplex)
+
     EXP_SINGLE_NODE_FILENAME = 'exp_single_node.pickle.gzip'
     EXP_SCHED_FILENAME = 'exp_sched.pickle.gzip'
+
+    EXP_WITH_MULTIPLEX = 'EXP_WITH_MULTIPLEX'
+    EXP_WITHOUT_MULTIPLEX = 'EXP_WITHOUT_MULTIPLEX'
+
+    EXP_SCHED_WITH_MULTIPLEX_FILENAME = 'exp_sched_multiplex.pickle.gzip'
+    EXP_SCHED_WITHOUT_MULTIPLEX_FILENAME = 'exp_sched_without_multiplex.pickle.gzip'

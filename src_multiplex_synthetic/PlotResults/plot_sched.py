@@ -214,7 +214,7 @@ def plot_3d_surface(in_filename, out_filename, nw_diameter, fig_num):
 
     # plt.tight_layout()
 
-    plt.savefig(out_filename, pad_inches=0.1, bbox_inches='tight')
+    # plt.savefig(out_filename, pad_inches=0.1, bbox_inches='tight')
     plt.show()
 
 

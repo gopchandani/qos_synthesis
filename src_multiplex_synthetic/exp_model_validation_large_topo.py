@@ -10,8 +10,8 @@ import path_generator as pg
 def get_four_node_topo(_debug=False):
     # propagation and transmission delay (in millisecond)
     # 505 nanosecond propagation delay, packetSize/linkBW transmission delay
-    # link BW 10 GBps
-    prop_tran_delay = ((1000*8)/(10 * 8000000))*1000 + 0.000505
+    # link BW 1 GBps
+    prop_tran_delay = ((1000*8)/(1 * 8000000))*1000 + 0.000505
     prop_tran_delay = prop_tran_delay * 1000  # change to microsecond
 
     print("Prop and transmission delay (us):", prop_tran_delay)
