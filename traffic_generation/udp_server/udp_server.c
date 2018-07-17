@@ -27,17 +27,20 @@ struct packet_message{
 	char payload[984];
 };
 
+
 long int *secs;
 long int *nanosecs;
-int count = 0;
+static int count;
 int sockfd; /* socket */
+time_t timeout_in_secs = 30;
+FILE *fp;
 
 void print_data() {
 
 	int i = 0;
 	for (i=0; i < count; i ++ )
 	{
-		printf("\n%ld, %d, %ld, %ld, %ld, %ld", 0, 0, secs[i], nanosecs[i], 0, 0);
+		fprintf(fp, "\n%ld, %d, %ld, %ld, %ld, %ld", 0, 0, secs[i], nanosecs[i], 0, 0);
 	}
 	printf("\n");
 }
@@ -57,10 +60,14 @@ int main(int argc, char **argv) {
 	}
 	
 	signal(SIGINT, handle_sigint);
+	fp = fopen(argv[3], "w+");
+	struct timeval recv_timeout;;
 
 	int portno; /* port to listen on */
 
 	int number_time_packets = atoi(argv[2]);
+	recv_timeout.tv_sec = timeout_in_secs;
+	recv_timeout.tv_usec = 0;
 	
 	secs = malloc(number_time_packets * sizeof(long int));
 	nanosecs = malloc(number_time_packets * sizeof(long int));
@@ -75,7 +82,6 @@ int main(int argc, char **argv) {
 	struct timespec receive_timestamp;
 	struct timespec local_timestamp;
 	struct packet_message *temp = malloc(sizeof(struct packet_message));
-	//FILE *fp = fopen(argv[2], "a");
 
 	int one_way_seconds;
 	long int one_way_nanoseconds;
@@ -107,6 +113,13 @@ int main(int argc, char **argv) {
 		(const void *)&optval , sizeof(int));
 
 	/*
+	setsockopt: handling timeout in case of dropped packets
+	*/
+
+	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, \
+		(const char *)&recv_timeout, sizeof(recv_timeout));
+	
+	/*
    	* build the server's Internet address
 	*/
 
@@ -127,9 +140,14 @@ int main(int argc, char **argv) {
 
 
 	clientlen = sizeof(clientaddr);
-	printf("\nHost ID, Packet Number, One-way delay(s), One-way delay(ns), Running Avg.(ns), Worst-case(ns)"); 
+	fprintf(fp, "\nHost ID, Packet Number, One-way delay(s), One-way delay(ns), Running Avg.(ns), Worst-case(ns)"); 
+	clock_t start, end;
+	double cpu_time_used;
 
-	while (count < number_time_packets){
+	start = clock();
+	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+
+	while ((count < number_time_packets) && (cpu_time_used <= 60)){
 	/*
 	* recvfrom: receive a UDP datagram from a client
 	*/
@@ -151,12 +169,13 @@ int main(int argc, char **argv) {
 
 		secs[count] = one_way_seconds;
 		nanosecs[count] = one_way_nanoseconds;
+		fprintf(fp, "\n%ld, %d, %ld, %ld, %ld, %ld", 0, 0, secs[count], nanosecs[count], 0, 0);
 		count = count + 1;
 
 	}
 
 	shutdown(sockfd, SHUT_RDWR);
-	print_data();
+	//print_data();
 	return 0;
 
 }
