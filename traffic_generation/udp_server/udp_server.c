@@ -33,7 +33,7 @@ long int *nanosecs;
 static int count;
 int sockfd; /* socket */
 time_t timeout_in_secs = 30;
-FILE *fp;
+static FILE *fp;
 
 void print_data() {
 
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
 
 	if (argc == 2 && strcmp(argv[1], "--help")==0 ){
         	printf("Time Measurement Tool: Server Side\n");
-        	printf("Usage : ./server <server-port-number> <number-packets>\n");
+        	printf("Usage : ./server <server-port-number> <number-packets> <file-name>\n");
         	return 0;
 	}
 	
@@ -141,11 +141,11 @@ int main(int argc, char **argv) {
 
 	clientlen = sizeof(clientaddr);
 	fprintf(fp, "\nHost ID, Packet Number, One-way delay(s), One-way delay(ns), Running Avg.(ns), Worst-case(ns)"); 
-	clock_t start, end;
+	clock_t start;
 	double cpu_time_used;
 
 	start = clock();
-	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	cpu_time_used = ((double) (clock() - start)) / CLOCKS_PER_SEC;
 
 	while ((count < number_time_packets) && (cpu_time_used <= 60)){
 	/*
@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
 		nanosecs[count] = one_way_nanoseconds;
 		fprintf(fp, "\n%ld, %d, %ld, %ld, %ld, %ld", 0, 0, secs[count], nanosecs[count], 0, 0);
 		count = count + 1;
-
+		cpu_time_used = ((double) (clock() - start)) / CLOCKS_PER_SEC;
 	}
 
 	shutdown(sockfd, SHUT_RDWR);
