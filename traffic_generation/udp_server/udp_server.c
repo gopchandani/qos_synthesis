@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
 
 
 	clientlen = sizeof(clientaddr);
-	fprintf(fp, "\nHost ID, Packet Number, One-way delay(s), One-way delay(ns), Running Avg.(ns), Worst-case(ns)"); 
+	fprintf(fp, "Host ID, Packet Number, One-way delay(s), One-way delay(ns), Running Avg.(ns), Worst-case(ns)"); 
 	clock_t start;
 	double cpu_time_used;
 
