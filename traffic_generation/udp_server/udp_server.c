@@ -28,11 +28,11 @@ struct packet_message{
 };
 
 
-long int *secs;
-long int *nanosecs;
-static int count;
+unsigned long int *secs;
+unsigned long int *nanosecs;
+static unsigned long int count;
 int sockfd; /* socket */
-time_t timeout_in_secs = 30;
+time_t timeout_in_secs = 300;
 static FILE *fp;
 
 void print_data() {
@@ -40,7 +40,7 @@ void print_data() {
 	int i = 0;
 	for (i=0; i < count; i ++ )
 	{
-		fprintf(fp, "\n%ld, %d, %ld, %ld, %ld, %ld", 0, 0, secs[i], nanosecs[i], 0, 0);
+		fprintf(fp, "\n%d, %d, %lu, %lu, %d, %d", 0, 0, secs[i], nanosecs[i], 0, 0);
 	}
 	printf("\n");
 }
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
 
 	int portno; /* port to listen on */
 
-	int number_time_packets = atoi(argv[2]);
+	unsigned long int number_time_packets = atoi(argv[2]);
 	recv_timeout.tv_sec = timeout_in_secs;
 	recv_timeout.tv_usec = 0;
 	
@@ -79,12 +79,12 @@ int main(int argc, char **argv) {
 	struct sockaddr_in serveraddr; /* server's addr */
 	struct sockaddr_in clientaddr; /* client addr */
 	
+	struct timespec transmit_timestamp;
 	struct timespec receive_timestamp;
-	struct timespec local_timestamp;
 	struct packet_message *temp = malloc(sizeof(struct packet_message));
 
 	int one_way_seconds;
-	long int one_way_nanoseconds;
+	unsigned long int one_way_nanoseconds;
 
 	long int running_average_one_way[2] = {0, 0};
 	long int worst_case_one_way[2] = {0,0};
@@ -140,36 +140,31 @@ int main(int argc, char **argv) {
 
 
 	clientlen = sizeof(clientaddr);
-	fprintf(fp, "Host ID, Packet Number, One-way delay(s), One-way delay(ns), Running Avg.(ns), Worst-case(ns)"); 
+	fprintf(fp, "Packet Number, Receive(s), Transmit(s), Receive(ns), Transmit(ns), One-way delay(s), One-way delay(ns), Running Avg.(ns), Worst-case(ns)"); 
 	clock_t start;
 	double cpu_time_used;
 
 	start = clock();
 	cpu_time_used = ((double) (clock() - start)) / CLOCKS_PER_SEC;
+	
+	while (count < number_time_packets){
 
-	while ((count < number_time_packets) && (cpu_time_used <= 60)){
 	/*
 	* recvfrom: receive a UDP datagram from a client
 	*/
 		recvfrom(sockfd, (void *)temp, sizeof(struct packet_message), 0,(struct sockaddr *) &clientaddr, &clientlen);
 		pkt_id = temp->id;
 	
-		clock_gettime(CLOCK_REALTIME, &local_timestamp);
-		receive_timestamp.tv_sec = temp->snapshot.tv_sec;
-		receive_timestamp.tv_nsec = temp->snapshot.tv_nsec;
+		clock_gettime(CLOCK_REALTIME, &receive_timestamp);
+		transmit_timestamp.tv_sec = temp->snapshot.tv_sec;
+		transmit_timestamp.tv_nsec = temp->snapshot.tv_nsec;
 				
-		one_way_seconds = (local_timestamp.tv_sec - receive_timestamp.tv_sec);
-		one_way_nanoseconds = (local_timestamp.tv_nsec - receive_timestamp.tv_nsec);
+		one_way_seconds = (receive_timestamp.tv_sec - transmit_timestamp.tv_sec);
+		one_way_nanoseconds = one_way_seconds*1E9 + (receive_timestamp.tv_nsec - transmit_timestamp.tv_nsec);
 	
-	        if(one_way_seconds < 0)
-			one_way_seconds += INT_MAX;
-
-        	if(one_way_nanoseconds < 0)
-			one_way_nanoseconds += LONG_MAX ;
-
 		secs[count] = one_way_seconds;
 		nanosecs[count] = one_way_nanoseconds;
-		fprintf(fp, "\n%ld, %d, %ld, %ld, %ld, %ld", 0, 0, secs[count], nanosecs[count], 0, 0);
+		fprintf(fp, "\n%lu, %ld, %ld, %ld, %ld, %ld, %ld, %ld", count, receive_timestamp.tv_sec, transmit_timestamp.tv_sec, receive_timestamp.tv_nsec, transmit_timestamp.tv_nsec, one_way_seconds, one_way_nanoseconds);
 		count = count + 1;
 		cpu_time_used = ((double) (clock() - start)) / CLOCKS_PER_SEC;
 	}
