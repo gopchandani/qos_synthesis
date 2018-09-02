@@ -165,10 +165,10 @@ int main(int argc, char **argv) {
 		secs[count] = one_way_seconds;
 		nanosecs[count] = one_way_nanoseconds;
 		fprintf(fp, "\n%lu, %ld, %ld, %ld, %ld, %ld, %ld, %ld", count, receive_timestamp.tv_sec, transmit_timestamp.tv_sec, receive_timestamp.tv_nsec, transmit_timestamp.tv_nsec, one_way_seconds, one_way_nanoseconds);
+		fflush(fp);
 		count = count + 1;
 		cpu_time_used = ((double) (clock() - start)) / CLOCKS_PER_SEC;
 	}
-
 	shutdown(sockfd, SHUT_RDWR);
 	//print_data();
 	return 0;
