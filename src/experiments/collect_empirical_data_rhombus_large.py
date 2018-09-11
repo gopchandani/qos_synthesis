@@ -212,7 +212,7 @@ def get_rhombus_data(file_suffix):
 
 def get_rhombus_data_pscp(file_suffix):
 
-    mydir = os.path.join(os.getcwd(), datetime.datetime.now().strftime('%Y%m%d_%H%M%S'))
+    mydir = os.path.join(os.getcwd() + '/data/', datetime.datetime.now().strftime('%Y%m%d_%H%M%S'))
     os.makedirs(mydir)
 
     for f in flows:
