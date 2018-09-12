@@ -7,15 +7,7 @@ import datetime
 import time
 from collections import defaultdict
 from plot_pcap_times import plot_delay
-#from flow_dict import all_flows as flows
-from flow_dict import flow_f1 as flows
-#from flow_dict import flow_f2 as flows
-#from flow_dict import flow_f3 as flows
-#from flow_dict import flow_f4 as flows
-#from flow_dict import flow_f5 as flows
-#from flow_dict import flow_f6 as flows
-#from flow_dict import flow_f7 as flows
-#from flow_dict import flow_f8 as flows
+from flow_dict import all_flows as flows
 from topo_dict import host_ip
 
 
@@ -32,23 +24,10 @@ def run_cmd_via_paramiko(IP, command, port=22, username='pi', password='raspberr
 
     s.connect(IP, port, username, password)
     (stdin, stdout, stderr) = s.exec_command(command)
+
     output = list(stdout.readlines())
     s.close()
     return output
-
-
-def run_cmd_via_paramiko_server(IP, command, port=22, username='pi', password='raspberry'):
-
-    s = paramiko.SSHClient()
-    s.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    s.load_system_host_keys()
-
-    s.connect(IP, port, username, password)
-    (stdin, stdout, stderr) = s.exec_command(command)
-    #output = list(stdout.readlines())
-    s.close()
-    #return output
-    return
 
 
 '''
@@ -176,12 +155,32 @@ def start_all_flows_simultaneously(num_packets, is_background, is_same):
 
     print('tcpdumps have finished')
 
+command = "cd scripts/; ./test;"
+
 def main():
 
     # update_pi_scripts()
     # clean_client_server()
     # update_traffic_repo()
     # compile_traffic_repo()
+
+    print(run_cmd_via_paramiko("192.17.101.126", command,
+                               port=22,
+                               username="admin", password="csl440"))
+
+    print(run_cmd_via_paramiko("192.17.101.127", "./fastfailover_reaction_time_expt delete_flows;"
+                                                 "./fastfailover_reaction_time_expt add_flows;",
+                               username="admin", password="csl440"))
+
+    print(run_cmd_via_paramiko("192.17.101.128",  "cd scripts/;"
+                                                  "./fastfailover_reaction_time_expt delete_flows;"
+                                                  "./fastfailover_reaction_time_expt add_flows;",
+                               username="admin", password="csl440"))
+
+    print(run_cmd_via_paramiko("192.17.101.129",  "cd scripts/;"
+                                                  "./fastfailover_reaction_time_expt delete_flows;"
+                                                  "./fastfailover_reaction_time_expt add_flows;",
+                               username='admin', password="csl440"))
 
     num_packets = input('Enter the number of packets')
     background_traffic = input('Is there a background flow?')
