@@ -25,40 +25,67 @@ class SynthesisLibHardware(object):
 
         self.queue_id_cntr_per_br = defaultdict(int)
 
-    def push_flow(self, bridge_dict, in_port, dst_mac, out_port, q_id):
+
+    def push_flow_rule(self, switch_dict, src_ip, dst_ip, udp_port, out_port, flow_priority, queue_num=0):
 
         push_flow_cmd = "ovs-ofctl add-flow " + \
-                       "tcp:" + bridge_dict["switch_IP"] + ":" + bridge_dict["of_port"] + " " \
-                       "in_port=" + str(in_port.split('/')[2]) +  \
-                       ",dl_dst=" + dst_mac + \
-                        ",vlan_vid=0x1000/0x1000" + "," + \
-                        "actions=strip_vlan," + "output:" + str(out_port.split('/')[2])
-                        #"set_queue:" + str(q_id) + ","\
+                        "tcp:" + str(switch_dict["switch_ip"]) + ":" + str(switch_dict["of_port"]) + " " + \
+                        "ip,nw_src=" + str(src_ip) +",nw_dst=" + str(dst_ip) +",udp,tp_dst=" + \
+                        str(udp_port) + ",priority=" + str(flow_priority) + \
+                        ",actions=set_queue:"+ str(queue_num) + ",output:" + str(out_port.split('/')[2])
+        os.system(push_flow_cmd)
 
+
+    def push_flow_rule_group(self, switch_dict, group_id, src_ip, dst_ip, udp_port, flow_priority):
+
+        push_flow_cmd = "ovs-ofctl -O OpenFlow13 add-flow " + \
+                        "tcp:" + str(switch_dict["switch_ip"]) + ":" + str(switch_dict["of_port"]) + " " + \
+                        "ip,nw_src=" + str(src_ip) + ",nw_dst=" + str(dst_ip) + \
+                        ",udp,tp_dst=" + str(udp_port) + \
+                        ",priority=" + str(flow_priority) + ",actions=group:" + str(group_id)
 
         os.system(push_flow_cmd)
-        time.sleep(1)
 
-    def push_queue(self, bridge_dict, port, min_rate, max_rate):
-        self.queue_id_cntr_per_br[bridge_dict["bridge_name"]] +=  1
+    def push_queue(self, switch_dict, port, min_rate, max_rate, queue_priority):
         min_rate_str = str(min_rate)
         max_rate_str = str(max_rate)
 
-        queue_cmd = "ovs-vsctl " + \
-                    "--db=tcp:" + bridge_dict["switch_IP"] + ":6640 -- " + \
-                    "set Port " + port + " qos=@newqos -- " + \
-                    "--id=@newqos create qos type=linux-htb other-config:max-rate=" + max_rate_str + \
-                    " queues=" + str(self.queue_id_cntr_per_br[bridge_dict["bridge_name"]]) + \
-                    "=@q" + str(self.queue_id_cntr_per_br[bridge_dict["bridge_name"]]) + \
-                    " -- " +\
-                    "--id=@q" + str(self.queue_id_cntr_per_br[bridge_dict["bridge_name"]]) + \
-                    " create Queue other-config:min-rate=" + min_rate_str + \
-                    " other-config:max-rate=" + max_rate_str
+        queue_cmd = "ovs-vsctl " + "--db=tcp:" + str(switch_dict["switch_ip"]) + ":6634 -- " + \
+                    "set port " + str(port) + " qos=@newqos -- " + \
+                    "--id=@newqos create qos type=PRONTO_STRICT " + \
+                    " queues:" + str(queue_priority) + \
+                    "=@sample_name -- " + \
+                    "--id=@sample_name" + \
+                    " create queue other-config:min-rate=" + str(min_rate_str) + \
+                    " other-config:max-rate=" + str(max_rate_str)
 
         os.system(queue_cmd)
-        time.sleep(1)
 
-        return self.queue_id_cntr_per_br[bridge_dict["bridge_name"]]
+    def push_group(self, switch_dict, group_id, group_type, buckets):
+
+        group_command = 'ovs-ofctl -O OpenFlow13 add-group' + ' ' + \
+                        'tcp:' + switch_dict['switch_ip'] + ':' + switch_dict['of_port'] + ' ' + \
+                        'group_id=' + str(group_id) + ',' + \
+                        'type=' + str(group_type) + ',' + \
+                        'bucket=watch_port:' + buckets[0]["watch_port"].split('/')[2] + ',' + 'output:' + \
+                        buckets[0]["output_port"].split('/')[2] + ',' + \
+                        'bucket=watch_port:' + \
+                        buckets[1]["watch_port"].split('/')[2] + ',' + \
+                        'output:' + buckets[1]["output_port"].split('/')[2]
+
+        os.system(group_command)
+
+
+
+
+
+
+
+
+
+
+
+
 
     def push_table_miss_goto_next_table_flow(self, bridge_dict, src_table,priority):
 
@@ -130,47 +157,8 @@ class SynthesisLibHardware(object):
 
         os.system(flow_rule)
 
-    def push_fast_failover_group_set_vlan_action(self, bridge_dict, intent_list, set_vlan_tags):
-        self.group_id_cntr += 1
-        group_id = self.group_id_cntr
-
-        group_command = 'ovs-ofctl -O OpenFlow13 add-group' + ' ' \
-                        'tcp:' + bridge_dict['switch_IP'] + ':' + bridge_dict['of_port'] + ' ' + \
-                        'group_id=' + str(group_id) + ',' + \
-                        'type=fast_failover' + ',' + \
-                        'bucket=watch_port:' + intent_list[0].out_port.split('/')[2] + ',' \
-                        'actions=mod_vlan_vid:' + str(set_vlan_tags[0]) + ',output:' + \
-                        intent_list[0].out_port.split('/')[2] + ',' + \
-                        'bucket=watch_port:' + intent_list[1].out_port.split('/')[2] + ',' \
-                        'actions=mod_vlan_vid:' + str(set_vlan_tags[1]) + ',output:' + \
-                        intent_list[1].out_port.split('/')[2]
 
 
-        #TODO: Push a fast failover group where each bucket correspond to the intent in the intent_list
-        # Each bucket has two actions: It sets the vlan_id to the corresponding index in set_vlan_tags
-        # And sends the packet out to the out_port in the intent
-        # The watch port for a bucket is same as the out_port of the intent
-
-        # group["type"] = "FF"
-        # bucket_list = []
-        # for i in range(len(intent_list)):
-        #
-        #     intent = intent_list[i]
-        #
-        #     out_port, watch_port = self.get_out_and_watch_port(intent)
-        #     bucket = {}
-        #     bucket["actions"] = [{"type": "SET_FIELD", "field": "vlan_vid", "value": set_vlan_tags[i] + 0x1000},
-        #                          {"type": "OUTPUT", "port": out_port}]
-        #
-        #     bucket["watch_port"] = watch_port
-        #     bucket["watch_group"] = 4294967295
-        #     bucket_list.append(bucket)
-        #
-        # group["buckets"] = bucket_list
-        # group_id = group["group_id"]
-
-        os.system(group_command)
-        return group_id
 
     def push_select_all_group_set_vlan_action(self, bridge_dict, intent_list, modified_tag):
 

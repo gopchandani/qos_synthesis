@@ -77,7 +77,7 @@ class SynthesizeQoSHardware:
 
     def synthesize_flow_specifications(self, flow_specs):
         
-        print "Synthesizing rules in the switches..."
+        print("Synthesizing rules in the switches...")
 
         intent_list_dict = defaultdict(defaultdict)
         for fs in flow_specs:

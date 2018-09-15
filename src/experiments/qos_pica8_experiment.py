@@ -70,7 +70,7 @@ class QoSPica8Experiment(Experiment):
 
                 arp_cmd = "sudo arp -s " + other_host_dict["host_IP"] + " " + other_host_dict["host_MAC"]
 
-                print "Installing this at IP: %s" % cmd_host_dict["host_IP"]
+                print("Installing this at IP: %s" % cmd_host_dict["host_IP"])
 
                 nc.run_cmd_via_paramiko(cmd_host_dict["mgmt_ip"], 22,
                                         cmd_host_dict["usr"],
@@ -148,9 +148,9 @@ class QoSPica8Experiment(Experiment):
             command = "cat /home/%s/out_%s.txt"  % (client["usr"], str(rate))
             output_lines = nc.run_cmd_via_paramiko(client["mgmt_ip"], 22, client["usr"], client["psswd"],
                                                    command)
-            print 'Cliient' + str(client)
-            print 'Server' + str(server)
-            print output_lines
+            print('Client' + str(client))
+            print('Server' + str(server))
+            print(output_lines)
             measurements = self.parse_measurements(output_lines)
 
             self.data["Throughput"][first_key][second_key].append(float(measurements["throughput"]))
@@ -180,10 +180,10 @@ class QoSPica8Experiment(Experiment):
         self.init_data(nc, clients, servers, self.measurement_rates)
 
         for i in range(self.num_iterations):
-            print "iteration:", i + 1
+            print("iteration:", i + 1)
 
             for rate in self.measurement_rates:
-                print "Send Rate:", rate
+                print("Send Rate:", rate)
                 self.start_all_flows_simulatenously(nc, clients, servers, rate)
                 self.collect_measurements(nc, clients, servers, rate)
 

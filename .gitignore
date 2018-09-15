@@ -11,3 +11,5 @@ src/synthesis/.cache/*
 *.bak
 *~
 *.json
+*.log
+venv*

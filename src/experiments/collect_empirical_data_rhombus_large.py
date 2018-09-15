@@ -10,6 +10,8 @@ from plot_pcap_times import plot_delay
 from flow_dict import all_flows as flows
 from topo_dict import host_ip
 
+from synthesis.synthesize_simple_backup_flows import SynthesizeSimpleBackupFlows
+from network_configuration_hardware_nsdi import NetworkConfigurationHardwareNsdi
 
 client_process = "`echo $HOME`/Repositories/qos_synthesis/traffic_generation/udp_client/client"
 server_process = "`echo $HOME`/Repositories/qos_synthesis/traffic_generation/udp_server/server"
@@ -132,7 +134,7 @@ def start_all_flows_simultaneously(num_packets, is_background, is_same):
         print('Starting Client')
         client_thread = threading.Thread(target=run_cmd_via_paramiko, args=(host_ip[flow["client"]][1],
                                                                             client_command(host_ip[flow["server"]][0],
-                                                                                           str(num_packets),
+                                                                                              str(num_packets),
                                                                                            str(flow['rate']),
                                                                                            str(flow['port']))))
         client_thread.setDaemon(True)
@@ -159,28 +161,39 @@ command = "cd scripts/; ./test;"
 
 def main():
 
+    nc = NetworkConfigurationHardwareNsdi()
+    nc.setup_network_configuration()
+
+    params = {"nc": nc,
+              "flows": flows}
+
+    ssbf = SynthesizeSimpleBackupFlows(params)
+    ssbf.trigger()
+
     # update_pi_scripts()
-    # clean_client_server()
     # update_traffic_repo()
     # compile_traffic_repo()
 
-    print(run_cmd_via_paramiko("192.17.101.126", command,
-                               port=22,
-                               username="admin", password="csl440"))
+    # print(run_cmd_via_paramiko("192.17.101.126", command="./scripts/fastfailover_reaction_time_expt delete_flows;"
+    #                                                      "./scripts/fastfailover_reaction_time_expt add_flows;",
+    #                            port=22,
+    #                            username="admin", password="csl440"))
 
-    print(run_cmd_via_paramiko("192.17.101.127", "./fastfailover_reaction_time_expt delete_flows;"
-                                                 "./fastfailover_reaction_time_expt add_flows;",
-                               username="admin", password="csl440"))
+    # print(run_cmd_via_paramiko("192.17.101.127", "./fastfailover_reaction_time_expt_delete_flows;"
+    #                                              "./fastfailover_reaction_time_expt_add_flows;"
+    #                                                 "ls -ltr | grep fast",
+    #                            username="admin", password="csl440"))
 
-    print(run_cmd_via_paramiko("192.17.101.128",  "cd scripts/;"
-                                                  "./fastfailover_reaction_time_expt delete_flows;"
-                                                  "./fastfailover_reaction_time_expt add_flows;",
-                               username="admin", password="csl440"))
 
-    print(run_cmd_via_paramiko("192.17.101.129",  "cd scripts/;"
-                                                  "./fastfailover_reaction_time_expt delete_flows;"
-                                                  "./fastfailover_reaction_time_expt add_flows;",
-                               username='admin', password="csl440"))
+    # print(run_cmd_via_paramiko("192.17.101.128",  "cd scripts/;"
+    #                                               "./fastfailover_reaction_time_expt delete_flows;"
+    #                                               "./fastfailover_reaction_time_expt add_flows;",
+    #                            username="admin", password="csl440"))
+
+    # print(run_cmd_via_paramiko("192.17.101.129",  "cd scripts/;"
+    #                                               "./fastfailover_reaction_time_expt delete_flows;"
+    #                                               "./fastfailover_reaction_time_expt add_flows;",
+    #                            username='admin', password="csl440"))
 
     num_packets = input('Enter the number of packets')
     background_traffic = input('Is there a background flow?')
