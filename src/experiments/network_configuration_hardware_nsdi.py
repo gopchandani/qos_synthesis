@@ -98,6 +98,19 @@ class NetworkConfigurationHardwareNsdi(object):
         self.graph.add_node(switch_dict["switch_name"], node_type="switch", b=switch_dict)
 
 
+    def is_switch(self, node_id):
+        if self.graph.node[node_id]["node_type"] == "switch":
+            return True
+        else:
+            return False
+
+    def is_host(self, node_id):
+        if self.graph.node[node_id]["node_type"] == "host":
+            return True
+        else:
+            return False
+
+
 
     def get_host_dict(self, host_id):
         return self.graph.node[host_id]['h']
@@ -112,7 +125,7 @@ class NetworkConfigurationHardwareNsdi(object):
 
         host_dict = {"host_name": "dot08",
                      "switch_id" : "ps1",
-                     "host_IP": "192.168.1.8",
+                     "host_ip": "192.168.1.8",
                      "mgmt_ip": "10.192.180.112",
                      "usr": "pi",
                      "psswd": "raspberry"
@@ -121,8 +134,8 @@ class NetworkConfigurationHardwareNsdi(object):
         self.graph.add_node(host_dict["host_name"], node_type="host", h=host_dict)
 
         host_dict = {"host_name": "dot09",
-                     "switch_id": "ps1",
-                     "host_IP": "192.168.1.9",
+                     "switch_id": "ps4",
+                     "host_ip": "192.168.1.9",
                      "mgmt_ip": "10.193.188.190",
                      "usr": "pi",
                      "psswd": "raspberry"
@@ -163,48 +176,22 @@ class NetworkConfigurationHardwareNsdi(object):
 
         pi_to_switch_bw = 1000000 * 50 #Assume pi to switch bandwidth is 50 Mbps
         pi_to_switch_delay = 10e-6 * 10 # Assumes pi to switch latency is 10 microseconds
-        link_dict = {"node1" : "dot08",
-                     "node1_port" : "eth0",
-                     "node2" : "ps1",
-                     "node2_port" : "ge-1/1/1",
-                     "bw" : pi_to_switch_bw,
-                     "delay" :pi_to_switch_delay}
 
-        self.graph.add_edge(link_dict["node1"],
-                            link_dict["node2"],
-                            l=link_dict)
+        links = [("dot08", "ps1", "eth0", "ge-1/1/1", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot09", "ps4", "eth0", "ge-1/1/1", "host-sw", pi_to_switch_bw, pi_to_switch_delay)]
 
-        link_dict = {"node1" : "dot09",
-                     "node1_port" : "eth0",
-                     "node2" : "ps2",
-                     "node2_port" : "ge-1/1/1",
-                     "bw" : pi_to_switch_bw,
-                     "delay" :pi_to_switch_delay}
-
-        self.graph.add_edge(link_dict["node1"],
-                            link_dict["node2"],
-                            l=link_dict)
+        self.add_links(links)
 
 
-    def add_switch_links(self):
-
-        switch_to_switch_bw = 1000000 * 1000 * 10  # Assume pi to switch bandwidth is 10 Gbps
-        switch_to_switch_delay = 10e-9 * 10  # Assumes pi to switch latency is 10 nanoseconds
-
-        links = [("ps1", "ps2", "ge-1/1/2", "ge-1/1/2","sw-sw"),
-                 ("ps1", "ps3", "ge-1/1/4", "ge-1/1/2","sw-sw"),
-                 ("ps2", "ps3", "ge-1/1/4", "ge-1/1/8","sw-sw"),
-                 ("ps2", "ps4", "ge-1/1/6", "ge-1/1/2", "sw-sw"),
-                 ("ps3", "ps4", "ge-1/1/10", "ge-1/1/4","sw-sw")]
-
-        for node1, node2, node1_port, node2_port, link_type in links:
+    def add_links(self, links):
+        for node1, node2, node1_port, node2_port, link_type, bw, delay in links:
             link_dict = {
                 "node1": node1,
                 "node2": node2,
                 "node1_port": node1_port,
                 "node2_port": node2_port,
-                "bw": switch_to_switch_bw,
-                "delay":switch_to_switch_delay
+                "bw": bw,
+                "delay":delay
             }
 
             self.graph.add_edge(link_dict["node1"],
@@ -215,13 +202,27 @@ class NetworkConfigurationHardwareNsdi(object):
                 "node2": node1,
                 "node1_port": node2_port,
                 "node2_port": node1_port,
-                "bw": switch_to_switch_bw,
-                "delay": switch_to_switch_delay
+                "bw": bw,
+                "delay": delay
             }
 
             self.graph.add_edge(link_dict["node1"],
                                 link_dict["node2"],
                                 l=link_dict, t=link_type)
+
+    def add_switch_links(self):
+
+        switch_to_switch_bw = 1000000 * 1000 * 10  # Assume pi to switch bandwidth is 10 Gbps
+        switch_to_switch_delay = 10e-9 * 10  # Assumes pi to switch latency is 10 nanoseconds
+
+        links = [("ps1", "ps2", "ge-1/1/2", "ge-1/1/2","sw-sw", switch_to_switch_bw, switch_to_switch_delay),
+                 ("ps1", "ps3", "ge-1/1/4", "ge-1/1/2","sw-sw", switch_to_switch_bw, switch_to_switch_delay),
+                 ("ps2", "ps3", "ge-1/1/4", "ge-1/1/8","sw-sw", switch_to_switch_bw, switch_to_switch_delay),
+                 ("ps2", "ps4", "ge-1/1/6", "ge-1/1/2", "sw-sw", switch_to_switch_bw, switch_to_switch_delay),
+                 ("ps3", "ps4", "ge-1/1/10", "ge-1/1/4","sw-sw", switch_to_switch_bw, switch_to_switch_delay)]
+
+        self.add_links(links)
+
 
     def setup_network_configuration(self):
 

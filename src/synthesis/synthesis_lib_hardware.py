@@ -75,18 +75,6 @@ class SynthesisLibHardware(object):
 
         os.system(group_command)
 
-
-
-
-
-
-
-
-
-
-
-
-
     def push_table_miss_goto_next_table_flow(self, bridge_dict, src_table,priority):
 
         dst_table_id = src_table + 1

@@ -104,44 +104,46 @@ def start_all_flows_simultaneously(num_packets, is_background, is_same):
     rt_traffic_jobs = []
 
     for flow in flows:
-        print()
-        print(host_ip[flow["client"]][0], '------->', host_ip[flow["server"]][0])
-        tcpdump_server_thread = threading.Thread(target=run_cmd_via_paramiko, args=(host_ip[flow["server"]][1],
-                                                                            run_tcpdump(flow["id"],
-                                                                                        0, num_packets)))
-        tcpdump_jobs.append(tcpdump_server_thread)
+        if flow["type"] == "data":
 
-        tcpdump_client_thread = threading.Thread(target=run_cmd_via_paramiko, args=(host_ip[flow["client"]][1],
-                                                                            run_tcpdump(flow["id"],
-                                                                                        1, num_packets)))
-        tcpdump_jobs.append(tcpdump_client_thread)
+            print()
+            print(host_ip[flow["client"]][0], '------->', host_ip[flow["server"]][0])
+            tcpdump_server_thread = threading.Thread(target=run_cmd_via_paramiko, args=(host_ip[flow["server"]][1],
+                                                                                run_tcpdump(flow["id"],
+                                                                                            0, num_packets)))
+            tcpdump_jobs.append(tcpdump_server_thread)
 
-        for job in tcpdump_jobs:
-            job.start()
+            tcpdump_client_thread = threading.Thread(target=run_cmd_via_paramiko, args=(host_ip[flow["client"]][1],
+                                                                                run_tcpdump(flow["id"],
+                                                                                            1, num_packets)))
+            tcpdump_jobs.append(tcpdump_client_thread)
 
-        #time.sleep(5) -- unnecessary
+            for job in tcpdump_jobs:
+                job.start()
 
-        # server_thread = threading.Thread(target=run_cmd_via_paramiko, args=(host_ip[flow["server"]][1],
-        #                                                                     server_command(str(flow['port']),
-        #                                                                                    str(num_packets),
-        #                                                                                    flow['id'], is_background,
-        #                                                                                    is_same)))
-        # this was not working
-        # print 'Starting Server'
-        # run_cmd_via_paramiko_server(host_ip[flow["server"]][1], server_command(str(flow['port']), str(num_packets), flow['id'],
-        #                                                     is_background, is_same))
-        time.sleep(1.0)
-        print('Starting Client')
-        client_thread = threading.Thread(target=run_cmd_via_paramiko, args=(host_ip[flow["client"]][1],
-                                                                            client_command(host_ip[flow["server"]][0],
-                                                                                              str(num_packets),
-                                                                                           str(flow['rate']),
-                                                                                           str(flow['port']))))
-        client_thread.setDaemon(True)
-        rt_traffic_jobs.append(client_thread)
+            #time.sleep(5) -- unnecessary
 
-        for job in rt_traffic_jobs:
-            job.start()
+            # server_thread = threading.Thread(target=run_cmd_via_paramiko, args=(host_ip[flow["server"]][1],
+            #                                                                     server_command(str(flow['port']),
+            #                                                                                    str(num_packets),
+            #                                                                                    flow['id'], is_background,
+            #                                                                                    is_same)))
+            # this was not working
+            # print 'Starting Server'
+            # run_cmd_via_paramiko_server(host_ip[flow["server"]][1], server_command(str(flow['port']), str(num_packets), flow['id'],
+            #                                                     is_background, is_same))
+            time.sleep(1.0)
+            print('Starting Client')
+            client_thread = threading.Thread(target=run_cmd_via_paramiko, args=(host_ip[flow["client"]][1],
+                                                                                client_command(host_ip[flow["server"]][0],
+                                                                                                  str(num_packets),
+                                                                                               str(flow['rate']),
+                                                                                               str(flow['port']))))
+            client_thread.setDaemon(True)
+            rt_traffic_jobs.append(client_thread)
+
+            for job in rt_traffic_jobs:
+                job.start()
 
     print('Flows are running now')
 
@@ -161,13 +163,16 @@ command = "cd scripts/; ./test;"
 
 def main():
 
+    print("Starting")
     nc = NetworkConfigurationHardwareNsdi()
     nc.setup_network_configuration()
 
+    print('network configuration done')
     params = {"nc": nc,
               "flows": flows}
 
     ssbf = SynthesizeSimpleBackupFlows(params)
+    ssbf.compute_switch_configurations()
     ssbf.trigger()
 
     # update_pi_scripts()
@@ -228,21 +233,24 @@ def get_rhombus_data_pscp(file_suffix):
     os.makedirs(mydir)
 
     for f in flows:
-        remote_filepath = f["data_loc"] + f["id"] + '_' + file_suffix + ".csv"
-        tcpdump_file_server = f["data_loc"] + 'tcpdump_' + f["id"] + '_server' + '.pcap'
-        tcpdump_file_client = f["data_loc"] + 'tcpdump_' + f["id"] + '_client' + '.pcap'
+        if f["type"] == "data":
+            remote_filepath = f["data_loc"] + f["id"] + '_' + file_suffix + ".csv"
+            tcpdump_file_server = f["data_loc"] + 'tcpdump_' + f["id"] + '_server' + '.pcap'
+            tcpdump_file_client = f["data_loc"] + 'tcpdump_' + f["id"] + '_client' + '.pcap'
 
-        cmd = "pscp " + "-pw raspberry " + f["user"] + "@" + host_ip[f["server"]][1] + ":" + remote_filepath + " " + mydir + '/'
-        get_tcpdump_client = "pscp " + "-pw raspberry " + f["user"] + "@" + host_ip[f["client"]][1] + ":" + tcpdump_file_client + " " + mydir + '/'
-        get_tcpdump_server = "pscp " + "-pw raspberry " + f["user"] + "@" + host_ip[f["server"]][1] + ":" + tcpdump_file_server + " " + mydir + '/'
+            cmd = "pscp " + "-pw raspberry " + f["user"] + "@" + host_ip[f["server"]][1] + ":" + remote_filepath + " " + mydir + '/'
+            get_tcpdump_client = "pscp " + "-pw raspberry " + f["user"] + "@" + host_ip[f["client"]][1] + ":" + tcpdump_file_client + " " + mydir + '/'
+            get_tcpdump_server = "pscp " + "-pw raspberry " + f["user"] + "@" + host_ip[f["server"]][1] + ":" + tcpdump_file_server + " " + mydir + '/'
 
-        print(cmd)
-        print(get_tcpdump_server)
-        print(get_tcpdump_client)
+            print(cmd)
+            print(get_tcpdump_server)
+            print(get_tcpdump_client)
 
-        #os.system(cmd)
-        os.system(get_tcpdump_server)
-        os.system(get_tcpdump_client)
+            #os.system(cmd)
+            os.system(get_tcpdump_server)
+            os.system(get_tcpdump_client)
+        else:
+            continue
 
     return mydir
 
