@@ -1,19 +1,22 @@
+#define _GNU_SOURCE
 #include<unistd.h>
 #include<sys/socket.h>
 #include<netinet/in.h>
 #include<stdio.h>
 #include<arpa/inet.h>
 #include<string.h>
+#include<sched.h>
 #include<time.h>
 #include<stdlib.h>
 
-struct packet_message{
+struct __attribute__((__packed__)) packet_message{
+    char payload[968];
     int id;
     struct timespec snapshot;
-    char payload[984];
 };
 
 unsigned long int count = 0;
+struct timeval timeout;
 /*double *send_times;
 
 void print_data() {
@@ -28,6 +31,16 @@ void print_data() {
 */
 
 int main(int argc, char *argv[]){
+
+    //CPU Pinning
+    cpu_set_t traffic_gen_cpu_set;
+    CPU_ZERO(&traffic_gen_cpu_set);
+    CPU_SET(3, &traffic_gen_cpu_set);
+    sched_setaffinity(0, sizeof(cpu_set_t), &traffic_gen_cpu_set);
+
+    //Scheduler Priority
+    const struct sched_param priority = {1};
+    sched_setscheduler(0, SCHED_FIFO, &priority);
 
     if (argc == 2 && strcmp(argv[1], "--help")==0 ){
 	printf("Time Measurement Tool: Client Side\n");
@@ -63,11 +76,12 @@ int main(int argc, char *argv[]){
 
     while(count < number_time_packets){
 	
-	if (count % 1000 == 0) {
+	clock_gettime(CLOCK_REALTIME, &send_timestamp);
+	if (count % 10000 == 0) {
         	printf("\ncount: %d/%d", count, number_time_packets);
  	}	
 
-	clock_gettime(CLOCK_REALTIME, &send_timestamp);
+	//clock_gettime(CLOCK_REALTIME, &send_timestamp);
 	pack_msg->id = count++;
 	pack_msg->snapshot = send_timestamp;
 
@@ -80,7 +94,9 @@ int main(int argc, char *argv[]){
   	
 	if (budget_for_rate - send_time > 0)
 	{
-		usleep((budget_for_rate - send_time) / 1000);
+		//usleep((budget_for_rate - send_time) / 1000);
+		timeout.tv_usec = (budget_for_rate - send_time)/1000;
+		select(0,NULL,NULL,NULL, &timeout);
 	}
     }
     
