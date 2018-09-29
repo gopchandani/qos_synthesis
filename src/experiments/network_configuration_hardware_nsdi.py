@@ -39,7 +39,7 @@ class NetworkConfigurationHardwareNsdi(object):
             os.system(delete_groups_cmd)
 
 
-            for port in switch_dict["port_list"]:
+            for port in switch_dict["egress_port_list"]:
 
                 port_clear_qos_cmd = "ovs-vsctl " + "--db=tcp:" + str(switch_dict["switch_ip"]) + ":6634 -- " + \
                             "clear Port " + port + " qos"
@@ -63,7 +63,8 @@ class NetworkConfigurationHardwareNsdi(object):
                       "usr": "admin",
                       "psswd": "csl440",
                       "of_port": "6633",
-                      "port_list":['ge-1/1/1','ge-1/1/2','ge-1/1/4']}
+                      "port_list":['ge-1/1/1','ge-1/1/2', 'ge-1/1/3', 'ge-1/1/4', 'ge-1/1/5', 'ge-1/1/7', 'ge-1/1/9'],
+                      "egress_port_list": ['ge-1/1/2', 'ge-1/1/4']}
 
         self.graph.add_node(switch_dict["switch_name"], node_type="switch", b=switch_dict)
 
@@ -73,7 +74,9 @@ class NetworkConfigurationHardwareNsdi(object):
                        "usr": "admin",
                        "psswd": "csl440",
                        "of_port": "6633",
-                       "port_list":['ge-1/1/2', 'ge-1/1/4', 'ge-1/1/6']}
+                       "port_list":['ge-1/1/2', 'ge-1/1/4', 'ge-1/1/6', 'ge-1/1/8', 'ge-1/1/10', 'ge-1/1/12',
+                                    'ge-1/1/14', 'ge-1/1/16'],
+                       "egress_port_list": ['ge-1/1/4', 'ge-1/1/6']}
 
         self.graph.add_node(switch_dict["switch_name"], node_type="switch", b=switch_dict)
 
@@ -83,7 +86,8 @@ class NetworkConfigurationHardwareNsdi(object):
                        "usr": "admin",
                        "psswd": "csl440",
                        "of_port": "6633",
-                       "port_list": ['ge-1/1/2', 'ge-1/1/8', 'ge-1/1/10']}
+                       "port_list": ['ge-1/1/2', 'ge-1/1/8', 'ge-1/1/10'],
+                       "egress_port_list": ['ge-1/1/10']}
 
         self.graph.add_node(switch_dict["switch_name"], node_type="switch", b=switch_dict)
 
@@ -93,7 +97,10 @@ class NetworkConfigurationHardwareNsdi(object):
                        "usr": "admin",
                        "psswd": "csl440",
                        "of_port": "6633",
-                       "port_list": ['ge-1/1/2', 'ge-1/1/4', 'ge-1/1/1']}
+                       "port_list": ['ge-1/1/1', 'ge-1/1/2', 'ge-1/1/3', 'ge-1/1/4', 'ge-1/1/5', 'ge-1/1/6', 'ge-1/1/7',
+                                     'ge-1/1/8', 'ge-1/1/9', 'ge-1/1/10', 'ge-1/1/11'],
+                       "egress_port_list": ['ge-1/1/1', 'ge-1/1/5', 'ge-1/1/6', 'ge-1/1/7', 'ge-1/1/8', 'ge-1/1/9'
+                           , 'ge-1/1/10', 'ge-1/1/11', 'ge-1/1/13']}
 
         self.graph.add_node(switch_dict["switch_name"], node_type="switch", b=switch_dict)
 
@@ -123,25 +130,44 @@ class NetworkConfigurationHardwareNsdi(object):
 
     def add_host_nodes(self):
 
-        host_dict = {"host_name": "dot08",
-                     "switch_id" : "ps1",
-                     "host_ip": "192.168.1.8",
-                     "mgmt_ip": "10.192.180.112",
-                     "usr": "pi",
-                     "psswd": "raspberry"
+        hosts = [
+            ("dot08", "ps1", "192.168.1.8", "10.193.212.15", "pi", "raspberry"),
+            ("dot09", "ps4", "192.168.1.9", "10.193.188.190", "pi", "raspberry"),
+            ("dot10", "ps1", "192.168.1.10", "10.193.198.88", "pi", "raspberry"),
+            ("dot11", "ps4", "192.168.1.11", "10.192.92.86", "pi", "raspberry"),
+            ("dot12", "ps1", "192.168.1.12", "10.193.57.162", "pi", "raspberry"),
+            ("dot15", "ps4", "192.168.1.15", "10.193.237.3", "pi", "raspberry"),
+            ("dot20", "ps1", "192.168.1.20", "10.195.137.21", "pi", "raspberry"),
+            ("dot29", "ps4", "192.168.1.29", "10.192.153.227", "pi", "raspberry"),
+            ("dot30", "ps2", "192.168.1.30", "10.195.27.95", "pi", "raspberry"),
+            ("dot31", "ps4", "192.168.1.31", "10.193.242.20", "pi", "raspberry"),
+            ("dot40", "ps2", "192.168.1.40", "10.193.182.29", "pi", "raspberry"),
+            ("dot120", "ps4", "192.168.1.120", "10.193.249.20", "pi", "raspberry"),
+            ("dot140", "ps2", "192.168.1.140", "10.194.183.169", "pi", "raspberry"),
+            ("dot200", "ps4", "192.168.1.200", "10.192.243.200", "pi", "raspberry"),
+            ("dot220", "ps2", "192.168.1.220", "10.192.156.191", "pi", "raspberry"),
+            ("dot240", "ps4", "192.168.1.240", "10.195.207.152", "pi", "raspberry"),
+            ("dot250", "ps2", "192.168.1.250", "10.194.58.113", "iti", "csl440"),
+            ("dot123", "ps4", "192.168.1.123", "10.194.94.26", "iti", "csl440"),
+            ("dot102", "ps1", "192.168.1.102", "10.194.94.27", "sdn", "sdnqos"),
+        ]
+
+        self.add_hosts(hosts)
+
+    def add_hosts(self, hosts):
+        for host_name, switch_id, host_ip, mgmt_ip, usr, psswd in hosts:
+            host_dict = {
+                "host_name": host_name,
+                "switch_id": switch_id,
+                "host_ip": host_ip,
+                "mgmt_ip": mgmt_ip,
+                "usr": usr,
+                "psswd": psswd
             }
 
-        self.graph.add_node(host_dict["host_name"], node_type="host", h=host_dict)
-
-        host_dict = {"host_name": "dot09",
-                     "switch_id": "ps4",
-                     "host_ip": "192.168.1.9",
-                     "mgmt_ip": "10.193.188.190",
-                     "usr": "pi",
-                     "psswd": "raspberry"
-                     }
-
-        self.graph.add_node(host_dict["host_name"], node_type="host", h=host_dict)
+            self.graph.add_node(host_dict["host_name"],
+                                node_type="host",
+                                h=host_dict)
 
     def switch_attached_host_dicts(self,switch_dict):
         host_dict_list=[]
@@ -177,8 +203,33 @@ class NetworkConfigurationHardwareNsdi(object):
         pi_to_switch_bw = 1000000 * 50 #Assume pi to switch bandwidth is 50 Mbps
         pi_to_switch_delay = 10e-6 * 10 # Assumes pi to switch latency is 10 microseconds
 
+        laptop_to_switch_bw = 10000000 * 50
+        laptop_to_switch_delay = 10e-6 * 10 # Assumes pi to switch latency is 10 microseconds
+
+
         links = [("dot08", "ps1", "eth0", "ge-1/1/1", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
-                 ("dot09", "ps4", "eth0", "ge-1/1/1", "host-sw", pi_to_switch_bw, pi_to_switch_delay)]
+                 ("dot10", "ps1", "eth0", "ge-1/1/3", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot12", "ps1", "eth0", "ge-1/1/5", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot20", "ps1", "eth0", "ge-1/1/7", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot30", "ps2", "eth0", "ge-1/1/8", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot40", "ps2", "eth0", "ge-1/1/10", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot140", "ps2", "eth0", "ge-1/1/12", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot220", "ps2", "eth0", "ge-1/1/14", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+
+                 ("dot09", "ps4", "eth0", "ge-1/1/1", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot11", "ps4", "eth0", "ge-1/1/5", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot15", "ps4", "eth0", "ge-1/1/6", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot29", "ps4", "eth0", "ge-1/1/7", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+
+                 ("dot31", "ps4", "eth0", "ge-1/1/8", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot120", "ps4", "eth0", "ge-1/1/9", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot200", "ps4", "eth0", "ge-1/1/10", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot240", "ps4", "eth0", "ge-1/1/11", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+
+                 ("dot250", "ps2", "enp0s25", "ge-1/1/16", "host-sw", laptop_to_switch_bw, laptop_to_switch_delay),
+                 ("dot123", "ps4", "enp0s31f6", "ge-1/1/13", "host-sw", laptop_to_switch_bw, laptop_to_switch_delay),
+                 ("dot102", "ps1", "eth0", "ge-1/1/9", "host-sw", laptop_to_switch_bw, laptop_to_switch_delay)
+                 ]
 
         self.add_links(links)
 
@@ -216,7 +267,8 @@ class NetworkConfigurationHardwareNsdi(object):
         switch_to_switch_delay = 10e-9 * 10  # Assumes pi to switch latency is 10 nanoseconds
 
         links = [("ps1", "ps2", "ge-1/1/2", "ge-1/1/2","sw-sw", switch_to_switch_bw, switch_to_switch_delay),
-                 ("ps1", "ps3", "ge-1/1/4", "ge-1/1/2","sw-sw", switch_to_switch_bw, switch_to_switch_delay),
+                 ("ps1", "ps4", "ge-1/1/4", "ge-1/1/3", "sw-sw", switch_to_switch_bw, switch_to_switch_delay),
+                 #("ps1", "ps3", "ge-1/1/4", "ge-1/1/2","sw-sw", switch_to_switch_bw, switch_to_switch_delay),
                  ("ps2", "ps3", "ge-1/1/4", "ge-1/1/8","sw-sw", switch_to_switch_bw, switch_to_switch_delay),
                  ("ps2", "ps4", "ge-1/1/6", "ge-1/1/2", "sw-sw", switch_to_switch_bw, switch_to_switch_delay),
                  ("ps3", "ps4", "ge-1/1/10", "ge-1/1/4","sw-sw", switch_to_switch_bw, switch_to_switch_delay)]

@@ -53,7 +53,7 @@ def run_tcpdump(flow_num, is_client, num_packets):
 
 def client_command(server_ip, num_packets, flow_rate_in_Mbps, port_no):
 
-    budget = (1E9 * 8) / int (1024 * float(flow_rate_in_Mbps))
+    budget = (1E9 * 8 * 1.5) / int (1000 * float(flow_rate_in_Mbps))
     client_command = ' '.join([client_process, server_ip, num_packets, str(int(budget)), str(port_no)])
     if should_nice == True:
         client_command = 'sudo nice --20 ' + client_command
@@ -91,6 +91,7 @@ def compile_traffic_repo():
 def clean_client_server():
     for client in host_ip:
         print(run_cmd_via_paramiko(host_ip[client][1], "sudo pkill -x client; sudo pkill -x server; sudo rm *.csv; sudo rm *.pcap"))
+        #print(run_cmd_via_paramiko(host_ip[client][1], "sudo /home/pi/scripts/powersave_governor.sh"))
 
 def update_pi_scripts():
     for client in host_ip:
@@ -111,15 +112,14 @@ def start_all_flows_simultaneously(num_packets, is_background, is_same):
             tcpdump_server_thread = threading.Thread(target=run_cmd_via_paramiko, args=(host_ip[flow["server"]][1],
                                                                                 run_tcpdump(flow["id"],
                                                                                             0, num_packets)))
+            tcpdump_server_thread.start()
             tcpdump_jobs.append(tcpdump_server_thread)
 
             tcpdump_client_thread = threading.Thread(target=run_cmd_via_paramiko, args=(host_ip[flow["client"]][1],
                                                                                 run_tcpdump(flow["id"],
                                                                                             1, num_packets)))
+            tcpdump_client_thread.start()
             tcpdump_jobs.append(tcpdump_client_thread)
-
-            for job in tcpdump_jobs:
-                job.start()
 
             #time.sleep(5) -- unnecessary
 
@@ -142,8 +142,8 @@ def start_all_flows_simultaneously(num_packets, is_background, is_same):
             client_thread.setDaemon(True)
             rt_traffic_jobs.append(client_thread)
 
-            for job in rt_traffic_jobs:
-                job.start()
+    for job in rt_traffic_jobs:
+        job.start()
 
     print('Flows are running now')
 
@@ -163,6 +163,7 @@ command = "cd scripts/; ./test;"
 
 def main():
 
+    clean_client_server()
     print("Starting")
     nc = NetworkConfigurationHardwareNsdi()
     nc.setup_network_configuration()
@@ -175,35 +176,11 @@ def main():
     ssbf.compute_switch_configurations()
     ssbf.trigger()
 
-    # update_pi_scripts()
-    # update_traffic_repo()
-    # compile_traffic_repo()
-
-    # print(run_cmd_via_paramiko("192.17.101.126", command="./scripts/fastfailover_reaction_time_expt delete_flows;"
-    #                                                      "./scripts/fastfailover_reaction_time_expt add_flows;",
-    #                            port=22,
-    #                            username="admin", password="csl440"))
-
-    # print(run_cmd_via_paramiko("192.17.101.127", "./fastfailover_reaction_time_expt_delete_flows;"
-    #                                              "./fastfailover_reaction_time_expt_add_flows;"
-    #                                                 "ls -ltr | grep fast",
-    #                            username="admin", password="csl440"))
-
-
-    # print(run_cmd_via_paramiko("192.17.101.128",  "cd scripts/;"
-    #                                               "./fastfailover_reaction_time_expt delete_flows;"
-    #                                               "./fastfailover_reaction_time_expt add_flows;",
-    #                            username="admin", password="csl440"))
-
-    # print(run_cmd_via_paramiko("192.17.101.129",  "cd scripts/;"
-    #                                               "./fastfailover_reaction_time_expt delete_flows;"
-    #                                               "./fastfailover_reaction_time_expt add_flows;",
-    #                            username='admin', password="csl440"))
 
     num_packets = input('Enter the number of packets')
     background_traffic = input('Is there a background flow?')
     paths = input('Is it same or different paths?')
-    clean_client_server()
+
 
 
     is_background = 'bg' if background_traffic else 'nobg'

@@ -62,11 +62,17 @@ class SynthesizeSimpleBackupFlows(object):
             src_host_dict = self.params["nc"].get_host_dict(f["client"])
             target_host_dict = self.params["nc"].get_host_dict(f["server"])
 
-            path = nx.shortest_path(self.params["nc"].graph,
-                                    source=src_host_dict["host_name"],
-                                    target=target_host_dict["host_name"])
+            if "path" not in f:
+
+                path = nx.shortest_path(self.params["nc"].graph,
+                                        source=src_host_dict["host_name"],
+                                        target=target_host_dict["host_name"])
+
+            else:
+                path = f["path"]
 
             print(path)
+
             if f["type"] == "ptp":
                 flow_rule_priority = 2
             elif f["type"] == "data":
@@ -77,6 +83,7 @@ class SynthesizeSimpleBackupFlows(object):
             things = self.generate_flows_queues_groups(path, f["priority"],flow_rule_priority)
             f["rules"] = things["rules"]
             f["queues"] = things["queues"]
+
 
     def trigger(self):
 
