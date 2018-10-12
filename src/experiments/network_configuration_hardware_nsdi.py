@@ -131,8 +131,8 @@ class NetworkConfigurationHardwareNsdi(object):
     def add_host_nodes(self):
 
         hosts = [
-            ("dot08", "ps1", "192.168.1.8", "10.193.212.15", "pi", "raspberry"),
-            ("dot09", "ps4", "192.168.1.9", "10.193.188.190", "pi", "raspberry"),
+            ("dot08", "ps1", "192.168.1.8", "10.195.206.153", "pi", "raspberry"),
+            ("dot09", "ps4", "192.168.1.9", "10.194.111.180", "pi", "raspberry"),
             ("dot10", "ps1", "192.168.1.10", "10.193.198.88", "pi", "raspberry"),
             ("dot11", "ps4", "192.168.1.11", "10.192.92.86", "pi", "raspberry"),
             ("dot12", "ps1", "192.168.1.12", "10.193.57.162", "pi", "raspberry"),

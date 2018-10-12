@@ -1,5 +1,5 @@
 import networkx as nx
-from synthesis.synthesis_lib_hardware import SynthesisLibHardware
+from src.synthesis.synthesis_lib_hardware import SynthesisLibHardware
 
 
 class SynthesizeSimpleBackupFlows(object):
