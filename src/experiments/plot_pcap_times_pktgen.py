@@ -3,7 +3,7 @@ from matplotlib import rcParams
 from matplotlib import pyplot as plt
 import numpy as np
 
-path_root = "/home/ak7/Repositories/qos_synthesis/src/experiments/data/20181012_131415"
+path_root = "/home/ak7/Repositories/qos_synthesis/src/experiments/data/20181016_171939bg_intuitive_paths"
 num_packets = 10000
 
 def print_stats(diffs):
@@ -23,6 +23,7 @@ def plot_delay(path_root):
 
     for file in os.listdir(path_root):
         if file.endswith(".pcap"):
+            print()
             print('Opening ' + str(file))
             with open(path_root + file, 'rb') as f:
                 pcap = dpkt.pcap.Reader(f)
@@ -46,10 +47,10 @@ def plot_delay(path_root):
 
                             #print(source_secs, source_usecs)
                             diff_secs = dest_secs - source_secs
-                            diff_usecs = dest_usecs - source_usecs
+                            diff_usecs = dest_usecs - source_usecs + (diff_secs * 1e6)
 
-                            if (diff_usecs < 0):
-                                diff_usecs = diff_usecs + (diff_secs * 1e6)
+                            # if (diff_usecs < 0):
+                            #     diff_usecs = diff_usecs + (diff_secs * 1e6)
 
                             f1.write("%s\n" % str(diff_usecs))
                             diffs.append(diff_usecs)
@@ -67,7 +68,7 @@ def plot_delay(path_root):
 
                 # ax.plot(diffs, '.-')
                 ax.scatter(range(len(diffs)), diffs, color='k', alpha=0.7)
-                plt.axhline(y=900, color='r', linestyle='-')
+                plt.axhline(y=1200, color='r', linestyle='-')
                 ax.set_title('One-way delay for ' + file.split('_')[1])
                 ax.set_xlabel('Packet Number')
                 ax.set_ylabel('One way delay (us)')
