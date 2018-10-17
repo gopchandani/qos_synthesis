@@ -81,7 +81,8 @@ def create_flow_spec(_debug=False):
 
     # change accordingly for each flow -- put some value just for demonstration
     period = 5  # in microsecond
-    e2e_deadline = 800  # in microsecond
+    # e2e_deadline = 800  # in microsecond
+    e2e_deadline = 3000  # in microsecond
     pckt_size = 1000 * 8  # size of the packets (in bits)
     pkt_processing_time = 17.0  # corresponding processing time (in microsecond)
     # bw_req = pckt_size / (5/1000) # Kbps

@@ -11,7 +11,8 @@ from config import *
 
 class Flow:
 
-    def __init__(self, id, src, dst, period, e2e_deadline, pckt_size, pkt_processing_time, prio, flowclass="RT"):
+    def __init__(self, id, src, dst, period, e2e_deadline, pckt_size, pkt_processing_time, prio,
+                 flowclass="RT", flowtype="forward"):
         self.id = id
         self.src = src
         self.dst = dst
@@ -22,7 +23,9 @@ class Flow:
         self.prio = prio
         self.flowclass = flowclass
         self.bw_req = pckt_size/period
+        self.flowtype = flowtype  # forward or backup
         self.path = []  # will be updated later
+
 
 
 def get_flow_by_param(id, indx, nxtindx, period, e2e_deadline, prio):

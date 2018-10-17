@@ -69,6 +69,9 @@ class PARAMS(Const):
 
     BASE_E2E_BETA_LIST_MULTIPLEX_COMP = [0.6, 1.0]  # see RTSS paper, how we set E2E deadline based on Topology (diamaeter of NW)
 
+    # this is for backup path experiment
+    BASE_E2E_BETA_LIST_BACKUP_PATH = [0.6]  # see RTSS paper, how we set E2E deadline based on Topology (diamaeter of NW)
+
     N_PRIO_LEVEL = 3  # number of priority levels
 
     # this two variable must be in same length
@@ -88,8 +91,7 @@ class PARAMS(Const):
 
     N_SINGLE_NODE_EXP_SAMPLE_RUN = 10000  # number of sample runs for single node experiment
 
-    SCHED_EXP_EACH_TRIAL_COUNT = 50  # number of trials for schedulability experiment
-
+    SCHED_EXP_EACH_TRIAL_COUNT = 1000  # number of trials for schedulability experiment
     SCHED_MULTIPLEX_EXP_EACH_TRIAL_COUNT = 20  # number of trials (comparing with multiplex)
 
     EXP_SINGLE_NODE_FILENAME = 'exp_single_node.pickle.gzip'
@@ -98,5 +100,9 @@ class PARAMS(Const):
     EXP_WITH_MULTIPLEX = 'EXP_WITH_MULTIPLEX'
     EXP_WITHOUT_MULTIPLEX = 'EXP_WITHOUT_MULTIPLEX'
 
+    EXP_BACKUP_ALL_FLOW = 'EXP_BACKUP_ALL_FLOW'
+    EXP_BACKUP_HP_FLOW = 'EXP_BACKUP_HP_FLOW'
+
     EXP_SCHED_WITH_MULTIPLEX_FILENAME = 'exp_sched_multiplex.pickle.gzip'
     EXP_SCHED_WITHOUT_MULTIPLEX_FILENAME = 'exp_sched_without_multiplex.pickle.gzip'
+    EXP_SCHED_FORWAD_BACKUP_PATH_FILENAME = 'exp_sched_with_primary_backup_path.pickle.gzip'
