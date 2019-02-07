@@ -7,11 +7,14 @@ import datetime
 import time
 from collections import defaultdict
 from src.experiments.plot_pcap_times_pktgen import plot_delay
-from src.experiments.flow_dict_afdx import all_flows as flows
-from src.experiments.topo_dict_afdx import host_ip
+# from src.experiments.flow_dict_afdx import all_flows as flows
+# from src.experiments.topo_dict_afdx import host_ip
+from src.experiments.topo_dict import host_ip
+from src.experiments.flow_dict import all_flows as flows
 
 from src.synthesis.synthesize_simple_backup_flows import SynthesizeSimpleBackupFlows
-from src.experiments.network_configuration_hardware_afdx import NetworkConfigurationHardwareNsdi
+# from src.experiments.network_configuration_hardware_afdx import NetworkConfigurationHardwareNsdi
+from src.experiments.network_configuration_hardware_nsdi import NetworkConfigurationHardwareNsdi
 
 # should_nice = True
 
@@ -22,9 +25,12 @@ from src.experiments.network_configuration_hardware_afdx import NetworkConfigura
 
 pktgen_script = "sudo taskset 0x1 sudo `echo $HOME`/Repositories/linux/samples/pktgen/pktgen_sample01_simple.sh"
 packet_size_in_bytes = 1024
-num_packets = 10000
+num_packets = 100000
 num_threads = 4
 burst = 0
+
+# Background to RT Traffic
+speedup_factor = 5
 
 
 def run_cmd_via_paramiko(IP, command, port=22, username='pi', password='raspberry'):
@@ -61,8 +67,12 @@ def run_tcpdump(flow_num, is_client, num_packets, interface_name):
     file_name = flow_num +'_client.pcap' if is_client else flow_num +'_server.pcap'
     output_file = 'tcpdump_' + file_name
 
-    tcpdump_command = 'sudo taskset 0x4 sudo nice --20 tcpdump -U -i ' + interface_name + \
-                      ' -B 307200 -c ' + str(num_packets) + ' udp dst portrange 10000-10011 -w ' + output_file
+    if interface_name == 'enp0s31f6':
+        # num_packets = speedup_factor * num_packets
+        return
+
+    tcpdump_command = 'sudo taskset 0x4 sudo nice --20 tcpdump -n -U -i ' + interface_name + \
+                      ' -B 307200 -c ' + str(num_packets) + ' udp dst portrange 10000-10013 -w ' + output_file
 
     print(tcpdump_command)
 
@@ -84,6 +94,9 @@ def client_command_pktgen(packet_size_in_bytes, server_ip, server_mac, num_threa
 
     if server_ip == host_ip["dot123"][0]:
         eth_interface_name = 'enp0s25'
+        num_packets = speedup_factor * num_packets
+        return
+
     else:
         eth_interface_name = 'eth0'
 
@@ -108,6 +121,59 @@ def clean_client_server():
                                                        "sudo pkill -x tcpdump; "
                                                        "sudo rm *.pcap"))
 
+def kill_ptp_start_again():
+    for client in host_ip:
+        print(host_ip[client][0])
+        print(run_cmd_via_paramiko(host_ip[client][1], "source ~/.bashrc;"))
+
+def update_arp_tables():
+    for client in host_ip:
+        print(host_ip[client][0])
+        print(run_cmd_via_paramiko(host_ip[client][1], "cd scripts; sudo ./arp_table_fix.sh;"))
+
+def is_ptp_running():
+    for client in host_ip:
+        print(host_ip[client][0])
+        print(run_cmd_via_paramiko(host_ip[client][1], "ps -el | grep ptp"))
+
+def reboot_hosts():
+    for client in host_ip:
+        print(host_ip[client][0])
+        print(run_cmd_via_paramiko(host_ip[client][1], "sudo reboot;"))
+
+def ping_hosts():
+    for client in host_ip:
+        print(host_ip[client][0])
+        print(run_cmd_via_paramiko(host_ip[client][1], "echo hello;"))
+
+def put_in_performance_mode():
+    for client in host_ip:
+        print(host_ip[client][0])
+        print(run_cmd_via_paramiko(host_ip[client][1], "sudo /home/pi/scripts/performance_governor.sh;"))
+
+def put_in_powersave_mode():
+    for client in host_ip:
+        print(host_ip[client][0])
+        print(run_cmd_via_paramiko(host_ip[client][1], "sudo /home/pi/scripts/powersave_governor.sh;"))
+
+def install_ptp_commands_in_hosts():
+    for flow in flows:
+        print(host_ip[flow["client"]][0], host_ip[flow["server"]][0])
+        # Server command
+        c_c = 'sudo ptpd2 --interface eth0 --slaveonly --unicast -u ' + host_ip[flow["server"]][0] + \
+                             ' --debug --foreground --verbose'
+        client_ptp_command = 'echo ' + c_c + ' >> .bashrc'
+        print(client_ptp_command)
+
+        print(run_cmd_via_paramiko(host_ip[flow["client"]][1], client_ptp_command))
+
+        s_c = 'sudo ptpd2 --interface eth0 --masteronly --unicast -u ' + host_ip[flow["client"]][0] + \
+                             ' --debug --foreground --verbose'
+        server_ptp_command = 'echo ' + s_c + ' >> .bashrc'
+        print(server_ptp_command)
+
+        print(run_cmd_via_paramiko(host_ip[flow["server"]][1], server_ptp_command))
+
 
 def reinstall_pi_scripts():
     for client in host_ip:
@@ -119,7 +185,7 @@ def reinstall_pi_scripts():
 def update_pi_scripts():
     for client in host_ip:
         print(host_ip[client][0])
-        print(run_cmd_via_paramiko(host_ip[client][1], "cd scripts/; git pull"))
+        print(run_cmd_via_paramiko(host_ip[client][1], "cd scripts/; git pull; sudo ./arp_table_fix.sh;"))
 
 def run_startup_scripts():
     for client in host_ip:
@@ -140,7 +206,7 @@ def download_linux_insert_pktgen_driver():
     for client in host_ip:
         print(host_ip[client][0])
         print(run_cmd_via_paramiko(host_ip[client][1], "cd Repositories/; "
-                                                       "git clone --depth=1 https://github.com/raspberrypi/linux.git;"))
+                                                        "git clone --depth=1 https://github.com/raspberrypi/linux.git;"))
         print(run_cmd_via_paramiko(host_ip[client][1], "sudo insmod "
                                                        "/lib/modules/`uname -r`/kernel/net/core/pktgen.ko "))
 
@@ -217,8 +283,11 @@ def main():
               "flows": flows}
 
     ssbf = SynthesizeSimpleBackupFlows(params)
+    print('---- SynthesizeSimpleBackupFlows done')
     ssbf.compute_switch_configurations()
+    print('---- compute_switch_configurations done')
     ssbf.trigger()
+    print('---- trigger done')
 
     background_traffic = input('Is there a background flow?')
     paths = input('Is it intuitive(enter 1) or non-intuitive path(enter 0) experiment?')
@@ -303,8 +372,18 @@ def processed_expt_output(directory):
 
 if __name__ == "__main__":
 
+    # kill_ptp_start_again()
+    #put_in_performance_mode()
+    put_in_powersave_mode()
     main()
+
+    # is_ptp_running()
     # run_startup_scripts()
     # reinstall_pi_scripts()
+    # update_pi_scripts()
+    # install_ptp_commands_in_hosts()
+    # reboot_hosts()
+    # ping_hosts()
     # download_linux_insert_pktgen_driver()
+    # update_pi_scripts()
 

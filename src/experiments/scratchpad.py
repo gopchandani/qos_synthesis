@@ -88,47 +88,27 @@ def plot_delay(path_root):
                 # f, ax = plt.subplots(1, 1, figsize=(6.0, 4.0))
                 f, ax = plt.subplots(1, 1)
 
-
                 # ax.plot(diffs, '.-')
                 #ax.scatter(range(len(diffs)), diffs, color='k', alpha=0.7)
 
                 min_seq_num = min(diff_dict.keys())
                 max_seq_num = max(diff_dict.keys())
 
+                x_list_present, y_list_present = [], []
                 x_list_absent, y_list_absent = [], []
-                x_list_primary, y_list_primary = [], []
-                x_list_backup, y_list_backup = [], []
-
-                drop = 0
-                is_primary = 1
 
                 for i in range(min_seq_num, max_seq_num + 1):
                     if i in diff_dict:
-                        if is_primary == 1:# primary path or (drop == 1 and is_primary == 0)
-                            x_list_primary.append(i)
-                            y_list_primary.append(diff_dict[i])
-
-                        elif (is_primary == 0): # failover path
-                            x_list_backup.append(i)
-                            y_list_backup.append(diff_dict[i])
-                            if drop == 1:
-                                drop = 0
-
+                        x_list_present.append(i)
+                        y_list_present.append(diff_dict[i])
                     else:
                         x_list_absent.append(i)
                         y_list_absent.append(2500)
-                        if (drop == 0 and is_primary == 1):
-                            is_primary = 0
-                        elif (drop == 0 and is_primary == 0):
-                            is_primary = 1
-                        if drop == 0:
-                            drop = 1
 
                 ax.scatter(x_list_absent, y_list_absent, color='r', marker="x", alpha=0.7)
-                ax.scatter(x_list_primary, y_list_primary, color='k', alpha=0.7)
-                ax.scatter(x_list_backup, y_list_backup, color='b', alpha=0.7)
+                ax.scatter(x_list_present, y_list_present, color='k', alpha=0.7)
 
-                plt.axhline(y=1200, color='g', linestyle='-', linewidth=2)
+                plt.axhline(y=1200, color='r', linestyle='-')
                 ax.set_title('One-way delay for ' + file.split('_')[1])
                 ax.set_xlabel('Packet Number')
                 ax.set_ylabel('One way delay (us)')
