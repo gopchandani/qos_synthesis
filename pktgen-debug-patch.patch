@@ -1,0 +1,190 @@
+From e36849939809eb9f58a756bac649028b7ff3dfb2 Mon Sep 17 00:00:00 2001
+From: Ashish Kashinath <akashina@eng.ucsd.edu>
+Date: Wed, 1 May 2019 19:31:35 +0000
+Subject: [PATCH] Adding command line parameter
+
+This patch adds a command line parameter -g <DELAY> to specify
+inter-packet duration in nanoseconds
+
+Signed-off-by: Ashish Kashinath <ashishk3@illinois.edu>wq
+---
+ net/core/pktgen.c                        | 30 ++++++++++++++++++++++++++++--
+ samples/pktgen/parameters.sh             |  6 +++++-
+ samples/pktgen/pktgen_sample01_simple.sh |  6 ++++--
+ 3 files changed, 37 insertions(+), 5 deletions(-)
+
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index 6e1e10ff4..a4f08aba8 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -118,6 +118,7 @@
+  */
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#define DEBUG
+ 
+ #include <linux/sys.h>
+ #include <linux/types.h>
+@@ -183,6 +184,8 @@
+ #define MPLS_STACK_BOTTOM htonl(0x00000100)
+ 
+ #define func_enter() pr_debug("entering %s\n", __func__);
++#define if_enter() pr_debug("executing if :  %d\n", __LINE__);
++#define else_enter() pr_debug("executing else : %d\n", __LINE__);
+ 
+ /* Device flag bits */
+ #define F_IPSRC_RND   (1<<0)	/* IP-Src Random  */
+@@ -403,6 +406,8 @@ struct pktgen_dev {
+ 	struct dst_ops dstops;
+ #endif
+ 	char result[512];
++	__u64 x;
++	__u64 y;
+ };
+ 
+ struct pktgen_hdr {
+@@ -2251,6 +2256,7 @@ static void spin(struct pktgen_dev *pkt_dev, ktime_t spin_until)
+ 	ktime_t start_time, end_time;
+ 	s64 remaining;
+ 	struct hrtimer_sleeper t;
++	__u64 temp;
+ 
+ 	hrtimer_init_on_stack(&t.timer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
+ 	hrtimer_set_expires(&t.timer, spin_until);
+@@ -2260,12 +2266,23 @@ static void spin(struct pktgen_dev *pkt_dev, ktime_t spin_until)
+ 		goto out;
+ 
+ 	start_time = ktime_get();
++	/*---- changing the threshold*/
+ 	if (remaining < 100000) {
++		/*temp = pkt_dev->sofar;
++		if(do_div(temp, 1000)==0){
++			if_enter();
++		}*/
+ 		/* for small delays (<100us), just loop until limit is reached */
++		//pkt_dev->x += 1;
+ 		do {
+ 			end_time = ktime_get();
+ 		} while (ktime_compare(end_time, spin_until) < 0);
+ 	} else {
++		/*temp = pkt_dev->sofar;
++		if(do_div(temp, 1000)==0){
++			else_enter();
++		}*/
++		//pkt_dev->y += 1;
+ 		/* see do_nanosleep */
+ 		hrtimer_init_sleeper(&t, current);
+ 		do {
+@@ -3382,6 +3399,7 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
+ 	struct netdev_queue *txq;
+ 	struct sk_buff *skb;
+ 	int ret;
++	__u64 temp;
+ 
+ 	/* If device is offline, then don't send */
+ 	if (unlikely(!netif_running(odev) || !netif_carrier_ok(odev))) {
+@@ -3490,7 +3508,12 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
+ 	refcount_add(burst, &pkt_dev->skb->users);
+ 
+ xmit_more:
+-	ret = netdev_start_xmit(pkt_dev->skb, odev, txq, --burst > 0);
++	//ret = netdev_start_xmit(pkt_dev->skb, odev, txq, --burst > 0);
++	temp = pkt_dev->sofar;
++	if(do_div(temp,11)==0)
++		ret = netdev_start_xmit(pkt_dev->skb, odev, txq, --burst > 0);
++	else
++		ret = NETDEV_TX_OK;
+ 
+ 	switch (ret) {
+ 	case NETDEV_TX_OK:
+@@ -3526,6 +3549,7 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
+ 
+ 	/* If pkt_dev->count is zero, then run forever */
+ 	if ((pkt_dev->count != 0) && (pkt_dev->sofar >= pkt_dev->count)) {
++		//pr_debug("x=%u y=%u\n", pkt_dev->x, pkt_dev->y); 
+ 		pktgen_wait_for_skb(pkt_dev);
+ 
+ 		/* Done with this */
+@@ -3578,6 +3602,7 @@ static int pktgen_thread_worker(void *arg)
+ 		if (t->control & T_STOP) {
+ 			pktgen_stop(t);
+ 			t->control &= ~(T_STOP);
++
+ 		}
+ 
+ 		if (t->control & T_RUN) {
+@@ -3598,6 +3623,7 @@ static int pktgen_thread_worker(void *arg)
+ 		try_to_freeze();
+ 	}
+ 
++
+ 	pr_debug("%s stopping all device\n", t->tsk->comm);
+ 	pktgen_stop(t);
+ 
+@@ -3606,7 +3632,7 @@ static int pktgen_thread_worker(void *arg)
+ 
+ 	pr_debug("%s removing thread\n", t->tsk->comm);
+ 	pktgen_rem_thread(t);
+-
++	
+ 	return 0;
+ }
+ 
+diff --git a/samples/pktgen/parameters.sh b/samples/pktgen/parameters.sh
+index 72fc56287..dcc4c0c77 100644
+--- a/samples/pktgen/parameters.sh
++++ b/samples/pktgen/parameters.sh
+@@ -23,7 +23,7 @@ function usage() {
+ 
+ ##  --- Parse command line arguments / parameters ---
+ ## echo "Commandline options:"
+-while getopts "s:i:d:m:f:t:c:n:b:vxh6" option; do
++while getopts "s:i:d:m:f:t:c:n:b:g:vxh6" option; do
+     case $option in
+         i) # interface
+           export DEV=$OPTARG
+@@ -73,6 +73,10 @@ while getopts "s:i:d:m:f:t:c:n:b:vxh6" option; do
+ 	  export IP6=6
+ 	  info "IP6: IP6=$IP6"
+ 	  ;;
++	g)
++	  export DELAY=$OPTARG
++	  info "DELAY=$DELAY"
++	  ;;
+         h|?|*)
+           usage;
+           err 2 "[ERROR] Unknown parameters!!!"
+diff --git a/samples/pktgen/pktgen_sample01_simple.sh b/samples/pktgen/pktgen_sample01_simple.sh
+index e9ab4edba..0c798c7f3 100755
+--- a/samples/pktgen/pktgen_sample01_simple.sh
++++ b/samples/pktgen/pktgen_sample01_simple.sh
+@@ -24,7 +24,7 @@ fi
+ [ -z "$COUNT" ]   && COUNT="100000" # Zero means indefinitely
+ 
+ # Base Config
+-DELAY="0"        # Zero means max speed
++[ -z "$DELAY" ]   && DELAY="1000" # Zero means max speed
+ 
+ # Flow variation random source port between min and max
+ UDP_MIN=9
+@@ -45,6 +45,8 @@ pg_set $DEV "count $COUNT"
+ # Reduce alloc cost by sending same SKB many times
+ # - this obviously affects the randomness within the packet
+ pg_set $DEV "clone_skb $CLONE_SKB"
++pg_set $DEV "udp_dst_min 10000"
++pg_set $DEV "udp_dst_max 10000"
+ 
+ # Set packet size
+ pg_set $DEV "pkt_size $PKT_SIZE"
+@@ -53,7 +55,7 @@ pg_set $DEV "pkt_size $PKT_SIZE"
+ pg_set $DEV "delay $DELAY"
+ 
+ # Flag example disabling timestamping
+-pg_set $DEV "flag NO_TIMESTAMP"
++#pg_set $DEV "flag NO_TIMESTAMP"
+ 
+ # Destination
+ pg_set $DEV "dst_mac $DST_MAC"
+-- 
+2.11.0
+

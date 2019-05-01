@@ -1,0 +1,21 @@
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index 6e1e10ff433a..a4e9a9337bae 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -3490,7 +3490,15 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
+ 	refcount_add(burst, &pkt_dev->skb->users);
+ 
+ xmit_more:
+-	ret = netdev_start_xmit(pkt_dev->skb, odev, txq, --burst > 0);
++	if (do_div(pkt_dev->sofar,11)==0)
++		ret = netdev_start_xmit(pkt_dev->skb, odev, txq, --burst > 0);
++	else{
++		pkt_dev->last_ok = 1;
++		pkt_dev->sofar++;
++		ret = NET_XMIT_DROP;
++		if (burst > 0 && !netif_xmit_frozen_or_drv_stopped(txq))
++			goto xmit_more;
++	}
+ 
+ 	switch (ret) {
+ 	case NETDEV_TX_OK:
