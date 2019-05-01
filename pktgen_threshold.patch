@@ -1,0 +1,13 @@
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index 6e1e10ff4..351809475 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -2260,7 +2260,7 @@ static void spin(struct pktgen_dev *pkt_dev, ktime_t spin_until)
+ 		goto out;
+ 
+ 	start_time = ktime_get();
+-	if (remaining < 100000) {
++	if (remaining < 1000000) {
+ 		/* for small delays (<100us), just loop until limit is reached */
+ 		do {
+ 			end_time = ktime_get();

@@ -1,0 +1,48 @@
+From b040a57c2da2d4ef040e36c8a6407a3afbeab66f Mon Sep 17 00:00:00 2001
+From: Ashish Kashinath <akashina@eng.ucsd.edu>
+Date: Wed, 1 May 2019 21:03:47 +0000
+Subject: [PATCH 3/3] Changing the pktgen traffic generator script
+
+This patch contains changes to the pktgen traffic generator
+script to enable packet timestamping as well as specifying
+source port number and inter-packet delay.
+
+Signed-off-by: Ashish Kashinath<ashishk3@illinois.edu>
+---
+ samples/pktgen/pktgen_sample01_simple.sh | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/samples/pktgen/pktgen_sample01_simple.sh b/samples/pktgen/pktgen_sample01_simple.sh
+index e9ab4edba..0c798c7f3 100755
+--- a/samples/pktgen/pktgen_sample01_simple.sh
++++ b/samples/pktgen/pktgen_sample01_simple.sh
+@@ -24,7 +24,7 @@ fi
+ [ -z "$COUNT" ]   && COUNT="100000" # Zero means indefinitely
+ 
+ # Base Config
+-DELAY="0"        # Zero means max speed
++[ -z "$DELAY" ]   && DELAY="1000" # Zero means max speed
+ 
+ # Flow variation random source port between min and max
+ UDP_MIN=9
+@@ -45,6 +45,8 @@ pg_set $DEV "count $COUNT"
+ # Reduce alloc cost by sending same SKB many times
+ # - this obviously affects the randomness within the packet
+ pg_set $DEV "clone_skb $CLONE_SKB"
++pg_set $DEV "udp_dst_min 10000"
++pg_set $DEV "udp_dst_max 10000"
+ 
+ # Set packet size
+ pg_set $DEV "pkt_size $PKT_SIZE"
+@@ -53,7 +55,7 @@ pg_set $DEV "pkt_size $PKT_SIZE"
+ pg_set $DEV "delay $DELAY"
+ 
+ # Flag example disabling timestamping
+-pg_set $DEV "flag NO_TIMESTAMP"
++#pg_set $DEV "flag NO_TIMESTAMP"
+ 
+ # Destination
+ pg_set $DEV "dst_mac $DST_MAC"
+-- 
+2.11.0
+

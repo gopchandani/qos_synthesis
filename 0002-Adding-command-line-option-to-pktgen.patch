@@ -1,0 +1,40 @@
+From f780b5805120101cffa8fcf16de3c45debdad0f9 Mon Sep 17 00:00:00 2001
+From: Ashish Kashinath <akashina@eng.ucsd.edu>
+Date: Wed, 1 May 2019 21:01:11 +0000
+Subject: [PATCH 2/3] Adding command-line option to pktgen
+
+Adding a command-line option to specify inter-packet
+delay to pktgen
+
+Signed-off-by:Ashish Kashinath<ashishk3@illinois.edu>
+---
+ samples/pktgen/parameters.sh | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/samples/pktgen/parameters.sh b/samples/pktgen/parameters.sh
+index 72fc56287..dcc4c0c77 100644
+--- a/samples/pktgen/parameters.sh
++++ b/samples/pktgen/parameters.sh
+@@ -23,7 +23,7 @@ function usage() {
+ 
+ ##  --- Parse command line arguments / parameters ---
+ ## echo "Commandline options:"
+-while getopts "s:i:d:m:f:t:c:n:b:vxh6" option; do
++while getopts "s:i:d:m:f:t:c:n:b:g:vxh6" option; do
+     case $option in
+         i) # interface
+           export DEV=$OPTARG
+@@ -73,6 +73,10 @@ while getopts "s:i:d:m:f:t:c:n:b:vxh6" option; do
+ 	  export IP6=6
+ 	  info "IP6: IP6=$IP6"
+ 	  ;;
++	g)
++	  export DELAY=$OPTARG
++	  info "DELAY=$DELAY"
++	  ;;
+         h|?|*)
+           usage;
+           err 2 "[ERROR] Unknown parameters!!!"
+-- 
+2.11.0
+
