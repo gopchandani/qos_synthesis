@@ -6,7 +6,8 @@ import csv
 import datetime
 import time
 from collections import defaultdict
-from src.experiments.plot_csv_from_pcap import plot_csv
+# from src.experiments.plot_pcap_times_pktgen import plot_delay
+from src.experiments.plot_cdf_hist_from_csv import read_csv
 from src.experiments.flow_dict_afdx import all_flows as flows
 from src.experiments.topo_dict_afdx import host_ip
 # from src.experiments.topo_dict import host_ip
@@ -25,10 +26,12 @@ from src.experiments.network_configuration_hardware_afdx import NetworkConfigura
 
 pktgen_script = "sudo taskset 0x1 sudo `echo $HOME`/Repositories/linux/samples/pktgen/pktgen_sample01_simple.sh"
 packet_size_in_bytes = 1024
-num_packets = 100000 * 11
-num_packets_laptop = num_packets * 10
-num_threads = 1
+num_packets = 100000 # 100k packets for our experiments
 burst = 0
+
+client_script = "sudo taskset 0x1 sudo `echo $HOME`/Repositories/qos_synthesis/traffic_generation/udp_client/client"
+server_script = "sudo taskset 0x4 sudo `echo $HOME`/Repositories/qos_synthesis/traffic_generation/udp_server/server"
+packet_gap_in_ns = 1000000 # 1 ms the packet gap in AFDX spec
 
 # Background to RT Traffic
 speedup_factor = 5
@@ -64,20 +67,6 @@ def run_cmd_via_paramiko(IP, command, port=22, username='pi', password='raspberr
 
 '''
 
-def run_tcpdump(flow_num, is_client, num_packets, interface_name):
-    file_name = flow_num +'_client.pcap' if is_client else flow_num +'_server.pcap'
-    output_file = 'tcpdump_' + file_name
-
-    if interface_name is not "eth0":
-        tcpdump_command = 'sudo taskset 0x4 sudo nice --20 tcpdump -n -U -i ' + interface_name + \
-                      ' -B 3072000 -c ' + str(num_packets_laptop) + ' udp dst portrange 10000-10013 -w ' + output_file
-    else:
-
-        tcpdump_command = 'sudo taskset 0x4 sudo nice --20 tcpdump -n -U -i ' + interface_name + \
-                      ' -B 307200 -c ' + str(num_packets) + ' udp dst portrange 10000-10013 -w ' + output_file
-
-    print(tcpdump_command)
-    return tcpdump_command
 
 # def setup_sed(port_number):
 #     TODO:
@@ -89,33 +78,26 @@ def run_tcpdump(flow_num, is_client, num_packets, interface_name):
 #
 #     return command
 
-def client_command_pktgen(packet_size_in_bytes, server_ip, server_mac, num_threads, burst,
-                          flow_rate_in_Mbps, num_packets):
 
-    inter_packet_time_in_ns = int((packet_size_in_bytes * 8 * 1000)/(flow_rate_in_Mbps))*(1000/1024)
+# Haven't parameterized packet size yet
+def client_command(server_ip, num_packets, packet_gap_in_ns, port_num):
 
-    if server_ip == host_ip["dot123"][0]:
-        eth_interface_name = 'enp0s25'
-        command = ' '.join([pktgen_script, '-vx', '-i', str(eth_interface_name),
-                        '-s', str(packet_size_in_bytes),
-                        '-d', str(server_ip),
-                        '-m', str(server_mac),
-                        '-t', str(num_threads),
-                        '-b', str(burst),
-                        '-g', str(inter_packet_time_in_ns),
-                        '-n', str(num_packets_laptop)
+    command = ' '.join([client_script, str(server_ip)
+                        , str(num_packets)
+                        , str(packet_gap_in_ns)
+                        , str(port_num)
                         ])
 
-    else:
-        eth_interface_name = 'eth0'
-        command = ' '.join([pktgen_script, '-vx', '-i', str(eth_interface_name),
-                        '-s', str(packet_size_in_bytes),
-                        '-d', str(server_ip),
-                        '-m', str(server_mac),
-                        '-t', str(num_threads),
-                        '-b', str(burst),
-                        '-g', str(inter_packet_time_in_ns),
-                        '-n', str(num_packets)
+    print(command)
+    return command
+
+def server_command(port_num, num_packets, file_name):
+
+    command = ' '.join([server_script
+                        , str(port_num)
+                        , str(num_packets)
+                        , '>'
+                        , str(file_name)
                         ])
 
     print(command)
@@ -127,10 +109,7 @@ def clean_client_server():
         print(host_ip[client][0])
         print(run_cmd_via_paramiko(host_ip[client][1], "sudo pkill -x pktgen_sample01; "
                                                        "sudo pkill -x tcpdump; "
-                                                       "sudo rm *.pcap;"
-                                                       "sudo rm *.csv"
-                                   )
-              )
+                                                       "sudo rm *.pcap"))
 
 def kill_ptp_start_again():
     for client in host_ip:
@@ -167,14 +146,6 @@ def put_in_powersave_mode():
         print(host_ip[client][0])
         print(run_cmd_via_paramiko(host_ip[client][1], "sudo /home/pi/scripts/powersave_governor.sh;"))
 
-def extract_csv_from_pcap():
-    for flow in flows:
-        if flow["type"] == "data":
-            print(host_ip[flow["server"]][1])
-            extract_csv_from_pcap_cmd = 'python `echo $HOME`/scripts/write_csv_from_pcap.py'
-            print(run_cmd_via_paramiko(host_ip[flow["server"]][1], extract_csv_from_pcap_cmd))
-
-
 def install_ptp_commands_in_hosts():
     for flow in flows:
         print(host_ip[flow["client"]][0], host_ip[flow["server"]][0])
@@ -206,13 +177,6 @@ def update_pi_scripts():
         print(host_ip[client][0])
         print(run_cmd_via_paramiko(host_ip[client][1], "cd scripts/; git pull; sudo ./arp_table_fix.sh;"))
 
-
-def update_pi_system():
-    for client in host_ip:
-        print(host_ip[client][0])
-        print(run_cmd_via_paramiko(host_ip[client][1], "sudo apy-get update -y; sudo apt-get upgrade -y; "
-                                                       "sudo apt-get dist-upgrade -y; sudo reboot;"))
-
 def run_startup_scripts():
     for client in host_ip:
         print(host_ip[client][0])
@@ -228,16 +192,6 @@ def install_vim_tcpdump():
                                                        "sudo apt install vim -y;"))
 
 
-def update_traffic_generation():
-    for client in host_ip:
-        print(host_ip[client][0])
-        print(run_cmd_via_paramiko(host_ip[client][1], "cd Repositories/qos_synthesis;"
-                                                       "git pull;"
-                                                       "cd udp_client/;"
-                                                       "make;"
-                                                       "cd ../udp_server/;"
-                                                       "make;"))
-
 def download_linux_insert_pktgen_driver():
     for client in host_ip:
         print(host_ip[client][0])
@@ -246,36 +200,9 @@ def download_linux_insert_pktgen_driver():
         print(run_cmd_via_paramiko(host_ip[client][1], "sudo insmod "
                                                        "/lib/modules/`uname -r`/kernel/net/core/pktgen.ko "))
 
+def start_all_flows_simultaneously(num_packets):
 
-def pktgen_driver_cycle():
-    print("Power Cycling Pktgen Driver")
-    for flow in flows:
-        if flow["type"] == "data":
-            print(host_ip[flow["client"]][0])
-            print(run_cmd_via_paramiko(host_ip[flow["client"]][1], "sudo rmmod pktgen;"
-                                                       "sleep 5;"
-                                                        "sudo insmod "
-                                                       "`echo $HOME`/Repositories/linux/net/core/pktgen.ko;"
-                                                       "lsmod | grep pktgen;"))
-
-def put_servers_into_performance_mode():
-    print("Putting Servers into Performance Mode")
-    for flow in flows:
-        if flow["type"] == "data":
-            print(host_ip[flow["server"]][0])
-            print(run_cmd_via_paramiko(host_ip[flow["server"]][1], "sudo /home/pi/scripts/performance_governor.sh;"))
-
-def put_servers_into_powersave_mode():
-    print("Putting Servers into Powersave Mode")
-    for flow in flows:
-        if flow["type"] == "data":
-            print(host_ip[flow["server"]][0])
-            print(run_cmd_via_paramiko(host_ip[flow["server"]][1], "sudo /home/pi/scripts/powersave_governor.sh;"))
-
-
-def start_all_flows_simultaneously(packet_size_in_bytes, num_packets, num_threads, burst):
-
-    tcpdump_jobs = []
+    server_jobs = []
     rt_traffic_jobs = []
 
     for flow in flows:
@@ -284,34 +211,30 @@ def start_all_flows_simultaneously(packet_size_in_bytes, num_packets, num_thread
             print()
             print(host_ip[flow["client"]][0], '------->', host_ip[flow["server"]][0])
 
-            if flow["server"] == "dot123":
-                eth_interface_name = 'enp0s31f6'
-                #num_packets = 700000
-            else:
-                eth_interface_name = 'eth0'
 
-
-            tcpdump_server_thread = threading.Thread(target=run_cmd_via_paramiko,
+            server_thread = threading.Thread(target=run_cmd_via_paramiko,
                                                      args=(
                                                          host_ip[flow["server"]][1],
-                                                         run_tcpdump(flow["id"],0, num_packets, eth_interface_name)))
+                                                         server_command(flow["port"], num_packets, '.'.join([flow["id"], 'csv']))
+                                                    )
+                                            )
 
-            tcpdump_server_thread.start()
-            tcpdump_jobs.append(tcpdump_server_thread)
+            server_thread.start()
+            server_jobs.append(server_thread)
 
             time.sleep(1.0)
             print('Starting Client')
             client_thread = threading.Thread(target=run_cmd_via_paramiko,
                                                     args=(
                                                         host_ip[flow["client"]][1],
-                                                        client_command_pktgen(
-                                                        packet_size_in_bytes,
+                                                        client_command(
                                                         host_ip[flow["server"]][0],
-                                                        host_ip[flow["server"]][2],
-                                                        num_threads,
-                                                        burst,
-                                                        flow['rate'],
-                                                        num_packets)))
+                                                        num_packets,
+                                                        packet_gap_in_ns,
+                                                        flow["port"]
+                                                        )
+                                                    )
+                                        )
 
             client_thread.setDaemon(True)
             rt_traffic_jobs.append(client_thread)
@@ -328,13 +251,13 @@ def start_all_flows_simultaneously(packet_size_in_bytes, num_packets, num_thread
 
     time.sleep(2.0)
 
-    for h in host_ip:
-        run_cmd_via_paramiko(host_ip[h][1], 'sudo killall tcpdump')
+    # for h in host_ip:
+    #     run_cmd_via_paramiko(host_ip[h][1], 'sudo killall tcpdump')
 
-    print('tcpdump\'s have finished')
+    print('servers\'s have finished')
 
 
-def main(run_id):
+def main():
 
     clean_client_server()
     print("Starting")
@@ -358,47 +281,13 @@ def main(run_id):
     # is_background = 'bg' if background_traffic else 'nobg'
     # is_same = 'intuitive_paths' if paths else 'nonintuitive_paths'
 
-    is_background = '_afdx'
-    is_same = 'bg_1Gbps_rt_8Mbps_with_all_changes_100k_packets_flows_f4_f8_prio_inverted'+ '_run_' + str(run_id)
+    is_background = 'table4_data'
+    is_same = ''
 
-    #time.sleep(120.0)
-    put_servers_into_performance_mode()
-
-    start_all_flows_simultaneously(packet_size_in_bytes, num_packets, num_threads, burst)
-    # extract_csv_from_pcap()
-
-    pcap_to_csv_jobs=[]
-
-    ## Snippet to convert pcaps to csv
-
-    for flow in flows:
-        if flow["type"] == "data":
-
-            pcap_to_csv_thread = threading.Thread(target=run_cmd_via_paramiko,
-                                             args=(host_ip[flow["server"]][1],
-                                                 'python `echo $HOME`/scripts/write_csv_from_pcap.py'))
-
-            pcap_to_csv_thread.setDaemon(True)
-            pcap_to_csv_jobs.append(pcap_to_csv_thread)
-
-    for job in pcap_to_csv_jobs:
-        job.start()
-
-    print("Conversions are happening ----")
-
-    for job in pcap_to_csv_jobs:
-        job.join()
-
-    print("Conversions are finished ----")
-
-    put_servers_into_powersave_mode()
-
+    time.sleep(120.0)
+    start_all_flows_simultaneously(num_packets)
     mydir = get_rhombus_data_pscp('_'.join([is_background, is_same]))
-    #plot_csv(mydir)
-
-    # plot_delay(mydir)
-    # read_csv(mydir)
-    # plot_hist(mydir)
+    read_csv(mydir)
 
     return 0
 
@@ -417,22 +306,13 @@ def get_rhombus_data_pscp(file_suffix):
             else:
                 password = "raspberry"
 
-            # tcpdump_file_server = f["data_loc"] + 'tcpdump_' + f["id"] + '_server' + '.pcap'
-            # get_tcpdump_server = "pscp " + "-pw " + password + " " + \
-            #                      f["user"] + "@" + host_ip[f["server"]][1] + \
-            #                      ":" + tcpdump_file_server + " " + mydir + '/'
-            #
-            # print(get_tcpdump_server)
-            # os.system(get_tcpdump_server)
-
-            csv_file_server = f["data_loc"] + f["id"] + '_diff_times' + '.csv'
-            get_csv_server = "pscp " + "-pw " + password + " " + \
+            server_file = f["data_loc"] + f["id"] + '.csv'
+            get_server_file = "pscp " + "-pw "+ password + " " + \
                                  f["user"] + "@" + host_ip[f["server"]][1] + \
-                                 ":" + csv_file_server + " " + mydir + '/'
+                                 ":" + server_file + " " + mydir + '/'
 
-
-            print(get_csv_server)
-            os.system(get_csv_server)
+            print(get_server_file)
+            os.system(get_server_file)
 
         else:
             continue
@@ -482,17 +362,9 @@ def processed_expt_output(directory):
 if __name__ == "__main__":
 
     # kill_ptp_start_again()
-    # put_in_performance_mode()
+    #put_in_performance_mode()
     # put_in_powersave_mode()
-
-    #
-    for i in range(10):
-        pktgen_driver_cycle()
-        main(i+1)
-        #time.sleep(60.0)
-
-    # update_traffic_generation()
-
+    main()
 
     # is_ptp_running()
     # run_startup_scripts()
@@ -501,7 +373,6 @@ if __name__ == "__main__":
     # install_ptp_commands_in_hosts()
     # reboot_hosts()
     # ping_hosts()
-    # update_pi_system()
     # download_linux_insert_pktgen_driver()
     # update_pi_scripts()
 
