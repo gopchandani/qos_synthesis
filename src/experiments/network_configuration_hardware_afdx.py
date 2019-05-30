@@ -170,9 +170,11 @@ class NetworkConfigurationHardwareNsdi(object):
             # Switch 4
             ("dot09", "ps4", "192.168.1.09", "10.194.111.180", "pi", "raspberry"),
             ("dot11", "ps4", "192.168.1.11", "10.194.17.214", "pi", "raspberry"),
-            ("dot29", "ps4", "192.168.1.29", "10.194.188.181", "pi", "raspberry"),
+            #("dot29", "ps4", "192.168.1.29", "10.194.188.181", "pi", "raspberry"),
+            ("dot244", "ps4", "192.168.1.244", "10.195.78.41", "pi", "raspberry"),
             ("dot40", "ps4", "192.168.1.40", "10.194.159.20", "pi", "raspberry"),
-            ("dot240", "ps4", "192.168.1.240", "10.193.140.82", "pi", "raspberry"),
+            #("dot240", "ps4", "192.168.1.240", "10.193.140.82", "pi", "raspberry"),
+            ("dot248", "ps4", "192.168.1.248", "10.193.109.118", "pi", "raspberry"),
             ## Background
             ("dot123", "ps4", "192.168.1.123", "10.194.45.147", "iti", "csl440"),
         ]
@@ -252,9 +254,11 @@ class NetworkConfigurationHardwareNsdi(object):
                  # Switch 4
                  ("dot09", "ps4", "eth0", "ge-1/1/1", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
                  ("dot11", "ps4", "eth0", "ge-1/1/3", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
-                 ("dot29", "ps4", "eth0", "ge-1/1/5", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot244", "ps4", "eth0", "ge-1/1/5", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 #("dot29", "ps4", "eth0", "ge-1/1/5", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
                  ("dot40", "ps4", "eth0", "ge-1/1/7", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
-                 ("dot240", "ps4", "eth0", "ge-1/1/9", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 #("dot240", "ps4", "eth0", "ge-1/1/9", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
+                 ("dot248", "ps4", "eth0", "ge-1/1/9", "host-sw", pi_to_switch_bw, pi_to_switch_delay),
                  ("dot123", "ps4", "enp0s31f6", "ge-1/1/11", "host-sw", laptop_to_switch_bw, laptop_to_switch_delay)
         ]
 

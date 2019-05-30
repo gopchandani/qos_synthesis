@@ -25,7 +25,8 @@ from src.experiments.network_configuration_hardware_afdx import NetworkConfigura
 
 pktgen_script = "sudo taskset 0x1 sudo `echo $HOME`/Repositories/linux/samples/pktgen/pktgen_sample01_simple.sh"
 packet_size_in_bytes = 1024
-num_packets = 100000 * 11
+real_num_packets = 100000
+num_packets = real_num_packets * 11
 num_packets_laptop = num_packets * 10
 num_threads = 1
 burst = 0
@@ -358,14 +359,16 @@ def main(run_id):
     # is_background = 'bg' if background_traffic else 'nobg'
     # is_same = 'intuitive_paths' if paths else 'nonintuitive_paths'
 
-    is_background = '_afdx'
-    is_same = 'bg_1Gbps_rt_8Mbps_with_all_changes_100k_packets_flows_f4_f8_prio_inverted'+ '_run_' + str(run_id)
+    # is_background = '_afdx'
+    # is_same = 'bg_1Gbps_rt_8Mbps_with_all_changes_100k_packets_fifo'+ '_run_' + str(run_id)
+
+    is_background = '_bg_1Gbps_'
+    is_same = 'rtss_scheme' + '_run_' + str(run_id) + '_' + str(real_num_packets) + '_packets'
 
     #time.sleep(120.0)
     put_servers_into_performance_mode()
 
     start_all_flows_simultaneously(packet_size_in_bytes, num_packets, num_threads, burst)
-    # extract_csv_from_pcap()
 
     pcap_to_csv_jobs=[]
 
@@ -394,7 +397,7 @@ def main(run_id):
     put_servers_into_powersave_mode()
 
     mydir = get_rhombus_data_pscp('_'.join([is_background, is_same]))
-    #plot_csv(mydir)
+    # plot_csv(mydir)
 
     # plot_delay(mydir)
     # read_csv(mydir)
@@ -486,13 +489,14 @@ if __name__ == "__main__":
     # put_in_powersave_mode()
 
     #
-    for i in range(10):
+    for i in range(50):
         pktgen_driver_cycle()
         main(i+1)
         #time.sleep(60.0)
 
     # update_traffic_generation()
 
+    # clean_client_server()
 
     # is_ptp_running()
     # run_startup_scripts()

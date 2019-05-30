@@ -4,10 +4,10 @@ from matplotlib import pyplot as plt
 import numpy as np
 import csv
 
-path_root = "/home/ak7/Repositories/qos_synthesis/src/experiments/data/20190429_164820afdx_nobg_rt_40"
+path_root = "/home/ak7/Repositories/qos_synthesis/src/experiments/data/20190527_015430nobg__rtss_scheme_run_1_100000_packets"
 flow_spec = '/home/ak7/Repositories/qos_synthesis/src/experiments/flow_dict_afdx.py'
 topo_spec = '/home/ak7/Repositories/qos_synthesis/src/experiments/network_configuration_hardware_afdx.py'
-num_packets = 10000
+#num_packets = 10000
 
 def print_stats(diffs):
 
@@ -111,7 +111,7 @@ def plot_csv(path_root):
                              )
 
                 # print_stats(diffs)
-                plt.savefig(path_root + file.split('.')[0] + '.pdf', pad_inches=0.1, bbox_inches='tight')
+                plt.savefig(path_root + file.split('.')[0] + '.png', pad_inches=0.1, bbox_inches='tight')
 
     with open(flow_spec) as f, open(path_root + 'flow_spec.txt', "w") as g:
         g.writelines(f.readlines())

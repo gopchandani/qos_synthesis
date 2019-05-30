@@ -1,8 +1,8 @@
 import os
 import pandas as pd
 
-parent_directory="/home/ak7/Desktop/RTSS/100k_ten_runs_inverted_priority_f4_f8/raw_data"
-result_directory="/home/ak7/Desktop/RTSS/100k_ten_runs_inverted_priority_f4_f8"
+parent_directory="/home/ak7/Desktop/RTSS/RTSS_May24/raw_data"
+result_directory="/home/ak7/Desktop/RTSS/RTSS_May24"
 flow_ids=['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8']
 #flow_ids=['f5']
 cases=['bg', 'noback']
