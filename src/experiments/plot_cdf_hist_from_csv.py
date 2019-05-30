@@ -11,7 +11,7 @@ location_of_data = "/home/ak7/Desktop/RTSS/RTSS_May24" # Give the directory here
 location_of_rawdata = "/home/ak7/Desktop/RTSS/RTSS_May24/raw_data"
 experiment = location_of_rawdata.split('/')[5]
 path_roots = list()
-type_of_experiment = "bg" # bg or noback
+# type_of_experiment = "bg" # bg or noback
 # type_of_experiment = "noback"
 
 # Non-overlapping background & RT Flows
@@ -25,7 +25,7 @@ type_of_experiment = "bg" # bg or noback
 # title = "Background & RT Flows share a node"
 
 # Background & RT Flows along same path
-path_roots = [ os.path.join(location_of_data,"f4"),
+path_roots = [ #os.path.join(location_of_data,"f4"),
               os.path.join(location_of_data,"f8")]
 title = "Background & RT Flows along same path"
 
@@ -34,11 +34,12 @@ color_list = ['g', 'b']
 ## Plotting settings
 plt.rcdefaults()
 plt.rcParams["font.family"] = "Arial"
-plt.rcParams['font.size'] = 15
-plt.rcParams['legend.fontsize'] = 13
-plt.rcParams['axes.titlesize'] = 15
-plt.rcParams['ytick.labelsize'] = 10
-plt.rcParams['xtick.labelsize'] = 10
+plt.rcParams['font.size'] = 20
+plt.rcParams['legend.fontsize'] = 18
+plt.rcParams['axes.titlesize'] = 20
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['figure.figsize'] = 8, 6
 
 # Plot all the csv's in the directory path_root individually
 def plot_csv_simple(path_root):
@@ -106,21 +107,22 @@ def plot_99point9th_percentile(path_root, type_of_experiment, flow_id, title):
     median_vals=list()
     num_above = 0
     # big_array=list()
-    two_np_array=np.empty([2,100001])
+    # two_np_array=np.empty([2,100001])
 
     for root_dir, sub_dirs, files in os.walk(os.path.join(path_root, type_of_experiment)):
         # print(root_dir, sub_dirs, files)
 
         sub_dirs.sort()
         if files:
-            i=1
+            # i=1
             for filename in files:
 
-                if filename.endswith(".csv") and filename.find(flow_id) >= 0 and int(root_dir.split('_')[-3]) in [1,2]:
+                if filename.endswith(".csv") and filename.find(flow_id) >= 0:# and int(root_dir.split('_')[-3]) in [1,2]:
 
                     # plt.clf()
                     print("*******", os.path.join(root_dir,filename))
                     title = " Flow Latency Statistics" + ":" + " RT Traffic only"
+                    # title = " Flow Latency Statistics" + ":" + " RT with Background Traffic"
                     app_diff = list()
 
                     with open(os.path.join(root_dir, filename), 'r', newline='') as csvfile:
@@ -178,22 +180,21 @@ def plot_99point9th_percentile(path_root, type_of_experiment, flow_id, title):
 
                     # plt.boxplot(app_diff_as_numpy)
                     # plt.ion()
-                    two_np_array [i, :] =  app_diff_as_numpy
+                    # two_np_array [i, :] =  app_diff_as_numpy
                     # np.concatenate( app_diff)
 
 
 
 
-                    i = i +1
+                    # i = i +1
     #print(ninetyninepointnine)
-    #plt.ylim(200,600.0)
+    plt.ylim([0.0,7000.0])
     plt.xticks([1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
-    plt.yticks([500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000])
+    plt.yticks([500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000,6500, 7000])
 
-    print(two_np_array.shape)
+    # print(two_np_array.shape)
     #
-    plt.boxplot(two_np_array)
-    # plt.ion()
+    # plt.boxplot(two_np_array)
 
     # plt.boxplot(csv_run_nums, min_vals)#, 'ob',  label='minimum')
     # plt.boxplot(csv_run_nums, averages)#, 'og', label='mean')
@@ -203,13 +204,14 @@ def plot_99point9th_percentile(path_root, type_of_experiment, flow_id, title):
     # plt.boxplot(csv_run_nums, ninety_nine_point_five_percentile_vals)#, 'ok', label='99.5 $\%^{ile}$')
     # plt.boxplot(csv_run_nums, ninety_nine_point_nine_percentile_vals)#, 'oy', label='99.9 $\%^{ile}$')
 
-    # plt.plot(csv_run_nums, min_vals, 'ob', label='minimum')
-    # plt.plot(csv_run_nums, averages, 'og', label='mean')
-    # plt.plot(csv_run_nums, median_vals, 'or', label='median')
-    # plt.plot(csv_run_nums, ninety_nineth_percentile_vals, 'oc', label='99.0 $\%^{ile}$')
-    # plt.plot(csv_run_nums, ninety_nine_point_three_percentile_vals, 'om', label='99.3 $\%^{ile}$')
-    # plt.plot(csv_run_nums, ninety_nine_point_five_percentile_vals, 'ok', label='99.5 $\%^{ile}$')
-    # plt.plot(csv_run_nums, ninety_nine_point_nine_percentile_vals, 'oy', label='99.9 $\%^{ile}$')
+    #plt.subplot(1,2,1)
+    plt.plot(csv_run_nums, min_vals, 'bs', label='minimum')
+    plt.plot(csv_run_nums, averages, 'go', label='mean')
+    plt.plot(csv_run_nums, median_vals, 'y*', label='median')
+    plt.plot(csv_run_nums, ninety_nineth_percentile_vals, 'cD', label='99.0p')
+    plt.plot(csv_run_nums, ninety_nine_point_three_percentile_vals, 'mx', label='99.3p')
+    plt.plot(csv_run_nums, ninety_nine_point_five_percentile_vals, 'kh', label='99.5p')
+    plt.plot(csv_run_nums, ninety_nine_point_nine_percentile_vals, 'r+', label='99.9p')
 
     # plt.plot(csv_run_nums, min_vals, label='minimum')
     # plt.plot(csv_run_nums, averages, label='mean')
@@ -220,14 +222,17 @@ def plot_99point9th_percentile(path_root, type_of_experiment, flow_id, title):
     # plt.plot(csv_run_nums, ninety_nine_point_nine_percentile_vals, label='99.9 percentile')
 
     plt.title(title)
-    plt.ylabel('End to End delays (' + u'\u03BC' + 's)')
+    #plt.ylabel('End to End delays (' + u'\u03BC' + 's)')
+    plt.ylabel('End to End Delay ($\mu$s)')
     plt.xlabel('Iteration # of Experiment')
     # plt.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
 
-    plt.legend(loc='upper center', prop={'size':10}, bbox_to_anchor=(0.5, -0.20), fancybox=True, shadow=True, ncol=4)
+    plt.legend(loc='upper center', prop={'size': 14}, fancybox=False, shadow=False, ncol=4)
+    #plt.legend(loc='upper center', prop={'size':10}, bbox_to_anchor=(0.5, -0.20), fancybox=True, shadow=True, ncol=4)
     plt.tight_layout()
 
     #plt.hist(diffs, label='99.9th', bins=5, alpha=0.5, color='g')
+    plt.savefig(os.path.join(path_root, type_of_experiment, 'max-min-f8-scatter-nobg.pdf'), pad_inches=0.05, bbob_inches='tight')
     plt.show()
     print(num_above)
 
@@ -318,25 +323,29 @@ def plot_hist_comparison(path_root):
             else:
                 rt_owt = list(app_diff_1)
 
-    plt.axvline(x=900.0, color='r', label='Deadline of Flow $F_4$', lw=2)
+    plt.axvline(x=900.0, color='r', lw=2)
+    # plt.axvline(x=900.0, color='r', label='Deadline of Flow $F_8$', lw=2)
     _ = plt.hist(rtbg_owt, bins=200, label='RT with Background Traffic', alpha=0.5, color='#d95f02')
     _ = plt.hist(rt_owt,  bins=200, label='RT Traffic Only', alpha=0.5, color='#7570b3')
-    #plt.ylim(0.0, 1000000.0)
+    # plt.ylim(0.0, 1000000.0)
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
     plt.xlim(0.0,1000.0)
-    plt.ylim(0.0, 5E6)
+    plt.ylim(0.0, 5.5E6)
     # plt.axvline(900)
 
 
-    plt.xlabel('End to End delays (' + u'\u03BC' + 's)')
+    plt.xlabel('End to End Delay ($\mu$s)')
     plt.ylabel('Packet Count')
-    plt.title('Priority/Queue-based Traffic Isolation')
+    # plt.title('Priority/Queue-based Traffic Isolation')
 
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=True, ncol=2)
+    plt.legend(loc='upper left', prop={'size': 14}, fancybox=False, shadow=False, ncol=1)
+    plt.text(850, 3.5E6, 'Deadline = 900.0 $\mu$s',  rotation=90)
+
+    # plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=False, shadow=False, ncol=2)
     # plt.legend()
     # plt.legend(loc='lower left', bbox_to_anchor=(0.0, 1.01), ncol=3, borderaxespad=0, frameon=False )#bbox_to_anchor=(1.04, 1), fancybox=True, shadow=True)
-    # plt.savefig(os.path.join(path_root, 'orig_' + path_root.split('/')[-2] + '_hist_comparison_' + str(percentile)), format='png')
+    plt.savefig(os.path.join(path_root, 'hist-f8.pdf'), pad_inches=0.05, bbob_inches='tight')
     plt.tight_layout()
     plt.show()
 
@@ -475,15 +484,15 @@ if __name__ == '__main__':
     # title = "Non-overlapping background & RT Flows"
     # # plot_99point9th_percentile(location_of_rawdata, type_of_experiment, 'f5', title)
     # plot_99point9th_percentile(location_of_rawdata, type_of_experiment, 'f4', title)
-    plot_99point9th_percentile(location_of_rawdata, type_of_experiment, 'f8', title)
+    # plot_99point9th_percentile(location_of_rawdata, type_of_experiment, 'f8', title)
 
 
     # List all directory
-    # for path_root in path_roots:
-    #     print("Entering %s\n" %(path_root))
-    #     # plot_csv_simple(path_root)
-    #     plot_hist_comparison(path_root)
-    #     # plot_cdf_comparison(path_root)
+    for path_root in path_roots:
+        print("Entering %s\n" %(path_root))
+        # plot_csv_simple(path_root)
+        plot_hist_comparison(path_root)
+        plot_cdf_comparison(path_root)
 
     # title = "Background & RT Flows along same path"
     # find_all_csvs_for_flow_and_plot_combined(location_of_rawdata, type_of_experiment, 'f4', title)
