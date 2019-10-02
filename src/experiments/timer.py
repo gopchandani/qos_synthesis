@@ -14,5 +14,6 @@ class Timer(object):
         self.end = time.time()
         self.secs = self.end - self.start
         self.msecs = self.secs * 1000  # millisecs
+        return self.msecs
 
 

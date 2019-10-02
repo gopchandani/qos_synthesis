@@ -6,6 +6,10 @@ from collections import defaultdict
 import math
 import pandas as pd
 import random
+from timer import Timer
+from matplotlib import rcParams
+from matplotlib import pyplot as plt
+import pickle
 
 
 
@@ -48,6 +52,7 @@ class MCP_Helper(object):
         for v in self.nw_graph.nodes():
             #for i in range(self.x + 1):
             for i in range(loop_range + 1):
+
                 self.d[v][i] = float("inf")
                 # self.d[v][i] = 100000000000 # a very big number
                 # self.d[v][i] = 0
@@ -314,128 +319,68 @@ def calculate_hmax(nw_graph):
     #print_graph(mst)
     hmax = nx.number_of_nodes(nw_graph)
 
-    print "hmax  is {}".format(hmax)
+    # print "hmax  is {}".format(hmax)
     return hmax
 
-def main():
+def main(num_switches, num_hosts_per_switch):
     print "this is main"
-
-    """
-    mygraph = nx.Graph()
-    mygraph.add_node("s")
-    mygraph.add_node("u")
-    mygraph.add_node("v")
-    mygraph.add_node("t")
-
-    mygraph.add_edge("s", "u")
-    mygraph.add_edge("s", "v")
-    mygraph.add_edge("u", "v")
-    mygraph.add_edge("u", "t")
-    mygraph.add_edge("v", "t")
-
-    print "=== my original graph ==="
-    print_graph(mygraph)
-
-    newmygraph = calibrate_graph(mygraph)
-    print "=== my new graph ==="
-    print_graph(newmygraph)
-    print "== done =="
-    """
-
 
     #nw_graph = nx.Graph()
     nw_graph = nx.DiGraph()
-
-
-
-    '''
-
-    nw_graph.add_node("s")
-    nw_graph.add_node("u")
-    nw_graph.add_node("v")
-    nw_graph.add_node("t")
-    #nw_graph.add_node("z")
-
-
-
-    nw_graph.add_edge("s", "u")
-    nw_graph.add_edge("s", "v")
-    nw_graph.add_edge("u", "v")
-    nw_graph.add_edge("u", "t")
-    #nw_graph.add_edge("u", "z")
-    nw_graph.add_edge("v", "t")
-    #nw_graph.add_edge("v", "z")
-
-    nw_graph.add_edge("u", "s")
-    nw_graph.add_edge("v", "s")
-    nw_graph.add_edge("v", "u")
-    nw_graph.add_edge("t", "u")
-    nw_graph.add_edge("t", "v")
-    '''
-
-
+    t = Timer()
 
     link_delay = 3 # ms
-    link_bw = 100  # MBPS
-    delay_budget = 100  # ms
-    bw_req_flow = 50  # MBPS
+    link_bw = 5  # MBPS
+    delay_budget = 10  # ms
+    bw_req_flow = 1  # MBPS
 
-    #'''
-    src = "h1s2"
-    dst = "h1s1"
+    switch_list = list()
+    host_list = list()
+    edge_list = [("s1", "s2"), ("s2", "s4"), ("s4", "s3"), ("s3", "s1") ] # just populate with edges between switches
+    flows_list = list()
 
+    switch_list = switch_list + (gen_switches(num_switches))
+    #print switch_list
+    host_list = host_list + (gen_hosts(num_hosts_per_switch, "s3"))
+    host_list = host_list + (gen_hosts(num_hosts_per_switch, "s4"))
+    #print host_list
+    edge_list = edge_list + (gen_host_switch_links(host_list, switch_list))
+    #print edge_list
 
-    #nw_graph = nx.DiGraph()
+    for i in range(len(host_list)):
+        if i < num_hosts_per_switch:
+            flows_list.append((host_list[i], host_list[i+num_hosts_per_switch]))
+
+    # print "----Flows----"
+    # print flows_list
+    # print "============="
+
     nw_graph = nx.Graph()
-    nw_graph.add_node("s1")
-    nw_graph.add_node("s2")
-    nw_graph.add_node("h1s1")
-    nw_graph.add_node("h1s2")
-    nw_graph.add_node("h2s2")
-    nw_graph.add_node("h2s1")
+    for switch in switch_list:
+        nw_graph.add_node(switch)
 
-    nw_graph.add_edge("s2", "h2s2", link_delay=link_delay, link_bw=link_bw)
-    #print "Link delay="
-    #print nw_graph["s2"]["h2s2"]['link_delay']
+    for host in host_list:
+        nw_graph.add_node(host)
 
-    nw_graph.add_edge("s2", "s1", link_delay=link_delay, link_bw=link_bw)
-    nw_graph.add_edge("s2", "h1s2", link_delay=link_delay, link_bw=link_bw)
-    nw_graph.add_edge("s1", "h2s1", link_delay=link_delay, link_bw=link_bw)
-    nw_graph.add_edge("s1", "h1s1", link_delay=link_delay, link_bw=link_bw)
+    for x,y in edge_list:
+        nw_graph.add_edge(x,y, link_delay=link_delay, link_bw=link_bw)
 
 
-    #'''
+    # print "Link delay="
+    # print nw_graph["s2"]["h2s2"]['link_delay']
 
-    '''
-    nw_graph = nx.Graph()
-
-    nw_graph.add_node("s")
-    nw_graph.add_node("u")
-    nw_graph.add_node("v")
-    nw_graph.add_node("t")
-
-    nw_graph.add_edge("s", "u", link_delay=link_delay, link_bw=link_bw)
-    nw_graph.add_edge("s", "v", link_delay=link_delay, link_bw=link_bw)
-    nw_graph.add_edge("u", "v", link_delay=link_delay, link_bw=link_bw)
-    nw_graph.add_edge("u", "t", link_delay=link_delay, link_bw=link_bw)
-    nw_graph.add_edge("v", "t", link_delay=link_delay, link_bw=link_bw)
-
-    src = "s"
-    dst = "t"
-    '''
     x = 10
 
     hmax = calculate_hmax(nw_graph)
-    #hmax = 3
+
     bw_budget = get_bw_budget(nw_graph, bw_req_flow, hmax)
-    print "BW budget = {}".format(bw_budget)
-    # hmax = 3
+    #print "BW budget = {}".format(bw_budget)
 
-    print_graph(nw_graph)
+    #print_graph(nw_graph)
 
-    print "=== after calibration === "
+    #print "=== after calibration === "
     nw_graph = calibrate_graph(nw_graph)
-    print_graph(nw_graph)
+    #print_graph(nw_graph)
 
     # print "w1(u,v): {}, w2_prime(u,v): {}".format(get_w1(0,0), get_w2_prime(0,0))
 
@@ -443,39 +388,93 @@ def main():
     # mh = MCP_Helper(nw_graph, delay_budget, bw_req_flow, x)
     #mh.calculate_mcp_ebf("s", "t")
 
+    t.__enter__()
+
     mh = MCP_Helper(nw_graph, hmax, delay_budget, bw_budget, bw_req_flow, x)
 
+    for src, dst in flows_list:
 
-    '''
-    itr = 2
-    for i in range(1, itr+1):
-        print "iteration {}".format(i)
+        path = mh.get_path_layout(src, dst)
+        if not path:
+            print "No path found!"
 
-        mh.calculate_mcp_ebf(src, dst, i)
+    return t.__exit__()
 
-        if mh.check_solution(dst, i):
-            print "Path found at iteration {}".format(i)
-            path = mh.extract_path(src, dst)
-            path_src_2_dst = path[::-1]
-            print path_src_2_dst
-            break
-        else:
-            print "Unable to find path at pass {}".format(i)
+def gen_hosts(num_hosts, switch_name):
+    list_of_hosts=list()
+    for i in range(num_hosts):
+        list_of_hosts.append(str("h" + str(i+1) + switch_name))
+    return list_of_hosts
 
-    '''
+def gen_switches( num_switches):
+    list_of_switches = list()
+    for i in range(num_switches):
+        list_of_switches.append(str("s")+str(i+1))
+    return list_of_switches
 
-    path = mh.get_path_layout(src, dst)
-    if  not path:
-        print "No path found!"
-    else:
-        print path
-
-    #path = mh.extract_path("s", "t")
-
-
-
+def gen_host_switch_links(list_of_hosts, list_of_switches):
+    list_of_edges = list()
+    for switch in list_of_switches:
+        for host in list_of_hosts:
+            if host.endswith(switch):
+                list_of_edges.append((switch, host))
+    return list_of_edges
 
 
 
 if __name__ == "__main__":
-    main()
+
+    # num_switches = 4
+    # times = dict()
+    # for num_hosts_per_switch in range(5,101,5):
+    #     # print num_hosts_per_switch
+    #     times[num_hosts_per_switch] = main(num_switches, num_hosts_per_switch)
+    #
+    # for key in times:
+    #     print key, times[key]
+    #
+    # runtime_mcp_fd_save = open(r'runtime_mcp_flow_comparison.pickle', 'wb')
+    # pickle.dump(times, runtime_mcp_fd_save)
+    # runtime_mcp_fd_save.close()
+
+    runtime_mcp_fd_load = open(r'runtime_mcp_flow_comparison.pickle', 'rb')
+    times_loaded = pickle.load(runtime_mcp_fd_load)
+    runtime_mcp_fd_load.close()
+
+
+    rcParams["font.family"] = "Helvetica"
+    rcParams['font.size'] = 15
+    rcParams['legend.fontsize'] = 11
+    rcParams['axes.titlesize'] = 15
+    rcParams['ytick.labelsize'] = 10
+    rcParams['xtick.labelsize'] = 10
+
+    f, ax = plt.subplots(1, 1)
+
+
+    min_num_switches = min(times_loaded.keys())
+    max_num_switches = max(times_loaded.keys())
+
+    print min_num_switches, max_num_switches
+
+    x_list, y_list = [], []
+
+    for i in range(min_num_switches, max_num_switches+1):
+        if i in times_loaded:
+            x_list.append(i)
+            y_list.append(times_loaded[i])
+
+    # ax.set_title("Runtime overhead of FR-SDN Scheme")
+    ax.set_xlabel('Number of Flows')
+    ax.set_ylabel('Run-time Overhead (ms)')
+    plt.axhline(y=0.05, color='g', linestyle='--', linewidth=2, label='Fast Failover [To be Used in Our Proposed Scheme]')
+    # plt.yscale("log")
+
+
+    plt.plot(x_list, y_list, color='r', alpha=0.7, label='State of the Art', marker='x')
+    plt.annotate('50 '+ u'\u03bcs', xy=(80,5000))
+    plt.legend()
+    plt.show()
+
+
+
