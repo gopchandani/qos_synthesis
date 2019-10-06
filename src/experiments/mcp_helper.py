@@ -219,6 +219,15 @@ def calculate_hmax(nw_graph):
     return hmax
 
 
+def wrapper_update_reamining_bw(nw_graph, path, bw_req_flow):
+    # print "updating remaining bw..."
+    # reduce the bw that allocated to that flow-path
+    for i in range(1, len(path) - 1):
+        nw_graph[path[i]][path[i + 1]]['link_bw'] -= bw_req_flow
+        nw_graph[path[i + 1]][path[i]]['link_bw'] -= bw_req_flow
+        # print "link{}->{}, current bw:{}".format(current_flow.path[i], current_flow.path[i+1], nw_graph[current_flow.path[i]][current_flow.path[i+1]]['link_bw'])
+
+
 def update_reamining_bw(nw_graph, current_flow):
     # print "updating remaining bw..."
     # reduce the bw that allocated to that flow-path
@@ -248,6 +257,24 @@ def print_delay_budget(nw_config):
     for current_flow in nw_config.flow_specs:
         print "Delay budget for flow {} to {} is {}".format(current_flow.src_host_id, current_flow.dst_host_id,
                                                             current_flow.delay_budget)
+
+
+def wrapper_for_find_path_by_mcp(nw_graph, flow_list, bw_req_flow, bw_budget, delay_budget, hmax, x=10):
+    for src, dst in flow_list:
+        mh = MCPHelper(nw_graph, hmax, delay_budget, bw_budget, bw_req_flow, x)
+        path = mh.get_path_layout(src, dst)
+
+        if not path:
+            print "No path found for flow {} to {}".format(src, dst)
+        else:
+            print "Path found for flow {} to {}".format(src, dst)
+            print path
+            # set the path for the flow
+            #reverse_path = path[::-1]  # path for the reverse flow
+            # nw_config.flow_specs[flow_id + 1].path = reverse_path  # set the path for the reverse flow
+
+            # decrease the available bw in the path
+            wrapper_update_reamining_bw(nw_graph, path, bw_req_flow)
 
 
 

@@ -617,4 +617,3 @@ class NetworkConfiguration(object):
                 current_flow.delay_budget = base_delay_budget
                 self.flow_specs[flow_id+1].delay_budget = base_delay_budget  # for reverse flow
                 base_delay_budget += delta
-
