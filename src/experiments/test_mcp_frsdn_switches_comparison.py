@@ -8,8 +8,8 @@ import math
 # import pandas as pd
 # import random
 from timer import Timer
-from matplotlib import rcParams
-from matplotlib import pyplot as plt
+# from matplotlib import rcParams
+# from matplotlib import pyplot as plt
 import pickle
 
 
@@ -379,14 +379,14 @@ if __name__ == "__main__":
     num_hosts_per_switch = 10
     times = dict()
 
-    for num_switches in range(4,100,4):
+    for num_switches in range(100,101,4):
         # print num_hosts_per_switch
         times[num_switches] = main(num_switches, num_hosts_per_switch)
 
     for key in times:
         print key, times[key]
 
-    runtime_mcp_fd_save = open(r'runtime_mcp_switch_comparison_rtas19.pickle', 'wb')
+    runtime_mcp_fd_save = open(r'runtime_mcp_switch_comparison_rtas19_100th.pickle', 'wb')
     pickle.dump(times, runtime_mcp_fd_save)
     runtime_mcp_fd_save.close()
 
@@ -395,6 +395,35 @@ if __name__ == "__main__":
     # runtime_mcp_fd_load.close()
     #
     #
+
+    # times_loaded = {
+    #     4: 3762.20548153,
+    #     8: 4824.9014616,
+    #     12: 6246.3105917,
+    #     16: 7857.81002045,
+    #     20: 9704.22649384,
+    #     24: 11623.628974,
+    #     28: 14715.1529789,
+    #     32: 16428.2294512,
+    #     36: 18754.039526,
+    #     40: 22305.9514761,
+    #     44: 24410.0869894,
+    #     48: 27644.1140175,
+    #     52: 31681.6120148,
+    #     56: 35482.9865694,
+    #     60: 39098.4840393,
+    #     64: 43345.9550142,
+    #     68: 47499.9574423,
+    #     72: 52413.8749838,
+    #     76: 57928.3419847,
+    #     80: 62883.1435442,
+    #     84: 68509.4474554,
+    #     88: 76111.7554903,
+    #     92: 81185.8046055,
+    #     96: 85728.9524078,
+    #     100: 94584.8314762
+    # }
+
     # rcParams["font.family"] = "Helvetica"
     # rcParams['font.size'] = 15
     # rcParams['legend.fontsize'] = 11
