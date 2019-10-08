@@ -270,10 +270,12 @@ def main(num_switches, num_hosts_per_switch):
 
     t = Timer()
 
-    link_delay = 3 # ms
-    link_bw = 10  # MBPS
-    delay_budget = 100  # ms
-    bw_req_flow = 1  # MBPS
+    link_delay = 0.1 #ms
+    bw_req_flow = 1  #MBPS
+    link_bw =  int(bw_req_flow * math.floor(num_hosts_per_switch/2.0)) + 1 #MBPS
+    print link_bw
+    delay_budget = 0.1  #ms
+    bw_req_flow = 1  #MBPS
     x = 10
 
     switch_list = list()
@@ -330,7 +332,7 @@ def main(num_switches, num_hosts_per_switch):
 
     t.__enter__()
     mcph.wrapper_for_find_path_by_mcp(nw_graph, flows_list, bw_req_flow, bw_budget, delay_budget, hmax, x=10)
-    return t.__exit__()
+    return (t.__exit__()/2.0)
 
     #mh = MCP_Helper(nw_graph, hmax, delay_budget, bw_budget, bw_req_flow, x)
     #
@@ -368,76 +370,74 @@ def gen_host_switch_links(list_of_hosts, list_of_switches):
 
 if __name__ == "__main__":
 
-    num_switches = 4
-    times = dict()
-    for num_hosts_per_switch in range(5,6,1):
-        # print num_hosts_per_switch
-        times[num_hosts_per_switch] = main(num_switches, num_hosts_per_switch)
+    # num_switches = 4
+    # times = dict()
+    # for num_hosts_per_switch in range(5,101,5):
+    #     # print num_hosts_per_switch
+    #     times[num_hosts_per_switch] = main(num_switches, num_hosts_per_switch)
+    #
+    # for key in times:
+    #     print key, times[key]
+    #
+    # runtime_mcp_fd_save = open(r'runtime_mcp_flow_comparison_5to100_on_pi.pickle', 'wb')
+    # pickle.dump(times, runtime_mcp_fd_save)
+    # runtime_mcp_fd_save.close()
 
-    for key in times:
-        print key, times[key]
+    runtime_mcp_fd_load = open(r'runtime_mcp_flow_comparison_5to100_on_pi.pickle', 'rb')
+    times_loaded = pickle.load(runtime_mcp_fd_load)
+    runtime_mcp_fd_load.close()
 
-    runtime_mcp_fd_save = open(r'runtime_mcp_flow_comparison.pickle', 'wb')
-    pickle.dump(times, runtime_mcp_fd_save)
-    runtime_mcp_fd_save.close()
+    rcParams["font.family"] = "Helvetica"
+    rcParams['font.size'] = 15
+    rcParams['legend.fontsize'] = 11
+    rcParams['axes.titlesize'] = 15
+    rcParams['ytick.labelsize'] = 10
+    rcParams['xtick.labelsize'] = 10
 
-    # runtime_mcp_fd_load = open(r'runtime_mcp_flow_comparison.pickle', 'rb')
-    # times_loaded = pickle.load(runtime_mcp_fd_load)
-    # runtime_mcp_fd_load.close()
-    #
-    #
-    #
-    # rcParams["font.family"] = "Helvetica"
-    # rcParams['font.size'] = 15
-    # rcParams['legend.fontsize'] = 11
-    # rcParams['axes.titlesize'] = 15
-    # rcParams['ytick.labelsize'] = 10
-    # rcParams['xtick.labelsize'] = 10
-    #
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111)
-    #
-    #
-    # min_num_switches = min(times_loaded.keys())
-    # max_num_switches = max(times_loaded.keys())
-    #
-    # print min_num_switches, max_num_switches
-    #
-    # x_list, y_list = [], []
-    # w_list = []
-    #
-    # for i in range(min_num_switches, max_num_switches+1):
-    #     if i in times_loaded:
-    #         x_list.append(i)
-    #         y_list.append(times_loaded[i])
-    #         if i <= 50:
-    #             w_list.append(2.5*i*times_loaded[i])
-    #         else:
-    #             w_list.append(2.5 * 50 * times_loaded[i])
-    #
-    # z_list = [115*x if x <=50 else 115*50 for x in x_list] # FF packets lost
-    #
-    #
-    # # ax.set_title("Runtime overhead of FR-SDN Scheme")
-    # ax.set_xlabel('Number of Flows')
-    # ax.set_ylabel('Runtime Overhead (ms)')
-    # ax.axhline(y=0.05, color='g', linestyle='--', linewidth=2, label='Runtime of Fast Failover')
-    # ax.plot(x_list, y_list, color='r', alpha=0.7, label='Runtime of State of the Art', marker='x')
-    # # plt.yscale("log")
-    #
-    #
-    # bx=ax.twinx()
-    # bx.set_yscale("log")
-    # bx.set_ylabel('Number of Packets Lost')
-    # bx.plot(x_list, z_list, color='g', alpha=0.7, label='Packets lost in Fast Failover', marker='+')
-    # # bx.axhline(y=70, color='k', linestyle='--', linewidth=2, label='Packets lost in Fast Failover')
-    # bx.plot(x_list, w_list, color='r', alpha=0.7, label='Packets lost in State of the Art', marker='s')
-    # ax.annotate('50 '+ u'\u03bcs', xy=(80,5000))
-    # bx.annotate('5750 pkts', xy=(75,8000))
-    # bx.legend(loc='upper center', bbox_to_anchor=(0.5, 1.20), ncol=2, fancybox=False, shadow=False, borderaxespad=0., mode='Expand')
-    # ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.10), ncol=2, fancybox=False, shadow=False, borderaxespad=0., mode='Expand')
-    #
-    # plt.show()
-    #
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+
+    min_num_switches = min(times_loaded.keys())
+    max_num_switches = max(times_loaded.keys())
+
+    print min_num_switches, max_num_switches
+
+    x_list, y_list = [], []
+    w_list = []
+
+    for i in range(min_num_switches, max_num_switches+1):
+        if i in times_loaded:
+            x_list.append(i)
+            y_list.append(times_loaded[i])
+            if i <= 50:
+                w_list.append(2.5*i*times_loaded[i])
+            else:
+                w_list.append(2.5 * 50 * times_loaded[i])
+
+    z_list = [115*x if x <=50 else 115*50 for x in x_list] # FF packets lost
+
+
+    # ax.set_title("Runtime overhead of FR-SDN Scheme")
+    ax.set_xlabel('Number of Flows')
+    ax.set_ylabel('Runtime Overhead (ms)')
+    ax.axhline(y=0.05, color='g', linestyle='--', linewidth=2, label='Runtime of Fast Failover')
+    ax.plot(x_list, y_list, color='r', alpha=0.7, label='Runtime of State of the Art', marker='x')
+    # plt.yscale("log")
+
+
+    bx=ax.twinx()
+    bx.set_yscale("log")
+    bx.set_ylabel('Number of Packets Lost')
+    bx.plot(x_list, z_list, color='g', alpha=0.7, label='Packets lost in Fast Failover', marker='+')
+    # bx.axhline(y=70, color='k', linestyle='--', linewidth=2, label='Packets lost in Fast Failover')
+    bx.plot(x_list, w_list, color='r', alpha=0.7, label='Packets lost in State of the Art', marker='s')
+    ax.annotate('50 '+ u'\u03bcs', xy=(80,5000))
+    bx.annotate('5750 pkts', xy=(75,8000))
+    bx.legend(loc='upper center', bbox_to_anchor=(0.5, 1.20), ncol=2, fancybox=False, shadow=False, borderaxespad=0., mode='Expand')
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.10), ncol=2, fancybox=False, shadow=False, borderaxespad=0., mode='Expand')
+
+    plt.show()
+
 
 

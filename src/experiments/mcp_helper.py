@@ -5,9 +5,10 @@ import networkx as nx
 from collections import defaultdict
 import math
 import pandas as pd
+from timer import Timer
 # import random
-from model.intent import Intent
-from synthesis.synthesis_lib import SynthesisLib
+from src.model.intent import Intent
+from src.synthesis.synthesis_lib import SynthesisLib
 
 from copy import deepcopy
 
@@ -155,12 +156,12 @@ class MCPHelper(object):
             self.calculate_mcp_ebf(src, dst, i)
 
             if self.check_solution(dst, i):
-                print "Path found at pass {}".format(i)
+                #print "Path found at pass {}".format(i)
                 path = self.extract_path(src, dst, i)
                 path_src_2_dst = path[::-1]
                 return path_src_2_dst
-            else:
-                print "Unable to find path at pass {}".format(i)
+            #else:
+                #print "Unable to find path at pass {}".format(i)
 
         return path_src_2_dst
 
@@ -260,15 +261,19 @@ def print_delay_budget(nw_config):
 
 
 def wrapper_for_find_path_by_mcp(nw_graph, flow_list, bw_req_flow, bw_budget, delay_budget, hmax, x=10):
+    t = Timer()
     for src, dst in flow_list:
+        t.__enter__()
         mh = MCPHelper(nw_graph, hmax, delay_budget, bw_budget, bw_req_flow, x)
         path = mh.get_path_layout(src, dst)
 
         if not path:
-            print "No path found for flow {} to {}".format(src, dst)
+            #print "No path found for flow {} to {}".format(src, dst)
+            return
         else:
-            print "Path found for flow {} to {}".format(src, dst)
-            print path
+            # print "Path found for flow {} to {}".format(src, dst)
+            fin = t.__exit__()
+            print path, fin
             # set the path for the flow
             #reverse_path = path[::-1]  # path for the reverse flow
             # nw_config.flow_specs[flow_id + 1].path = reverse_path  # set the path for the reverse flow
