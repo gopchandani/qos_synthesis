@@ -383,61 +383,9 @@ if __name__ == "__main__":
     # pickle.dump(times, runtime_mcp_fd_save)
     # runtime_mcp_fd_save.close()
 
-    # runtime_mcp_fd_load = open(r'runtime_mcp_flow_comparison_5to100_on_pi.pickle', 'rb')
-    # times_loaded = pickle.load(runtime_mcp_fd_load)
-    # print times_loaded
-    # runtime_mcp_fd_load.close()
-
-    # times_loaded = {
-    #     5:  904.578447342,
-    #     10: 5075.82902908,
-    #     15: 14963.5884762,
-    #     20: 34381.5600872,
-    #     25: 64104.6794653,
-    #     30: 108475.352526,
-    #     35: 169535.823941,
-    #     40: 250958.759904,
-    #     45: 352961.788535,
-    #     50: 475700.955391,
-    #     55: 634420.171499,
-    #     60: 817099.598408,
-    #     65: 1021487.4655,
-    #     70: 1282649.809,
-    #     75: 1586203.82142,
-    #     80: 1904077.99697,
-    #     85: 2276090.5901,
-    #     90: 2677599.8894,
-    #     95: 3139816.45501,
-    #     100: 3689929.92949
-    #
-    #
-    # }
-
-    times_loaded = {
-        5:  904.578447342,
-        10: 5075.82902908,
-        15: 14963.5884762,
-        20: 34381.5600872,
-        25: 64104.6794653,
-        30: 108475.352526,
-        35: 169535.823941,
-        40: 250958.759904,
-        45: 352961.788535,
-        50: 475700.955391,
-        55: 634420.171499,
-        60: 817099.598408,
-        65: 1021487.4655,
-        70: 1282649.809,
-        75: 1586203.82142,
-        80: 1904077.99697,
-        85: 2276090.5901,
-        90: 2677599.8894,
-        95: 3139816.45501,
-        100: 3689929.92949
-
-
-    }
-
+    runtime_mcp_fd_load = open(r'runtime_mcp_flow_comparison_5to100_on_pi.pickle', 'rb')
+    times_loaded = pickle.load(runtime_mcp_fd_load)
+    runtime_mcp_fd_load.close()
 
     rcParams["font.family"] = "Helvetica"
     rcParams['font.size'] = 15
@@ -461,21 +409,19 @@ if __name__ == "__main__":
     for i in range(min_num_switches, max_num_switches+1):
         if i in times_loaded:
             x_list.append(i)
-            y_list.append(times_loaded[i]*2.0/i)
-            w_list.append(0.125*times_loaded[i]*2.0/i)
-            # if i <= 50:
-            #     w_list.append(2.5*i*times_loaded[i])
-            # else:
-            #     w_list.append(2.5 * 50 * times_loaded[i])
+            y_list.append(times_loaded[i])
+            if i <= 50:
+                w_list.append(2.5*i*times_loaded[i])
+            else:
+                w_list.append(2.5 * 50 * times_loaded[i])
 
-    # z_list = [115*x if x <=50 else 115*50 for x in x_list] # FF packets lost is 115 for 20Mbps
-    z_list = [15 for x in x_list]  # FF packets lost is 15 for 1Mbps
+    z_list = [115*x if x <=50 else 115*50 for x in x_list] # FF packets lost is 115 for 20Mbps
+
 
     # ax.set_title("Runtime overhead of FR-SDN Scheme")
-    #ax.set_yscale("log")
     ax.set_xlabel('Number of Flows')
-    ax.set_ylabel('Runtime Overhead(ms)')
-    ax.axhline(y=0.10, color='g', linestyle='--', linewidth=2, label='Runtime of Fast Failover')
+    ax.set_ylabel('Runtime Overhead (ms)')
+    ax.axhline(y=0.05, color='g', linestyle='--', linewidth=2, label='Runtime of Fast Failover')
     ax.plot(x_list, y_list, color='r', alpha=0.7, label='Runtime of State of the Art', marker='x')
     # plt.yscale("log")
 
@@ -486,8 +432,8 @@ if __name__ == "__main__":
     bx.plot(x_list, z_list, color='g', alpha=0.7, label='Packets lost in Fast Failover', marker='+')
     # bx.axhline(y=70, color='k', linestyle='--', linewidth=2, label='Packets lost in Fast Failover')
     bx.plot(x_list, w_list, color='r', alpha=0.7, label='Packets lost in State of the Art', marker='s')
-    ax.annotate('100 '+ u'\u03bcs', xy=(80,5000))
-    bx.annotate('15 pkts', xy=(60,23))
+    ax.annotate('50 '+ u'\u03bcs', xy=(80,5000))
+    bx.annotate('5750 pkts', xy=(75,8000))
     bx.legend(loc='upper center', bbox_to_anchor=(0.5, 1.20), ncol=2, fancybox=False, shadow=False, borderaxespad=0., mode='Expand')
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.10), ncol=2, fancybox=False, shadow=False, borderaxespad=0., mode='Expand')
 
